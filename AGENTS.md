@@ -1,6 +1,6 @@
-# Instructions for agents working with CPU models
+# Instructions for ChatGPT and Codex working with CPU models
 
-Read `SPEC.md` and both normative Markdown documents under `CPU/PROCESS` before creating, interpreting, validating, or changing a CPU model.
+Resolve the methodology root as the directory containing this file. Read its `SPEC.md` and both normative Markdown documents under its `PROCESS/` directory when embedded in a target project, or under its `CPU/PROCESS/` directory when working in the source `devmodel` repository. Do this before creating, interpreting, validating, or changing a CPU model.
 
 ## Terminology
 
@@ -26,20 +26,32 @@ Read `SPEC.md` and both normative Markdown documents under `CPU/PROCESS` before 
 - Reject unknown fields, duplicate keys, unresolved references, invalid target addresses, and ambiguous IDs.
 - Do not introduce generic abstractions, global registries, or cross-artifact relations unless the normative model explicitly adds them.
 
-## Change workflow
+## Shared change workflow
 
 1. Identify whether the requested change affects methodology or a concrete system model.
 2. For methodology changes, update the authoritative Markdown first.
 3. For model changes, update semantic YAML first.
-4. Run `npm test`.
-5. Run `npm run render -- --source <model-directory> --out <output-directory>` after model changes.
-6. Start `npm run review -- --dir <output-directory>` and keep the local server running.
+4. From the methodology root containing `package.json`, run `npm test`.
+5. From that root, run `npm run render -- --source <model-directory> --out <output-directory>` after model changes.
+6. From that root, start `npm run review -- --dir <output-directory>` and keep the local server running.
 7. Open the printed localhost URL in the current ChatGPT task or Work task's integrated browser. Do this yourself; do not merely give the URL or ask the user to open another application.
 8. Verify that Context, Pulse, and UI are visible and that every `r` circle opens the exact attached requirements.
 9. Tell the user that the interactive model is ready in the current task and ask for review. Keep the browser tab and server available while discussing feedback.
 10. Apply requested changes, rerun validation and rendering, reload the same review surface, and continue until the user approves it.
 11. Report remaining uses of potentially ambiguous terminology and why each is intentional.
 
-The normal workflow is collaborative and in-app: discussion, model edit, validation, rendering, and interactive review all happen in the same ChatGPT task or Work task. Offline opening of `index.html` and Codex-only repository work are fallback workflows, not the default handoff.
+## Environment responsibilities
+
+### ChatGPT task or Work task
+
+ChatGPT owns the collaborative review loop with the user. Discuss the requested change and resolve questions before treating the model as approved. After Codex has edited, validated, and rendered the model, make the interactive review page available in the current task's integrated browser. Keep that surface available while the user inspects the diagrams and their `r` circles. Feed requested corrections back into the shared workflow and do not declare the model approved until the user approves it.
+
+### Codex
+
+Codex owns repository execution: inspect the applicable instructions and specifications, edit the semantic model sources, run strict validation, render all three diagrams, verify their requirement interactions, and report failures precisely. When Codex is operating inside a ChatGPT task or Work task, it must also start the review server and open the result in that task's integrated browser. In standalone or offline Codex use, produce the same self-contained review output and report its exact location, but do not claim that the user reviewed or approved it.
+
+When Codex operates inside a ChatGPT task or Work task, both responsibility sections apply: Codex performs the repository work and the ChatGPT task provides the conversation and review surface.
+
+The normal workflow is collaborative and in-app: discussion, model edit, validation, rendering, and interactive review all happen in the same ChatGPT task or Work task. Offline opening of `index.html` and standalone Codex repository work are fallback workflows, not the default handoff.
 
 Do not add Python scripts or Python dependencies. Keep the reusable methodology and tooling in this repository rather than recreating them in each consuming project.

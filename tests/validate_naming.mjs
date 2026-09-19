@@ -3,12 +3,13 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const processDirectory = fs.existsSync(path.join(root, 'CPU', 'PROCESS')) ? 'CPU/PROCESS' : 'PROCESS';
 const files = [
   'README.md',
   'SPEC.md',
   'AGENTS.md',
-  'CPU/PROCESS/CPU-Artifact-Formats-v1.md',
-  'CPU/PROCESS/CPU-Visual-Language-v1.md',
+  `${processDirectory}/CPU-Artifact-Formats-v1.md`,
+  `${processDirectory}/CPU-Visual-Language-v1.md`,
 ];
 const documents = new Map(files.map(file => [file, fs.readFileSync(path.join(root, file), 'utf8')]));
 const combined = [...documents.values()].join('\n');
