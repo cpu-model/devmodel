@@ -5,3 +5,13 @@ requirements:
     - The system shall process submitted input.
   ui.action.main.submit-input:
     - The user shall be able to submit input.
+  deployment.host.application-host:
+    - The application shall run on a Linux host.
+  deployment.program.example-application:
+    - The server and Web UI shall be delivered as one operating-system process.
+  deployment.program.example-application.port.web:
+    - The Web UI shall listen on port 8080.
+  deployment.service.data-stack.database:
+    - Persistent application data shall be stored in PostgreSQL.
+  deployment.connection.application-database:
+    - The application shall connect to PostgreSQL over the internal deployment network.

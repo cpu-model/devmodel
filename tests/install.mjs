@@ -36,6 +36,9 @@ try {
     'CPU/tools/render_model.mjs',
     'CPU/tools/finish_model.mjs',
     'CPU/tools/serve_model.mjs',
+    'CPU/examples/model/deployment.yaml',
+    'CPU/tests/all.mjs',
+    'CPU/tests/deployment_validation.mjs',
   ]) {
     assert.ok(fs.existsSync(path.join(target, file)), `Missing installed file: ${file}`);
   }

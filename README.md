@@ -19,9 +19,12 @@ A concrete system model consists of:
 - `context.yaml`
 - `pulse.yaml`
 - `ui.yaml`
+- `deployment.yaml`
 - `requirements.yaml`
 
 `UI` is the top-level artifact. `View` remains the term for an individual user-relevant surface inside UI.
+
+`deployment.yaml` is a complementary artifact for one concrete normative deployment. It records hosts, OS processes or Docker Compose projects, nested Compose services, implementation choices, environment declarations, ports, mounts, health checks, restart and resource instructions, and directed network connections. Server language defaults to Go; every Web UI platform and port is selected and recorded explicitly.
 
 ## Install
 
@@ -68,7 +71,7 @@ npm run render -- \
   --review-title "Increment 3"
 ```
 
-The output contains deterministic D2, SVG, `model.json`, and a self-contained `index.html`. Open `index.html` to display all three decorated diagrams and inspect the exact requirements attached to each marked element.
+The output contains deterministic D2, SVG, `model.json`, and a self-contained `index.html`. Open `index.html` to display all four decorated diagrams and inspect the exact requirements attached to each marked element.
 
 For the normal collaborative ChatGPT task or Work workflow, the agent then runs:
 

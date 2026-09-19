@@ -6,9 +6,9 @@
 
 ## 1. Purpose
 
-Artifact Formats v1 defines the semantic source formats for Context, Pulse, UI, and their attached requirements. The YAML artifacts are authoritative. Rendering is derived from them using Visual Language v1.
+Artifact Formats v1 defines the semantic source formats for Context, Pulse, UI, complementary Deployment, and their attached requirements. The YAML artifacts are authoritative. Rendering is derived from them using Visual Language v1.
 
-The formats are intentionally small and artifact-specific. v1 does not introduce a generic metamodel, global registry, UUID scheme, presentation fields, or general cross-artifact relation mechanism. Requirement target addresses are the explicit, limited exception described in section 9.
+The formats are intentionally small and artifact-specific. v1 does not introduce a generic metamodel, global registry, UUID scheme, presentation fields, or general cross-artifact relation mechanism. Requirement target addresses are the explicit, limited exception described in section 10.
 
 ## 2. Common rules
 
@@ -207,7 +207,101 @@ Its complete semantics are: the user can navigate from the containing View to th
 - Navigation entries contain only `to`; `name`, `id`, `style`, `control`, `gesture`, or `layout` fields are invalid.
 - Declared ordering of Actions and Information is semantically preserved for deterministic rendering.
 
-## 6. Deliberately absent from v1
+## 6. Deployment format
+
+Deployment describes one concrete intended deployment. Its commands, environment declarations, ports, mounts, health checks, restart policies, and resource constraints are normative implementation instructions. It is complementary to Context-Pulse-UI and does not add a fourth letter to the CPU name.
+
+```yaml
+deployment:
+  environment:
+    file: .env
+    variables:
+      - name: DATABASE_PASSWORD
+        required: true
+        secret: true
+  hosts:
+    - id: application-host
+      name: Application host
+      type: machine
+      os: linux
+      architecture: amd64
+  programs:
+    - id: application
+      name: Application
+      host: application-host
+      type: os-process
+      role: server-with-web-ui
+      implementation:
+        language: go
+        platform: server-rendered-html
+      command: ./application
+      environment:
+        file: .env
+      ports:
+        - id: web
+          name: Web UI
+          port: 8080
+          application: http
+          exposure: host
+      health-check:
+        type: http
+        path: /health
+      restart: on-failure
+      resources:
+        memory: 128MiB
+  connections: []
+```
+
+### 6.1 Environment
+
+`environment.file` defaults to `.env`. Variables contain `name` and optional `required`, scalar `default`, and `secret` fields. Secret values are never stored in the model. A variable marked `secret: true` must not define `default`.
+
+Program and Compose-service environment declarations use the same shape and may override the deployment-level file or add variables for that runtime unit.
+
+### 6.2 Hosts
+
+Each host contains `id`, `name`, and `type`; optional `os` and `architecture` are normative constraints. Allowed host types are `machine`, `virtual-machine`, and `cloud-host`. A host represents an execution host, not a Compose container.
+
+### 6.3 Programs and Compose services
+
+Each program contains `id`, `name`, `host`, and `type`. Allowed types are `os-process`, `docker-compose`, `managed-service`, and `external-service`.
+
+A `docker-compose` program contains a non-empty `services` list. Its services are the containers managed by that project. Other program types must not contain services. A Web UI may be a separate program/service or embedded by using role `server-with-web-ui`.
+
+Optional program and service roles are `server`, `web-ui`, `server-with-web-ui`, `worker`, `database`, `proxy`, and `other`. A server's implementation language defaults to `go`. A `web-ui` or `server-with-web-ui` has no platform default: Codex selects a suitable platform when necessary and records it explicitly in `implementation.platform` for review.
+
+Codex may select an unspecified port, but the chosen number must be written explicitly before validation and review. Every Web UI role declares at least one HTTP or HTTPS port.
+
+### 6.4 Normative runtime instructions
+
+Programs and services may declare:
+
+- `command`: exact start command;
+- `working-directory`: process working directory (programs only);
+- `environment`: environment file and variable declarations;
+- `ports`: listening ports and optional host publication;
+- `volumes`: identified source-to-target mounts with optional `read-only`;
+- `health-check`: `http`, `tcp`, or `command` check and its required parameters;
+- `restart`: `no`, `on-failure`, `always`, or `unless-stopped`;
+- `resources`: optional CPU and memory constraints.
+
+A port contains `id`, `name`, and numeric `port`. `host-port` is the published host port when applicable. `transport` defaults to `tcp`; `application` records an application protocol such as `http`, `https`, or `postgres`; `exposure` defaults to `internal` and is `internal`, `host`, or `public`.
+
+### 6.5 Connections
+
+Each directed connection contains `id`, `name`, `from`, and `to`, with optional `transport` and `application`. An endpoint is a program ID, `<program-id>.<service-id>`, `<program-id>.<port-id>`, or `<program-id>.<service-id>.<port-id>`. Both endpoints must resolve to visible deployment elements. Infrastructure and external services appear only when explicitly declared as hosts/programs and referenced by a connection.
+
+### 6.6 Deployment validation
+
+- IDs are unique in their natural host, program, service, port, or connection scope and contain no period.
+- Every program resolves to one declared host.
+- Every connection endpoint resolves and its ends differ.
+- Web UI platforms and Web UI ports are explicit.
+- Server language resolves to explicit `implementation.language` or the `go` default.
+- Compose projects have services; non-Compose programs do not.
+- Secret values, invalid ports, unknown fields, invalid enum values, and structurally incomplete normative instructions are rejected.
+
+## 7. Deliberately absent from v1
 
 The following are intentionally not part of Artifact Formats v1:
 
@@ -215,39 +309,41 @@ The following are intentionally not part of Artifact Formats v1:
 - areas, hierarchy, groups, tags, and metadata bags;
 - layout coordinates or renderer style;
 - UI widgets, gestures, responsive rules, colors, and typography;
-- protocol details and implementation architecture;
+- implementation architecture outside the complementary Deployment artifact;
 - UUIDs, namespaces, or global ID registries;
 - general cross-artifact relations;
 - active or superseded lifecycle machinery;
 - named Navigation relations.
 
-## 7. Source layout and generation
+## 8. Source layout and generation
 
 ```text
 system/
   context.yaml
   pulse.yaml
   ui.yaml
+  deployment.yaml
   requirements.yaml
 
 context.yaml -> context.d2 -> context.svg
 pulse.yaml   -> pulse.d2   -> pulse.svg
 ui.yaml      -> ui.d2      -> ui.svg
+deployment.yaml -> deployment.d2 -> deployment.svg
 ```
 
 The YAML files are the semantic sources. D2, SVG, PNG, and HTML are generated. Rendering follows Visual Language v1 and must not add, remove, or reinterpret semantics.
 
-## 8. v1 design principle
+## 9. v1 design principle
 
 Keep each artifact small, explicit, artifact-specific, strict, and human-readable. Add structure only when an observed semantic need requires it.
 
-## 9. Requirements format
+## 10. Requirements format
 
-Requirements are attached to identified model elements. `requirements.yaml` belongs to the same system model as the three semantic artifacts and all four files are reviewed together.
+Requirements are attached to identified model elements. `requirements.yaml` belongs to the same system model as the three core semantic artifacts and complementary Deployment artifact; all five files are reviewed together.
 
 Requirements must not be embedded in model names, generated D2, or SVG. Requirement indicators, click behavior, and layout are derived presentation defined by Visual Language v1.
 
-### 9.1 Document shape
+### 10.1 Document shape
 
 The document has exactly one top-level field, `requirements`. Its value is a mapping from target address to an ordered, non-empty list of non-empty requirement strings. An empty mapping is valid when no requirements are defined.
 
@@ -259,11 +355,13 @@ requirements:
     - One run shall comprise the complete retrieval.
   ui.action.diagnostics.acknowledge-error:
     - Acknowledgement shall be persistent.
+  deployment.program.backend:
+    - The backend shall run as an operating-system process.
 ```
 
 Requirement list order is preserved. v1 adds no individual requirement IDs, metadata, status fields, presentation fields, or verification fields. A string's wording does not serve as an ID. List positions are not stable identities.
 
-### 9.2 Target addresses
+### 10.2 Target addresses
 
 Words outside angle brackets are literal. IDs come from the corresponding semantic YAML; names and Pulse display numbers are never used as references.
 
@@ -275,18 +373,24 @@ Words outside angle brackets are literal. IDs come from the corresponding semant
 - `ui.view.<view-id>` targets a View.
 - `ui.action.<view-id>.<action-id>` targets an Action in that View.
 - `ui.info.<view-id>.<information-id>` targets Information in that View.
+- `deployment.host.<host-id>` targets a host.
+- `deployment.program.<program-id>` targets a program.
+- `deployment.program.<program-id>.port.<port-id>` targets a program port.
+- `deployment.service.<program-id>.<service-id>` targets a Compose service.
+- `deployment.service.<program-id>.<service-id>.port.<port-id>` targets a Compose-service port.
+- `deployment.connection.<connection-id>` targets a network connection.
 
 Addresses are case-sensitive. An addressable ID must not contain a period, which is the address separator. Validation reports an unaddressable ID rather than silently renaming it.
 
 Pulse Flows, free-text triggers, and View Navigation have no declared semantic IDs in v1 and are not directly addressable. Relevant requirements target an identified element, such as the triggering Pulse or affected View. This does not introduce identities for those constructs.
 
-### 9.3 Attachment semantics
+### 10.3 Attachment semantics
 
 Each mapping entry attaches its requirements directly to exactly the addressed element. There is no implicit inheritance from a View to its contents, from a Behavior to its emitted Pulses, or between artifacts. A renderer must not infer or redistribute attachments.
 
 One requirement string may be explicitly repeated at several targets if intended. Such repetition does not imply shared requirement identity. An element without an entry has no directly attached requirements; this says nothing about whether other requirements affect its behavior.
 
-### 9.4 Requirements validation
+### 10.4 Requirements validation
 
 - Reject unknown root fields, non-mapping requirement collections, invalid target syntax, duplicate keys, empty lists, and non-string or blank requirement values.
 - Resolve every target against the corresponding Context, Pulse, or UI artifact. Reject unknown IDs and wrong element kinds. Action and Information IDs resolve only within their addressed View.
@@ -294,8 +398,8 @@ One requirement string may be explicitly repeated at several targets if intended
 - Reject orphaned targets after deleting or renaming an element. Update the model and its requirements together; do not silently discard requirements.
 - Missing entries for otherwise valid elements are allowed. An empty `requirements` mapping is allowed.
 
-### 9.5 Review and generation
+### 10.5 Review and generation
 
-The reviewed model comprises the three semantic artifacts and the requirement attachment file. Diagram review provides access to the exact requirement strings attached to the selected element. Approval of diagrams alone must not be assumed to approve requirements omitted from review.
+The reviewed model comprises the three core semantic artifacts, complementary Deployment artifact, and requirement attachment file. Diagram review provides access to the exact requirement strings attached to the selected element. Approval of diagrams alone must not be assumed to approve requirements omitted from review.
 
-Generation reads all four sources. Requirement indicators are derived solely from resolved, non-empty attachments. Generated files must not add, omit, summarize, or reinterpret the authoritative requirement strings shown during review.
+Generation reads all five sources. Requirement indicators are derived solely from resolved, non-empty attachments. Generated files must not add, omit, summarize, or reinterpret the authoritative requirement strings shown during review.

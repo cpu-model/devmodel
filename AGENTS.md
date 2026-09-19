@@ -12,7 +12,7 @@ Resolve the methodology root as the directory containing this file. Read its `SP
 ## Source hierarchy
 
 - Treat Markdown specifications as authoritative methodology.
-- Treat `context.yaml`, `pulse.yaml`, `ui.yaml`, and `requirements.yaml` as authoritative for a concrete system.
+- Treat `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml` as authoritative for a concrete system.
 - Treat D2, SVG, PNG, and HTML as generated output. Never infer missing semantics from generated layout.
 - Do not edit generated artifacts to change meaning; change the semantic YAML or normative Markdown and regenerate.
 
@@ -25,6 +25,10 @@ Resolve the methodology root as the directory containing this file. Read its `SP
 - Keep requirement wording exact and ordered. Do not summarize or redistribute attached requirements.
 - Reject unknown fields, duplicate keys, unresolved references, invalid target addresses, and ambiguous IDs.
 - Do not introduce generic abstractions, global registries, or cross-artifact relations unless the normative model explicitly adds them.
+- Treat Deployment commands, environment declarations, ports, mounts, health checks, restart policies, and resource constraints as normative implementation instructions.
+- Default a server implementation language to Go when none is stated. Select and record an explicit platform for every Web UI; there is no Web UI platform default.
+- Codex may choose an unspecified Web UI platform or port, but must write the choice into `deployment.yaml` and expose it for user review.
+- Never place secret values in `deployment.yaml`; record only variable names and secret classification.
 
 ## Shared change workflow
 
@@ -35,7 +39,7 @@ Resolve the methodology root as the directory containing this file. Read its `SP
 5. From that root, run `npm run render -- --source <model-directory> --out <output-directory>` after model changes.
 6. From that root, start `npm run review -- --dir <output-directory>` and keep the local server running.
 7. Open the printed localhost URL in the current ChatGPT task or Work task's integrated browser. Do this yourself; do not merely give the URL or ask the user to open another application.
-8. Verify that Context, Pulse, and UI are visible and that every `r` circle opens the exact attached requirements.
+8. Verify that Context, Pulse, UI, and Deployment are visible and that every `r` circle opens the exact attached requirements.
 9. Tell the user that the interactive model is ready in the current task and ask for review. Keep the browser tab and server available while discussing feedback.
 10. Apply requested changes, rerun validation and rendering, reload the same review surface, and continue until the user approves it.
 11. Report remaining uses of potentially ambiguous terminology and why each is intentional.
@@ -48,7 +52,7 @@ ChatGPT owns the collaborative review loop with the user. Discuss the requested 
 
 ### Codex
 
-Codex owns repository execution: inspect the applicable instructions and specifications, edit the semantic model sources, run strict validation, render all three diagrams, verify their requirement interactions, and report failures precisely. When Codex is operating inside a ChatGPT task or Work task, it must also start the review server and open the result in that task's integrated browser. In standalone or offline Codex use, produce the same self-contained review output and report its exact location, but do not claim that the user reviewed or approved it.
+Codex owns repository execution: inspect the applicable instructions and specifications, edit the semantic model sources, run strict validation, render all four diagrams, verify their requirement interactions, and report failures precisely. When Codex is operating inside a ChatGPT task or Work task, it must also start the review server and open the result in that task's integrated browser. In standalone or offline Codex use, produce the same self-contained review output and report its exact location, but do not claim that the user reviewed or approved it.
 
 When Codex operates inside a ChatGPT task or Work task, both responsibility sections apply: Codex performs the repository work and the ChatGPT task provides the conversation and review surface.
 

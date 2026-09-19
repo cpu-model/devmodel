@@ -7,7 +7,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "node tests/validate_naming.mjs && node tools/render_model.mjs --source examples/model --validate-only && node tests/install.mjs",
+    "test": "node tests/all.mjs",
     "validate": "node tools/render_model.mjs --validate-only",
     "render": "node tools/render_model.mjs",
     "review": "node tools/serve_model.mjs"

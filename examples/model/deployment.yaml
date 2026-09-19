@@ -1,0 +1,70 @@
+deployment:
+  environment:
+    file: .env
+    variables:
+      - name: HTTP_ADDR
+        required: false
+        default: 127.0.0.1:8080
+  hosts:
+    - id: application-host
+      name: Application host
+      type: machine
+      os: linux
+      architecture: amd64
+  programs:
+    - id: example-application
+      name: Example application
+      host: application-host
+      type: os-process
+      role: server-with-web-ui
+      implementation:
+        language: go
+        platform: server-rendered-html
+      command: ./example-application
+      environment:
+        file: .env
+      ports:
+        - id: web
+          name: Web UI
+          port: 8080
+          application: http
+          exposure: host
+      health-check:
+        type: http
+        path: /health
+      restart: on-failure
+      resources:
+        memory: 128MiB
+    - id: data-stack
+      name: Data stack
+      host: application-host
+      type: docker-compose
+      environment:
+        file: .env
+      services:
+        - id: database
+          name: Database
+          role: database
+          implementation:
+            platform: postgres
+          ports:
+            - id: postgres
+              name: PostgreSQL
+              port: 5432
+              application: postgres
+              exposure: internal
+          volumes:
+            - id: data
+              source: database-data
+              target: /var/lib/postgresql/data
+          health-check:
+            type: command
+            command: pg_isready
+          restart: unless-stopped
+  connections:
+    - id: application-database
+      name: Store application data
+      from: example-application
+      to: data-stack.database.postgres
+      transport: tcp
+      application: postgres

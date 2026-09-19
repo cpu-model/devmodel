@@ -131,6 +131,33 @@ function decorate(root, {name, model, requirements}) {
     });
   }
 
+  if (name === 'deployment') {
+    model.hosts.forEach(host => clickable(find(host.id), `deployment.host.${host.id}`, host.name));
+    model.programs.forEach(program => {
+      const prefix = `${program.host}.${program.id}`;
+      clickable(find(prefix), `deployment.program.${program.id}`, program.name);
+      (program.ports || []).forEach(port => clickable(
+        find(`${prefix}.ports.${port.id}`),
+        `deployment.program.${program.id}.port.${port.id}`,
+        port.name,
+      ));
+      (program.services || []).forEach(service => {
+        const servicePrefix = `${prefix}.services.${service.id}`;
+        clickable(find(servicePrefix), `deployment.service.${program.id}.${service.id}`, service.name);
+        (service.ports || []).forEach(port => clickable(
+          find(`${servicePrefix}.ports.${port.id}`),
+          `deployment.service.${program.id}.${service.id}.port.${port.id}`,
+          port.name,
+        ));
+      });
+    });
+    model.connections.forEach((connection, index) => clickable(
+      connections[index],
+      `deployment.connection.${connection.id}`,
+      connection.name,
+    ));
+  }
+
   for (const group of [...svg.querySelectorAll('g[data-key]')]) {
     if (!(requirements[group.dataset.key] || []).length) continue;
     const text = group.querySelector(':scope > text');
@@ -191,7 +218,7 @@ function decorate(root, {name, model, requirements}) {
   svg.setAttribute('viewBox', [outer[0], outer[1], outer[2], outer[3] + 28].join(' '));
 }
 
-const names = ['context', 'pulse', 'ui'];
+const names = ['context', 'pulse', 'ui', 'deployment'];
 const svgs = Object.fromEntries(names.map(name =>
   [name, fs.readFileSync(path.join(out, `${name}.raw.svg`), 'utf8')]));
 const embeddedData = JSON.stringify(data).replaceAll('<', '\\u003c');
@@ -215,6 +242,7 @@ const html = `<!doctype html>
   main{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;padding:24px}
   section,aside{background:white;border:1px solid #ddd;border-radius:12px;padding:20px}
   section{margin-bottom:20px} h2{margin-top:0} svg{width:100%;height:auto}
+  #deployment .diagram{overflow-x:auto} #deployment svg{min-width:900px}
   g[data-key]{cursor:pointer} g[data-key]:focus{outline:none}
   g[data-key]:hover>text,g[data-key]:focus>text{text-decoration:underline}
   g[data-requirement-badge]:focus>circle{stroke:#b32400;stroke-width:3}

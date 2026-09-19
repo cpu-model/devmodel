@@ -52,10 +52,13 @@ cp "$source_root/CPU/PROCESS/CPU-Visual-Language-v1.md" "$cpu_dir/PROCESS/CPU-Vi
 cp "$source_root/tools/render_model.mjs" "$cpu_dir/tools/render_model.mjs"
 cp "$source_root/tools/finish_model.mjs" "$cpu_dir/tools/finish_model.mjs"
 cp "$source_root/tools/serve_model.mjs" "$cpu_dir/tools/serve_model.mjs"
+cp "$source_root/tests/all.mjs" "$cpu_dir/tests/all.mjs"
 cp "$source_root/tests/validate_naming.mjs" "$cpu_dir/tests/validate_naming.mjs"
+cp "$source_root/tests/deployment_validation.mjs" "$cpu_dir/tests/deployment_validation.mjs"
 cp "$source_root/examples/model/context.yaml" "$cpu_dir/examples/model/context.yaml"
 cp "$source_root/examples/model/pulse.yaml" "$cpu_dir/examples/model/pulse.yaml"
 cp "$source_root/examples/model/ui.yaml" "$cpu_dir/examples/model/ui.yaml"
+cp "$source_root/examples/model/deployment.yaml" "$cpu_dir/examples/model/deployment.yaml"
 cp "$source_root/examples/model/requirements.yaml" "$cpu_dir/examples/model/requirements.yaml"
 
 agents="$target/AGENTS.md"

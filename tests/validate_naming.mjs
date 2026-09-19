@@ -48,6 +48,8 @@ for (const [label, pattern] of [
   ['UI source filename', /\bui\.yaml\b/],
   ['nested View concept', /\bViews?\b/],
   ['UI requirement namespace', /\bui\.(?:view|action|info)\./],
+  ['Deployment source filename', /\bdeployment\.yaml\b/],
+  ['Deployment requirement namespace', /\bdeployment\.(?:host|program|service|connection)\./],
 ]) {
   if (!pattern.test(combined)) errors.push(`${label} is missing`);
 }

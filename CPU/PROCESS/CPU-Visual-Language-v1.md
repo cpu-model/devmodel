@@ -8,7 +8,7 @@
 
 ## 1. Purpose
 
-Visual Language v1 defines the notation used to render Context, Pulse, and UI artifacts.
+Visual Language v1 defines the notation used to render Context, Pulse, UI, and the complementary Deployment artifact.
 
 The semantic artifacts are authoritative. The visual language defines notation. D2 is only the renderer.
 
@@ -239,7 +239,31 @@ Navigation describes the meaningful relationship, not menu, tab, button, or othe
 
 No SVG postprocessing is required for the verified UI notation.
 
-## 6. Artifact-specific semantic sources
+## 6. Deployment
+
+### 6.1 Purpose
+
+Deployment shows one concrete intended execution topology: hosts, programs, Compose services, ports, and directed network connections. It is an implementation diagram and does not alter Context, Pulse, or UI semantics.
+
+### 6.2 Elements
+
+- **Host:** a strong rectangular container labeled with name, host type, operating system, and architecture when declared.
+- **Program:** a rounded container inside its host, labeled with program type, role, language, and platform when applicable.
+- **Compose service:** a rounded container within a Docker Compose project's Services area.
+- **Port:** a small rounded element within its program or service, labeled with application or transport protocol, process/container port, optional published host port, and exposure.
+- **Connection:** a directed connector between programs, services, or ports, labeled with its name and declared protocols.
+
+Containment means deployment containment only. A host contains programs; a Docker Compose program contains services; a program or service contains its ports. Connections do not imply Pulse causality or Context data semantics.
+
+### 6.3 Requirement indicators
+
+Hosts, programs, services, ports, and connections are visible, addressable elements. Each displays an `r` circle if and only if it has directly attached requirements. Activating the circle uses the same exact-requirement review behavior as the CPU diagrams.
+
+### 6.4 Rendering status
+
+Host, program, service, port, containment, and network connectors are Native D2/ELK constructions. Requirement indicators are Adapted deterministic SVG decoration.
+
+## 7. Artifact-specific semantic sources
 
 Visual Language v1 intentionally does not define a generic metamodel. The preferred sources are small artifact-specific YAML formats:
 
@@ -248,6 +272,7 @@ system/
   context.yaml
   pulse.yaml
   ui.yaml
+  deployment.yaml
   requirements.yaml
 ```
 
@@ -257,11 +282,12 @@ Generated artifacts:
 context.yaml -> context.d2 -> context.svg
 pulse.yaml   -> pulse.d2   -> pulse.svg
 ui.yaml      -> ui.d2      -> ui.svg
+deployment.yaml -> deployment.d2 -> deployment.svg
 ```
 
 Artifact-specific vocabulary is intentionally asymmetric and should remain understandable to a human reader.
 
-## 7. Identity
+## 8. Identity
 
 Machine-readable IDs are simple and stable within their natural artifact scope. v1 does not introduce UUIDs, namespaces, or a global identity registry.
 
@@ -269,7 +295,7 @@ Machine-readable IDs are simple and stable within their natural artifact scope. 
 
 General cross-artifact references are not normative in v1. Semantic duplication between artifacts is acceptable rather than prematurely introducing cross-artifact reference machinery. Requirement addresses are the defined limited exception.
 
-## 8. Renderer acceptance classes
+## 9. Renderer acceptance classes
 
 - **Native:** notation rendered directly and deterministically by D2.
 - **Adapted:** a small deterministic generated construction or SVG decoration is required.
@@ -284,6 +310,8 @@ Current v1 classification:
 | Information | Native |
 | Action | Native |
 | Behavior | Native |
+| Deployment host / program / service / port | Native |
+| Deployment network connection | Native |
 | D2/ELK connector routing | Native |
 | Pulse symbol on connector | Adapted |
 | Context initiative circle | Adapted |
@@ -291,7 +319,7 @@ Current v1 classification:
 
 No current Visual Language v1 requirement justifies a custom full renderer.
 
-## 9. Determinism and implementation constraints
+## 10. Determinism and implementation constraints
 
 The renderer implementation:
 
@@ -306,19 +334,20 @@ The renderer implementation:
 
 Minimal SVG decoration is acceptable when it implements a stable Visual Language rule. It must not become an uncontrolled second layout engine.
 
-## 10. Verified v1 decisions
+## 11. Verified v1 decisions
 
 - **Context:** system and external-system composition; domain data-flow labels; independent arrowhead for data direction; initiative circle centered on connector path; visible separation between initiative circle and arrowhead; connector and label clearance; sufficient relation spacing.
 - **Pulse:** left-to-right causal flow using ELK; Behavior nodes; numbered Pulse circle integrated into connector; Pulse circle centered on actual connector path.
 - **UI:** View containers; Action and Information symbols; Actions in the left column; Information in the right column; deterministic declared ordering within each column.
+- **Deployment:** nested host/program/service topology; visible ports and directed connections; implementation selections shown in labels.
 
 These verified rendering decisions constitute Visual Language v1.
 
-## 11. Requirement indicators
+## 12. Requirement indicators
 
 Requirement indicators provide interactive access to requirements without changing Context, Pulse, or UI semantics. The renderer baseline remains D2 0.9.0 with ELK. Requirement targets and source format are defined by Artifact Formats v1.
 
-### 11.1 Purpose and meaning
+### 12.1 Purpose and meaning
 
 A requirement indicator shows that requirements are directly attached to a model element. It is a review annotation and access control, not a new semantic model element, data flow, Pulse, or Action.
 
@@ -326,13 +355,13 @@ The indicator is a small outlined circle containing lowercase `r`. It has a clea
 
 Show an indicator if and only if the element has a resolved, non-empty requirement attachment. A container's indicator represents that container's own requirements, not the union of its contents' requirements.
 
-### 11.2 Binding and repeated occurrences
+### 12.2 Binding and repeated occurrences
 
 Each indicator binds to exactly one target address from `requirements.yaml`. Activating it opens the requirements for that target. Never bind by label text or Pulse display number.
 
 One indicator is shown per rendered occurrence. Where the same Pulse is drawn on several branches, every occurrence receives the indicator and opens the same attachment.
 
-### 11.3 Placement
+### 12.3 Placement
 
 Placement is deterministic and derived from actual rendered geometry. The indicator appears close enough to its element that the attachment is unambiguous.
 
@@ -341,12 +370,14 @@ Placement is deterministic and derived from actual rendered geometry. The indica
 - Pulse: beside the numbered Pulse symbol, outside that symbol and away from the connector path. Never place `r` inside the numbered circle.
 - View: beside the View title, representing requirements attached directly to that View.
 - Action or Information: beside the item's label, preserving existing semantic symbols.
+- Deployment host, program, service, or port: beside its label or in a clear corner of its containing shape.
+- Deployment connection: beside its relation label and clear of the connector and arrowhead.
 
 An indicator must not overlap another indicator, label, arrowhead, initiative symbol, numbered Pulse symbol, unrelated element, or connector. Use consistent size and minimum clearance across diagrams; do not introduce manual per-diagram pixel fixes.
 
 If space is unavailable, adjust deterministic generation or layout spacing. Do not weaken notation or introduce an unstable second layout engine. Keep indicators inside the exported viewport without clipping.
 
-### 11.4 Interactive behavior
+### 12.4 Interactive behavior
 
 Activating an `r` circle in the interactive review surface displays the complete requirements directly attached to its element. The surface displays the element's name, stable target address, and every requirement string in declared order, without paraphrasing or omission.
 
@@ -356,13 +387,13 @@ Indicators are keyboard-focusable, have a visible focus state, and activate with
 
 Clicking the model element itself may additionally open its requirements. This is optional and does not replace the visible indicator.
 
-### 11.5 Export and rendering
+### 12.5 Export and rendering
 
 Generate indicators as minimal deterministic SVG decoration after D2/ELK rendering. Do not add badge fields to semantic YAML or model indicators as layout nodes. Bindings derive from validated attachments; positions derive from rendered element geometry.
 
 Interactive behavior is guaranteed by the interactive review surface, which may embed SVG in HTML. Standalone SVG or static PNG need not offer click behavior. Static exports retain visible indicators and include a legend explaining that `r` denotes directly attached requirements. Static diagrams alone do not replace access to requirements during review.
 
-### 11.6 Acceptance
+### 12.6 Acceptance
 
 - Every rendered occurrence with directly attached requirements has one readable indicator; occurrences without attachments have none.
 - Indicators preserve all existing semantics and notation, including Pulse-circle and initiative geometry.
