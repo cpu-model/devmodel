@@ -1,0 +1,17 @@
+{
+  "name": "@cpu-model/devmodel",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node tests/validate_naming.mjs && node tools/render_model.mjs --source examples/model --validate-only",
+    "validate": "node tools/render_model.mjs --validate-only",
+    "render": "node tools/render_model.mjs"
+  },
+  "dependencies": {
+    "yaml": "2.9.1"
+  }
+}

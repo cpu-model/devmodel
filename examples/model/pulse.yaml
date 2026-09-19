@@ -1,0 +1,12 @@
+pulse:
+  behaviors:
+    - id: process-input
+      name: Process input
+  pulses:
+    - id: input-submitted
+      display: "01"
+      name: Input submitted
+  flows:
+    - trigger: User submits input
+      pulse: input-submitted
+      to: process-input

@@ -1,0 +1,7 @@
+requirements:
+  context.flow.user-input:
+    - The system shall accept user input.
+  pulse.behavior.process-input:
+    - The system shall process submitted input.
+  ui.action.main.submit-input:
+    - The user shall be able to submit input.

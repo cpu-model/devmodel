@@ -1,0 +1,10 @@
+ui:
+  views:
+    - id: main
+      name: Main
+      actions:
+        - id: submit-input
+          name: Submit input
+      information:
+        - id: current-status
+          name: Current status

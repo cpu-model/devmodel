@@ -1,0 +1,18 @@
+context:
+  system:
+    id: example
+    name: Example System
+  parties:
+    - id: user
+      type: person
+      name: User
+  flows:
+    - id: user-input
+      from: user
+      to: example
+      name: User input
+      initiative: user
+    - id: system-information
+      from: example
+      to: user
+      name: System information

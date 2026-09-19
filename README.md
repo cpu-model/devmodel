@@ -1,27 +1,67 @@
 # CPU development model
 
-This repository contains the normative specifications for the Context-Pulse-UI (CPU) development model.
+This repository contains the reusable methodology and tooling for the Context-Pulse-UI (CPU) development model.
 
-The semantic model consists of three artifact-specific YAML sources:
+## Start here
 
-- `context.yaml` for system context and domain data flows
-- `pulse.yaml` for causal event propagation
-- `ui.yaml` for user-visible capability expressed as Views, Information, Actions, and meaningful Navigation
+- [`SPEC.md`](SPEC.md) explains the model, source hierarchy, and project adoption rules.
+- [`AGENTS.md`](AGENTS.md) tells Codex and other coding agents how to interpret and change CPU models.
+- [`CPU Artifact Formats v1`](CPU/PROCESS/CPU-Artifact-Formats-v1.md) defines the semantic YAML formats and requirement attachments.
+- [`CPU Visual Language v1`](CPU/PROCESS/CPU-Visual-Language-v1.md) defines diagram notation, rendering, and interactive requirement review.
+- [`examples/model`](examples/model) is a minimal valid model.
 
-`UI` is the name of the top-level artifact. `View` remains the name of an individual user-relevant surface inside the UI artifact.
+Markdown is the only documentation source. The repository contains no PDF documents or PDF build chain.
 
-The normative documents are in [`CPU/PROCESS`](CPU/PROCESS). The Markdown files are the source for the requirements addenda attached to the PDF specifications.
+## Model sources
 
-## Validation
+A concrete system model consists of:
 
-Run:
+- `context.yaml`
+- `pulse.yaml`
+- `ui.yaml`
+- `requirements.yaml`
+
+`UI` is the top-level artifact. `View` remains the term for an individual user-relevant surface inside UI.
+
+## Install
+
+Requirements:
+
+- Node.js 20 or later
+- D2 0.9.0 with ELK support
+- A modern browser to open the generated interactive review page
 
 ```sh
-python3 tests/validate_naming.py
+npm install
 ```
 
-Rebuild the PDF addenda after editing their Markdown sources with:
+The toolchain has no Python dependencies.
+
+If D2 is not on `PATH`, set `D2_BIN` or pass `--d2`.
+
+## Validate a model
 
 ```sh
-python3 tools/update_process_pdfs.py
+npm run validate -- --source /path/to/model
 ```
+
+Validation is strict: duplicate YAML keys, unknown fields, invalid identities, unresolved references, invalid requirement targets, and blank requirements are rejected.
+
+## Render and review a model
+
+```sh
+npm run render -- \
+  --source /path/to/model \
+  --out /path/to/output \
+  --review-title "Increment 3"
+```
+
+The output contains deterministic D2, SVG, `model.json`, and a self-contained `index.html`. Open `index.html` to display all three decorated diagrams and inspect the exact requirements attached to each marked element.
+
+## Repository checks
+
+```sh
+npm test
+```
+
+This validates the normative terminology and the included example model without requiring D2 or Chrome.
