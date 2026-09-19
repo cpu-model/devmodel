@@ -438,6 +438,10 @@ function main() {
   fs.writeFileSync(path.join(options.out, 'model.json'), JSON.stringify({
     models,
     requirements,
+    sources: Object.fromEntries(['context', 'pulse', 'ui', 'deployment', 'requirements'].map(name => [
+      `${name}.yaml`,
+      fs.readFileSync(path.join(options.source, `${name}.yaml`), 'utf8'),
+    ])),
     reviewTitle: options.reviewTitle,
     systemName: models.context.system.name,
   }, null, 2));

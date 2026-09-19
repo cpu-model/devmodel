@@ -1,0 +1,31 @@
+direction: right
+"application-host": "Application host\nmachine · linux · amd64" {
+style.stroke-width: 3
+"example-application": "Example application\nos-process · server-with-web-ui · go · server-rendered-html" {
+style.border-radius: 12
+ports: "Ports" {
+style.stroke-dash: 4
+"web": "Web UI\nhttp 8080\nhost" {
+ shape: rectangle
+ style.border-radius: 8
+}
+}
+}
+"data-stack": "Data stack\ndocker-compose" {
+style.border-radius: 12
+services: "Services" {
+style.stroke-dash: 4
+"database": "Database\ndatabase · postgres" {
+style.border-radius: 12
+ports: "Ports" {
+style.stroke-dash: 4
+"postgres": "PostgreSQL\npostgres 5432\ninternal" {
+ shape: rectangle
+ style.border-radius: 8
+}
+}
+}
+}
+}
+}
+"application-host"."example-application" -> "application-host"."data-stack"."services"."database"."ports"."postgres": "Store application data · postgres · tcp"
