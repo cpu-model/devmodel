@@ -248,19 +248,18 @@ const html = `<!doctype html>
 <style>
   :root{color-scheme:light;--ink:#14213d;--muted:#62708a;--line:#dce3ee;--card:#fff;--accent:#3157d5;--accent-soft:#eef2ff;--surface:#f4f7fb}
   *{box-sizing:border-box}html{scroll-behavior:smooth}
-  body{margin:0;background:linear-gradient(180deg,#edf2ff 0,#f7f9fc 260px);color:var(--ink);font:16px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  body{margin:0;overflow-x:hidden;background:linear-gradient(180deg,#edf2ff 0,#f7f9fc 260px);color:var(--ink);font:16px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
   header{padding:42px max(24px,calc((100vw - 1280px)/2));background:radial-gradient(circle at 85% 10%,#5c79e8 0,transparent 34%),linear-gradient(135deg,#102253,#253f99);color:white}
   .eyebrow{display:inline-flex;padding:5px 10px;border:1px solid #ffffff55;border-radius:999px;background:#ffffff14;font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase}
   h1{margin:14px 0 8px;font-size:clamp(30px,5vw,54px);line-height:1.05;letter-spacing:-.03em}
   header p{max-width:760px;margin:0;color:#e1e8ff;font-size:17px}.meta{margin-top:16px;color:#cbd7ff;font-size:13px}
   nav{position:sticky;top:0;z-index:20;display:flex;gap:8px;padding:10px max(20px,calc((100vw - 1280px)/2));overflow-x:auto;background:#ffffffee;border-bottom:1px solid var(--line);backdrop-filter:blur(14px)}
   nav a{flex:none;padding:8px 13px;border-radius:999px;color:var(--ink);font-size:14px;font-weight:650;text-decoration:none}nav a:hover{background:var(--accent-soft);color:var(--accent)}
-  main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;max-width:1280px;margin:auto;padding:28px 24px 64px}
-  main>div{min-width:0}
+  main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,340px);gap:24px;width:100%;max-width:1280px;margin:auto;padding:28px 24px 64px}
+  main>div,main>aside,.model-card,.diagram{min-width:0;max-width:100%}
   .model-card,aside,.source-card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 35px #2337710d}
   .model-card{margin-bottom:24px;padding:24px;scroll-margin-top:72px}.model-card h2{margin:0 0 18px;font-size:22px;letter-spacing:-.01em}
-  svg{width:100%;height:auto}.diagram{border-radius:12px;background:#fbfcff}
-  #deployment .diagram{overflow-x:auto} #deployment svg{min-width:900px}
+  .diagram{overflow:hidden;border-radius:12px;background:#fbfcff}.diagram svg{display:block;width:100%;max-width:100%;height:auto}
   g[data-key]{cursor:pointer} g[data-key]:focus{outline:none}
   g[data-key]:hover>text,g[data-key]:focus>text{text-decoration:underline}
   g[data-requirement-badge]:focus>circle{stroke:#b32400;stroke-width:3}
@@ -271,7 +270,7 @@ const html = `<!doctype html>
   .source-card{margin-bottom:12px;overflow:hidden}.source-card summary{display:flex;justify-content:space-between;gap:20px;padding:16px 20px;cursor:pointer;font-weight:700;list-style:none}.source-card summary::-webkit-details-marker{display:none}.source-card[open] summary{border-bottom:1px solid var(--line);background:var(--accent-soft)}
   .source-hint{color:var(--muted);font-size:13px;font-weight:500}.source-card pre{margin:0;padding:20px;overflow:auto;background:#101827;color:#dce7ff;font:13px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.source-card code{font:inherit}
   .selected>text{fill:#b32400!important}
-  @media(max-width:900px){header{padding:32px 22px}main{grid-template-columns:1fr;padding:18px 14px 48px}.model-card{padding:18px}aside{position:static;grid-row:1}.sources{grid-column:1}.source-card pre{font-size:12px;padding:16px}}
+  @media(max-width:900px){header{padding:32px 20px}main{grid-template-columns:minmax(0,1fr);padding:18px 12px 48px}.model-card{padding:16px}aside{position:static;grid-row:1}.sources{grid-column:1}.source-card pre{font-size:12px;padding:14px}}
 </style>
 <header><span class="eyebrow">CPU Model Explorer</span><h1>${data.systemName}</h1><p>Utforska Context, Pulse, UI och den konkreta driftsättningen. Välj en cirkel märkt “r” för att läsa elementets exakta krav.</p><div class="meta">${data.reviewTitle} · D2 0.9.0 · ELK</div></header>
 <nav aria-label="Modellens delar"><a href="#context">Context</a><a href="#pulse">Pulse</a><a href="#ui">UI</a><a href="#deployment">Deployment</a><a href="#yaml">YAML-källor</a></nav>
