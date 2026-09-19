@@ -2,6 +2,8 @@
 
 This repository contains the reusable methodology and tooling for the Context-Pulse-UI (CPU) development model.
 
+**[Open the interactive CPU model site](https://cpu-model.github.io/devmodel/)** to review the diagrams, activate requirement circles, and inspect the authoritative YAML sources on desktop or mobile.
+
 ## Start here
 
 - [`SPEC.md`](SPEC.md) explains the model, source hierarchy, and project adoption rules.
