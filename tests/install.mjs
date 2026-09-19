@@ -39,6 +39,7 @@ try {
     'CPU/examples/model/deployment.yaml',
     'CPU/tests/all.mjs',
     'CPU/tests/deployment_validation.mjs',
+    'CPU/tests/artifact_validation.mjs',
   ]) {
     assert.ok(fs.existsSync(path.join(target, file)), `Missing installed file: ${file}`);
   }

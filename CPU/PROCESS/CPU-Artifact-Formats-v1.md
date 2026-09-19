@@ -86,6 +86,65 @@ When `initiative` is omitted, initiative is unspecified. Opposite data direction
 - Party type is exactly `person` or `external-system`.
 - Flow names describe domain data, not protocol operations.
 
+### 3.5 Context field reference
+
+The top-level document contains exactly `context`. Its value contains exactly the following fields:
+
+| Field | Type | Required | Default | Meaning |
+| --- | --- | --- | --- | --- |
+| `system` | mapping | yes | none | The single described system. |
+| `parties` | list of party mappings | yes | none | Directly communicating external parties; may be empty. |
+| `flows` | list of flow mappings | yes | none | Directed domain-information flows; may be empty. |
+
+System mapping:
+
+| Field | Type | Required | Allowed/default |
+| --- | --- | --- | --- |
+| `id` | non-empty string ID | yes | Unique among the system and parties; no period. |
+| `name` | non-empty string | yes | Human-readable display name. |
+
+Party mapping:
+
+| Field | Type | Required | Allowed/default |
+| --- | --- | --- | --- |
+| `id` | non-empty string ID | yes | Unique among the system and parties; no period. |
+| `name` | non-empty string | yes | Human-readable display name. |
+| `type` | string enum | yes | `person` or `external-system`. |
+
+Flow mapping:
+
+| Field | Type | Required | Allowed/default |
+| --- | --- | --- | --- |
+| `id` | non-empty string ID | yes | Unique among Context flows; no period. |
+| `name` | non-empty string | yes | Domain-information noun phrase. |
+| `from` | endpoint ID | yes | Resolves to the system or a party. |
+| `to` | endpoint ID | yes | Resolves to a different endpoint. |
+| `initiative` | endpoint ID | no | No default; when present, equals `from` or `to`. |
+
+No other fields are allowed at any Context level.
+
+### 3.6 Invalid Context examples
+
+```yaml
+# Invalid: protocol operation used as flow semantics and unresolved endpoint.
+context:
+  system: {id: app, name: App}
+  parties: []
+  flows:
+    - {id: get-data, name: GET /data, from: browser, to: app}
+```
+
+```yaml
+# Invalid: initiative is not one of this flow's endpoints.
+context:
+  system: {id: app, name: App}
+  parties:
+    - {id: user, name: User, type: person}
+    - {id: scheduler, name: Scheduler, type: external-system}
+  flows:
+    - {id: input, name: User input, from: user, to: app, initiative: scheduler}
+```
+
 ## 4. Pulse format
 
 Pulse describes possible causal event propagation using Behaviors, Pulses, and Flows. Trigger is a role in a Flow, not a separately declared semantic element.
@@ -139,6 +198,60 @@ The invariant is `trigger` XOR `from`. A Flow with both is invalid; a Flow with 
 - `trigger` is non-empty domain text when present.
 - Cycles and fan-out are valid and require no special syntax.
 - No validation rule infers Pulse relations from data dependencies.
+
+### 4.5 Pulse field reference
+
+The top-level document contains exactly `pulse`. Its value contains exactly:
+
+| Field | Type | Required | Default | Meaning |
+| --- | --- | --- | --- | --- |
+| `behaviors` | list of Behavior mappings | yes | none | System reactions; may be empty. |
+| `pulses` | list of Pulse mappings | yes | none | Named causal signals; may be empty. |
+| `flows` | list of Flow mappings | yes | none | Causal propagation; may be empty. |
+
+Behavior mapping:
+
+| Field | Type | Required | Allowed/default |
+| --- | --- | --- | --- |
+| `id` | non-empty string ID | yes | Unique among Behaviors; no period. |
+| `name` | non-empty string | yes | Human-readable verb phrase. |
+
+Pulse mapping:
+
+| Field | Type | Required | Allowed/default |
+| --- | --- | --- | --- |
+| `id` | non-empty string ID | yes | Unique among Pulses; no period. |
+| `display` | non-empty string | yes | Unique short diagram identity such as `"01"`. |
+| `name` | non-empty string | yes | Human-readable event name. |
+
+Flow mapping:
+
+| Field | Type | Required | Allowed/default |
+| --- | --- | --- | --- |
+| `trigger` | non-empty string | exactly one source form | Free-text external or temporal trigger. |
+| `from` | Behavior ID | exactly one source form | Emitting Behavior. |
+| `pulse` | Pulse ID | yes | Resolves to a declared Pulse. |
+| `to` | Behavior ID | yes | Resolves to a declared Behavior. |
+
+`trigger` XOR `from` is mandatory. A Pulse Flow has no ID, name, or direct requirement address. No other fields are allowed.
+
+### 4.6 Invalid Pulse examples
+
+```yaml
+# Invalid: both source forms are present.
+flows:
+  - trigger: Startup
+    from: scheduler
+    pulse: refresh
+    to: fetch-data
+```
+
+```yaml
+# Invalid: display identities are duplicated.
+pulses:
+  - {id: started, display: "01", name: Started}
+  - {id: completed, display: "01", name: Completed}
+```
 
 ## 5. UI format
 
@@ -206,6 +319,53 @@ Its complete semantics are: the user can navigate from the containing View to th
 - A View must not navigate to itself unless such self-navigation later gains explicit semantics; v1 rejects it.
 - Navigation entries contain only `to`; `name`, `id`, `style`, `control`, `gesture`, or `layout` fields are invalid.
 - Declared ordering of Actions and Information is semantically preserved for deterministic rendering.
+
+### 5.6 UI field reference
+
+The top-level document contains exactly `ui`. Its value contains exactly `views`, a required list of View mappings that may be empty.
+
+View mapping:
+
+| Field | Type | Required | Default | Meaning |
+| --- | --- | --- | --- | --- |
+| `id` | non-empty string ID | yes | none | Unique View identity; no period. |
+| `name` | non-empty string | yes | none | Human-readable View name. |
+| `actions` | list of Action mappings | no | empty list | User intentions in declared order. |
+| `information` | list of Information mappings | no | empty list | User-relevant concepts in declared order. |
+| `navigation` | list of Navigation mappings | no | empty list | Meaningful paths from this View. |
+
+Action and Information mappings have the same structural fields but different semantics:
+
+| Field | Type | Required | Allowed/default |
+| --- | --- | --- | --- |
+| `id` | non-empty string ID | yes | Unique within its containing View and kind; no period. |
+| `name` | non-empty string | yes | Action: verb phrase. Information: noun phrase. |
+
+Navigation mapping:
+
+| Field | Type | Required | Allowed/default |
+| --- | --- | --- | --- |
+| `to` | View ID | yes | Resolves to another declared View. |
+
+Navigation contains only `to`. No other fields are allowed at any UI level.
+
+### 5.7 Invalid UI examples
+
+```yaml
+# Invalid: Navigation has presentation and identity fields.
+navigation:
+  - id: open-settings
+    to: settings
+    control: tab
+```
+
+```yaml
+# Invalid: widget and layout details are not UI semantics.
+actions:
+  - id: save
+    name: Save changes
+    widget: blue-button
+```
 
 ## 6. Deployment format
 
@@ -301,6 +461,259 @@ Each directed connection contains `id`, `name`, `from`, and `to`, with optional 
 - Compose projects have services; non-Compose programs do not.
 - Secret values, invalid ports, unknown fields, invalid enum values, and structurally incomplete normative instructions are rejected.
 
+### 6.7 Deployment field reference
+
+The top-level document contains exactly `deployment`. Its value contains:
+
+| Field | Type | Required | Default | Meaning |
+| --- | --- | --- | --- | --- |
+| `environment` | Environment mapping | no | `{file: .env}` | Deployment-wide environment source and declarations. |
+| `hosts` | list of Host mappings | yes | none | Concrete execution hosts; may be empty. |
+| `programs` | list of Program mappings | yes | none | Deployable runtime units; may be empty. |
+| `connections` | list of Connection mappings | yes | none | Directed network connections; may be empty. |
+
+Environment mapping, used at deployment, program, and service levels:
+
+| Field | Type | Required | Default | Meaning |
+| --- | --- | --- | --- | --- |
+| `file` | non-empty string | no | `.env` | Environment file path relative to the applicable runtime context. |
+| `variables` | list of Variable mappings | no | empty list | Declared environment variables. |
+
+Variable mapping:
+
+| Field | Type | Required | Default | Meaning |
+| --- | --- | --- | --- | --- |
+| `name` | non-empty string | yes | none | Unique variable name within this Environment mapping. |
+| `required` | boolean | no | `false` | Whether deployment must supply a value. |
+| `default` | string, number, or boolean | no | none | Non-secret fallback value. |
+| `secret` | boolean | no | `false` | Whether the supplied value is secret. |
+
+`secret: true` and `default` are mutually exclusive. A model never contains a secret value.
+
+Host mapping:
+
+| Field | Type | Required | Allowed/default |
+| --- | --- | --- | --- |
+| `id` | non-empty string ID | yes | Globally unique Host ID; no period. |
+| `name` | non-empty string | yes | Human-readable host name. |
+| `type` | string enum | yes | `machine`, `virtual-machine`, or `cloud-host`. |
+| `os` | non-empty string | no | No default; normative when present. |
+| `architecture` | non-empty string | no | No default; normative when present. |
+
+Program mapping:
+
+| Field | Type | Required | Default/constraint |
+| --- | --- | --- | --- |
+| `id` | non-empty string ID | yes | Globally unique Program ID; no period. |
+| `name` | non-empty string | yes | none |
+| `host` | Host ID | yes | Resolves to one declared Host. |
+| `type` | string enum | yes | `os-process`, `docker-compose`, `managed-service`, or `external-service`. |
+| `role` | string enum | no | `server`, `web-ui`, `server-with-web-ui`, `worker`, `database`, `proxy`, or `other`. |
+| `implementation` | Implementation mapping | conditionally | Required to provide `platform` for Web UI roles. |
+| `command` | non-empty string | no | Exact normative start command. |
+| `working-directory` | non-empty string | no | Normative process working directory. |
+| `environment` | Environment mapping | no | Deployment-level declarations apply unless overridden by variable name; a local `file` replaces the deployment-level file and otherwise defaults to `.env`. |
+| `ports` | list of Port mappings | no | empty list; Web UI roles require an HTTP or HTTPS port. |
+| `volumes` | list of Volume mappings | no | empty list |
+| `health-check` | Health-check mapping | no | none |
+| `restart` | string enum | no | `no`, `on-failure`, `always`, or `unless-stopped`; no implicit default. |
+| `resources` | Resources mapping | no | none |
+| `services` | list of Service mappings | conditional | Non-empty for `docker-compose`; forbidden for other types. |
+
+Compose Service mapping:
+
+| Field | Type | Required | Default/constraint |
+| --- | --- | --- | --- |
+| `id` | non-empty string ID | yes | Unique inside the containing Compose project; no period. |
+| `name` | non-empty string | yes | none |
+| `role` | string enum | no | Same values as Program `role`. |
+| `implementation` | Implementation mapping | conditionally | Required to provide `platform` for Web UI roles. |
+| `command` | non-empty string | no | Exact container start command. |
+| `environment` | Environment mapping | no | Same shape as above. |
+| `ports` | list of Port mappings | no | empty list; Web UI roles require an HTTP or HTTPS port. |
+| `volumes` | list of Volume mappings | no | empty list |
+| `health-check` | Health-check mapping | no | none |
+| `restart` | string enum | no | Same values as Program `restart`. |
+| `resources` | Resources mapping | no | none |
+
+Services do not declare `host`, `type`, `working-directory`, or nested `services`; those concerns belong to their Compose project.
+
+Implementation mapping:
+
+| Field | Type | Required | Default/constraint |
+| --- | --- | --- | --- |
+| `language` | non-empty string | no | Defaults to `go` for `server` and `server-with-web-ui`; otherwise unspecified. |
+| `platform` | non-empty string | conditional | Required for `web-ui` and `server-with-web-ui`; no default. |
+
+Port mapping:
+
+| Field | Type | Required | Default/constraint |
+| --- | --- | --- | --- |
+| `id` | non-empty string ID | yes | Unique inside its Program or Service; no period. |
+| `name` | non-empty string | yes | none |
+| `port` | integer | yes | `1` through `65535`; process or container listening port. |
+| `host-port` | integer | no | `1` through `65535`; published host port. |
+| `transport` | string enum | no | `tcp` by default; alternatively `udp`. |
+| `application` | non-empty string | no | Application protocol such as `http`, `https`, or `postgres`. |
+| `exposure` | string enum | no | `internal` by default; alternatively `host` or `public`. |
+
+Volume mapping:
+
+| Field | Type | Required | Default/constraint |
+| --- | --- | --- | --- |
+| `id` | non-empty string ID | yes | Unique inside its Program or Service; no period. |
+| `source` | non-empty string | yes | Host path, named volume, or other concrete source. |
+| `target` | non-empty string | yes | Runtime mount target. |
+| `read-only` | boolean | no | `false`. |
+
+Health-check mapping:
+
+| `type` | Required fields | Optional fields | Forbidden type-specific fields |
+| --- | --- | --- | --- |
+| `http` | `type`, `path` | `port`, `interval` | `command` |
+| `tcp` | `type`, `port` | `interval` | `path`, `command` |
+| `command` | `type`, `command` | `interval` | `path`, `port` |
+
+`path`, `command`, and `interval` are non-empty strings. `port` is an integer from `1` through `65535`. `interval` has no duration-unit interpretation in v1 beyond being a normative non-empty runtime value.
+
+Resources mapping:
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `cpu` | non-empty string or positive number | at least one resource field | Normative CPU constraint. |
+| `memory` | non-empty string or positive number | at least one resource field | Normative memory constraint. |
+
+Connection mapping:
+
+| Field | Type | Required | Default/constraint |
+| --- | --- | --- | --- |
+| `id` | non-empty string ID | yes | Unique among Connections; no period. |
+| `name` | non-empty string | yes | none |
+| `from` | endpoint reference | yes | Resolves to a visible Program, Service, or Port. |
+| `to` | endpoint reference | yes | Resolves to a different visible endpoint. |
+| `transport` | string enum | no | `tcp` or `udp`; otherwise unspecified. |
+| `application` | non-empty string | no | Application protocol; otherwise unspecified. |
+
+Endpoint grammar is exactly one of:
+
+```text
+<program-id>
+<program-id>.<port-id>
+<compose-program-id>.<service-id>
+<compose-program-id>.<service-id>.<port-id>
+```
+
+No other fields are allowed at any Deployment level.
+
+### 6.8 Complete Docker Compose example
+
+```yaml
+deployment:
+  environment:
+    file: .env
+    variables:
+      - name: DATABASE_PASSWORD
+        required: true
+        secret: true
+  hosts:
+    - id: production-host
+      name: Production host
+      type: virtual-machine
+      os: linux
+      architecture: amd64
+  programs:
+    - id: application-stack
+      name: Application stack
+      host: production-host
+      type: docker-compose
+      services:
+        - id: web
+          name: Web
+          role: server-with-web-ui
+          implementation:
+            language: go
+            platform: server-rendered-html
+          command: ./application
+          ports:
+            - id: http
+              name: Web UI
+              port: 8080
+              host-port: 443
+              transport: tcp
+              application: https
+              exposure: public
+          health-check:
+            type: http
+            path: /health
+            port: 8080
+            interval: 30s
+          restart: unless-stopped
+          resources:
+            cpu: 1
+            memory: 256MiB
+        - id: database
+          name: Database
+          role: database
+          implementation:
+            platform: postgres
+          ports:
+            - id: postgres
+              name: PostgreSQL
+              port: 5432
+              application: postgres
+          volumes:
+            - id: data
+              source: database-data
+              target: /var/lib/postgresql/data
+          health-check:
+            type: command
+            command: pg_isready
+  connections:
+    - id: web-to-database
+      name: Store application data
+      from: application-stack.web
+      to: application-stack.database.postgres
+      transport: tcp
+      application: postgres
+```
+
+### 6.9 Invalid Deployment examples
+
+```yaml
+# Invalid: Web UI platform and explicit HTTP/HTTPS port are missing.
+- id: frontend
+  name: Frontend
+  host: application-host
+  type: os-process
+  role: web-ui
+```
+
+```yaml
+# Invalid: secret values must not be stored as defaults.
+variables:
+  - name: DATABASE_PASSWORD
+    secret: true
+    default: hunter2
+```
+
+```yaml
+# Invalid: services are allowed only in a docker-compose program.
+- id: server
+  name: Server
+  host: application-host
+  type: os-process
+  services:
+    - {id: nested, name: Nested}
+```
+
+```yaml
+# Invalid: the endpoint does not resolve.
+- id: missing-database
+  name: Database connection
+  from: application
+  to: data-stack.missing.postgres
+```
+
 ## 7. Deliberately absent from v1
 
 The following are intentionally not part of Artifact Formats v1:
@@ -393,7 +806,7 @@ One requirement string may be explicitly repeated at several targets if intended
 ### 10.4 Requirements validation
 
 - Reject unknown root fields, non-mapping requirement collections, invalid target syntax, duplicate keys, empty lists, and non-string or blank requirement values.
-- Resolve every target against the corresponding Context, Pulse, or UI artifact. Reject unknown IDs and wrong element kinds. Action and Information IDs resolve only within their addressed View.
+- Resolve every target against the corresponding Context, Pulse, UI, or Deployment artifact. Reject unknown IDs and wrong element kinds. Action and Information IDs resolve only within their addressed View; Service and Port IDs resolve only within their addressed Deployment parents.
 - Apply all existing model validation rules as well as the addressing restriction. Never repair invalid references by matching display names.
 - Reject orphaned targets after deleting or renaming an element. Update the model and its requirements together; do not silently discard requirements.
 - Missing entries for otherwise valid elements are allowed. An empty `requirements` mapping is allowed.
@@ -403,3 +816,38 @@ One requirement string may be explicitly repeated at several targets if intended
 The reviewed model comprises the three core semantic artifacts, complementary Deployment artifact, and requirement attachment file. Diagram review provides access to the exact requirement strings attached to the selected element. Approval of diagrams alone must not be assumed to approve requirements omitted from review.
 
 Generation reads all five sources. Requirement indicators are derived solely from resolved, non-empty attachments. Generated files must not add, omit, summarize, or reinterpret the authoritative requirement strings shown during review.
+
+### 10.6 Requirements field reference
+
+The top-level document contains exactly one field:
+
+| Field | Type | Required | Default/constraint |
+| --- | --- | --- | --- |
+| `requirements` | mapping | yes | May be empty. Every key is one valid target address and every value is an ordered non-empty list. |
+
+Each requirement value is a non-empty string. There are no requirement-object fields, IDs, severities, statuses, verification metadata, or implicit requirements. Duplicate YAML target keys are invalid before target resolution.
+
+Target-address resolution is strict and case-sensitive. The number and order of address segments must exactly match one grammar listed in section 10.2. A syntactically plausible address of the wrong kind is invalid—for example, addressing an Information ID as an Action.
+
+### 10.7 Invalid Requirements examples
+
+```yaml
+# Invalid: an attachment list must not be empty.
+requirements:
+  ui.view.main: []
+```
+
+```yaml
+# Invalid: requirement values are strings, not metadata objects.
+requirements:
+  deployment.program.backend:
+    - text: The backend shall run as an OS process.
+      priority: high
+```
+
+```yaml
+# Invalid: unknown target and wrong address shape.
+requirements:
+  deployment.port.web:
+    - The Web UI shall be publicly reachable.
+```

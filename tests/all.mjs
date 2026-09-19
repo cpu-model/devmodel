@@ -14,5 +14,6 @@ function run(script, args = []) {
 run('tests/validate_naming.mjs');
 run('tools/render_model.mjs', ['--source', path.join(root, 'examples', 'model'), '--validate-only']);
 run('tests/deployment_validation.mjs');
+run('tests/artifact_validation.mjs');
 
 if (fs.existsSync(path.join(root, 'CPU', 'PROCESS'))) run('tests/install.mjs');

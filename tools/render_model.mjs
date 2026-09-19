@@ -103,6 +103,7 @@ function optionalBoolean(value, label) {
 function contextD2(context, targets) {
   fields(context, ['system', 'parties', 'flows'], ['system', 'parties', 'flows'], 'context');
   fields(context.system, ['id', 'name'], ['id', 'name'], 'context.system');
+  nonEmpty(context.system.name, 'context.system.name');
   unique([context.system, ...list(context.parties, 'context.parties')], 'context endpoints');
   unique(list(context.flows, 'context.flows'), 'context.flows');
   const ids = new Set([context.system, ...context.parties].map(item => item.id));
@@ -110,6 +111,7 @@ function contextD2(context, targets) {
   const lines = ['direction: right', node(context.system.id, context.system.name, 'rectangle', 'style.stroke-width: 3')];
   for (const party of context.parties) {
     fields(party, ['id', 'name', 'type'], ['id', 'name', 'type'], `context.party.${party.id}`);
+    nonEmpty(party.name, `context.party.${party.id}.name`);
     if (!['person', 'external-system'].includes(party.type)) throw new Error(`Invalid party type: ${party.type}`);
     targets.add(`context.party.${party.id}`);
     lines.push(node(
@@ -121,6 +123,7 @@ function contextD2(context, targets) {
   }
   for (const flow of context.flows) {
     fields(flow, ['id', 'from', 'to', 'name', 'initiative'], ['id', 'from', 'to', 'name'], `context.flow.${flow.id}`);
+    nonEmpty(flow.name, `context.flow.${flow.id}.name`);
     if (!ids.has(flow.from) || !ids.has(flow.to) || flow.from === flow.to) throw new Error(`Invalid Context flow: ${flow.id}`);
     if ('initiative' in flow && ![flow.from, flow.to].includes(flow.initiative)) throw new Error(`Invalid initiative: ${flow.id}`);
     targets.add(`context.flow.${flow.id}`);
@@ -139,11 +142,13 @@ function pulseD2(pulse, targets) {
   const lines = ['direction: right'];
   for (const behavior of pulse.behaviors) {
     fields(behavior, ['id', 'name'], ['id', 'name'], `pulse.behavior.${behavior.id}`);
+    nonEmpty(behavior.name, `pulse.behavior.${behavior.id}.name`);
     targets.add(`pulse.behavior.${behavior.id}`);
     lines.push(node(behavior.id, behavior.name, 'rectangle', 'style.border-radius: 12'));
   }
   for (const item of pulse.pulses) {
     fields(item, ['id', 'display', 'name'], ['id', 'display', 'name'], `pulse.pulse.${item.id}`);
+    nonEmpty(item.name, `pulse.pulse.${item.id}.name`);
     targets.add(`pulse.pulse.${item.id}`);
   }
   const triggers = new Map();
@@ -175,6 +180,7 @@ function uiD2(ui, targets) {
   const lines = ['direction: right'];
   for (const view of ui.views) {
     fields(view, ['id', 'name', 'actions', 'information', 'navigation'], ['id', 'name'], `ui.view.${view.id}`);
+    nonEmpty(view.name, `ui.view.${view.id}.name`);
     targets.add(`ui.view.${view.id}`);
     lines.push(`${quote(view.id)}: ${quote(view.name)} {\nstyle.border-radius: 12\ngrid-columns: 2\ngrid-gap: 24`);
     for (const [kind, symbol, targetKind] of [['actions', '▶', 'action'], ['information', '●', 'info']]) {
@@ -183,6 +189,7 @@ function uiD2(ui, targets) {
       lines.push(`${kind}: "" {\nstyle.stroke: transparent\nstyle.fill: transparent\ngrid-columns: 1\ngrid-gap: 16`);
       for (const item of items) {
         fields(item, ['id', 'name'], ['id', 'name'], `ui.view.${view.id}.${kind}.${item.id}`);
+        nonEmpty(item.name, `ui.view.${view.id}.${kind}.${item.id}.name`);
         targets.add(`ui.${targetKind}.${view.id}.${item.id}`);
         lines.push(node(item.id, `${symbol} ${item.name}`, 'rectangle', 'style.stroke: transparent\nstyle.fill: transparent'));
       }
@@ -254,6 +261,9 @@ function deploymentD2(deployment, targets) {
       if (check.type === 'http' && !('path' in check)) throw new Error(`${label}.health-check.path is required for HTTP`);
       if (check.type === 'tcp' && !('port' in check)) throw new Error(`${label}.health-check.port is required for TCP`);
       if (check.type === 'command' && !('command' in check)) throw new Error(`${label}.health-check.command is required for command checks`);
+      if (check.type === 'http' && 'command' in check) throw new Error(`${label}.health-check.command is not allowed for HTTP`);
+      if (check.type === 'tcp' && ('path' in check || 'command' in check)) throw new Error(`${label}.health-check has fields not allowed for TCP`);
+      if (check.type === 'command' && ('path' in check || 'port' in check)) throw new Error(`${label}.health-check has fields not allowed for command checks`);
       if ('path' in check) nonEmpty(check.path, `${label}.health-check.path`);
       if ('command' in check) nonEmpty(check.command, `${label}.health-check.command`);
       if ('interval' in check) nonEmpty(check.interval, `${label}.health-check.interval`);
@@ -262,8 +272,13 @@ function deploymentD2(deployment, targets) {
     if ('restart' in unit && !['no', 'on-failure', 'always', 'unless-stopped'].includes(unit.restart)) throw new Error(`${label}.restart is invalid`);
     if (unit.resources !== undefined) {
       fields(unit.resources, ['cpu', 'memory'], [], `${label}.resources`);
+      if (!('cpu' in unit.resources) && !('memory' in unit.resources)) throw new Error(`${label}.resources requires cpu or memory`);
       for (const key of ['cpu', 'memory']) {
-        if (key in unit.resources && !['string', 'number'].includes(typeof unit.resources[key])) throw new Error(`${label}.resources.${key} must be a string or number`);
+        if (!(key in unit.resources)) continue;
+        const value = unit.resources[key];
+        if (!['string', 'number'].includes(typeof value) || (typeof value === 'string' && !value.trim()) || (typeof value === 'number' && value <= 0)) {
+          throw new Error(`${label}.resources.${key} must be a non-empty string or positive number`);
+        }
       }
     }
   }
@@ -277,6 +292,7 @@ function deploymentD2(deployment, targets) {
     const result = [];
     for (const port of ports) {
       fields(port, ['id', 'name', 'port', 'host-port', 'transport', 'application', 'exposure'], ['id', 'name', 'port'], `${targetPrefix}.port.${port.id}`);
+      nonEmpty(port.name, `${targetPrefix}.port.${port.id}.name`);
       if (!Number.isInteger(port.port) || port.port < 1 || port.port > 65535) throw new Error(`${targetPrefix}.port.${port.id}.port is invalid`);
       if ('host-port' in port && (!Number.isInteger(port['host-port']) || port['host-port'] < 1 || port['host-port'] > 65535)) {
         throw new Error(`${targetPrefix}.port.${port.id}.host-port is invalid`);
@@ -299,6 +315,7 @@ function deploymentD2(deployment, targets) {
 
   for (const host of deployment.hosts) {
     fields(host, ['id', 'name', 'type', 'os', 'architecture'], ['id', 'name', 'type'], `deployment.host.${host.id}`);
+    nonEmpty(host.name, `deployment.host.${host.id}.name`);
     if (!hostTypes.includes(host.type)) throw new Error(`Invalid deployment host type: ${host.type}`);
     if ('os' in host) nonEmpty(host.os, `deployment.host.${host.id}.os`);
     if ('architecture' in host) nonEmpty(host.architecture, `deployment.host.${host.id}.architecture`);
@@ -308,6 +325,7 @@ function deploymentD2(deployment, targets) {
     lines.push(`${quote(host.id)}: ${quote(`${host.name}\n${detail}`)} {\nstyle.stroke-width: 3`);
     for (const program of deployment.programs.filter(item => item.host === host.id)) {
       fields(program, ['id', 'name', 'host', 'type', 'role', 'implementation', 'command', 'working-directory', 'environment', 'ports', 'volumes', 'health-check', 'restart', 'resources', 'services'], ['id', 'name', 'host', 'type'], `deployment.program.${program.id}`);
+      nonEmpty(program.name, `deployment.program.${program.id}.name`);
       if (!programTypes.includes(program.type)) throw new Error(`Invalid program type: ${program.type}`);
       if ('role' in program && !roles.includes(program.role)) throw new Error(`Invalid program role: ${program.role}`);
       if (program.implementation !== undefined) {
@@ -338,6 +356,7 @@ function deploymentD2(deployment, targets) {
       if (services.length) lines.push('services: "Services" {\nstyle.stroke-dash: 4');
       for (const service of services) {
         fields(service, ['id', 'name', 'role', 'implementation', 'command', 'environment', 'ports', 'volumes', 'health-check', 'restart', 'resources'], ['id', 'name'], `deployment.service.${program.id}.${service.id}`);
+        nonEmpty(service.name, `deployment.service.${program.id}.${service.id}.name`);
         if ('role' in service && !roles.includes(service.role)) throw new Error(`Invalid service role: ${service.role}`);
         if (service.implementation !== undefined) {
           fields(service.implementation, ['language', 'platform'], [], `deployment.service.${program.id}.${service.id}.implementation`);
@@ -372,10 +391,12 @@ function deploymentD2(deployment, targets) {
   }
   for (const connection of deployment.connections) {
     fields(connection, ['id', 'name', 'from', 'to', 'transport', 'application'], ['id', 'name', 'from', 'to'], `deployment.connection.${connection.id}`);
+    nonEmpty(connection.name, `deployment.connection.${connection.id}.name`);
     if (!endpointIds.has(connection.from) || !endpointIds.has(connection.to) || connection.from === connection.to) {
       throw new Error(`Invalid deployment connection: ${connection.id}`);
     }
     if ('transport' in connection && !['tcp', 'udp'].includes(connection.transport)) throw new Error(`Invalid connection transport: ${connection.id}`);
+    if ('application' in connection) nonEmpty(connection.application, `deployment.connection.${connection.id}.application`);
     const label = [connection.name, connection.application, connection.transport].filter(Boolean).join(' · ');
     lines.push(`${reference(endpointNodes.get(connection.from))} -> ${reference(endpointNodes.get(connection.to))}: ${quote(label)}`);
     targets.add(`deployment.connection.${connection.id}`);
