@@ -46,6 +46,20 @@ A project using CPU should not copy this methodology into project-local document
 
 Project-specific decisions may extend CPU only when they are clearly separated from the normative v1 model. They must not silently change the meaning of existing fields or notation.
 
+## Collaborative review workflow
+
+The normal CPU process is a conversation between the user and the agent:
+
+1. discuss the desired change and resolve questions;
+2. create or update the semantic model files;
+3. validate the complete model;
+4. render Context, Pulse, and UI;
+5. make the interactive review surface available inside the current ChatGPT task or Work task;
+6. let the user inspect diagrams and activate `r` circles to read exact requirements;
+7. iterate in the same task until the user approves the model.
+
+The user must not be required to switch to an external editor, terminal, or browser application for normal review. Offline files remain available as a fallback.
+
 ## Tool contract
 
 The repository provides a Node.js toolchain that:
@@ -54,6 +68,7 @@ The repository provides a Node.js toolchain that:
 2. generates deterministic D2;
 3. invokes D2 0.9.0 with ELK;
 4. embeds SVG and applies the normative CPU decoration in a self-contained review page;
-5. provides interactive access to exact requirement attachments.
+5. provides interactive access to exact requirement attachments;
+6. serves the review page on localhost so the agent can open it in the current ChatGPT task or Work task.
 
 No Python runtime or Python packages are required.

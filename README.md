@@ -58,6 +58,14 @@ npm run render -- \
 
 The output contains deterministic D2, SVG, `model.json`, and a self-contained `index.html`. Open `index.html` to display all three decorated diagrams and inspect the exact requirements attached to each marked element.
 
+For the normal collaborative ChatGPT task or Work workflow, the agent then runs:
+
+```sh
+npm run review -- --dir /path/to/output
+```
+
+The agent opens the printed localhost URL in the current task's integrated browser, verifies the interactive `r` circles, and leaves that review surface available while you discuss changes. You should not need to open a terminal, external browser, or separate modeling tool. Opening `index.html` manually is only the offline fallback.
+
 ## Repository checks
 
 ```sh

@@ -33,7 +33,13 @@ Read `SPEC.md` and both normative Markdown documents under `CPU/PROCESS` before 
 3. For model changes, update semantic YAML first.
 4. Run `npm test`.
 5. Run `npm run render -- --source <model-directory> --out <output-directory>` after model changes.
-6. Inspect generated diagrams and review interactions before approval.
-7. Report remaining uses of potentially ambiguous terminology and why each is intentional.
+6. Start `npm run review -- --dir <output-directory>` and keep the local server running.
+7. Open the printed localhost URL in the current ChatGPT task or Work task's integrated browser. Do this yourself; do not merely give the URL or ask the user to open another application.
+8. Verify that Context, Pulse, and UI are visible and that every `r` circle opens the exact attached requirements.
+9. Tell the user that the interactive model is ready in the current task and ask for review. Keep the browser tab and server available while discussing feedback.
+10. Apply requested changes, rerun validation and rendering, reload the same review surface, and continue until the user approves it.
+11. Report remaining uses of potentially ambiguous terminology and why each is intentional.
+
+The normal workflow is collaborative and in-app: discussion, model edit, validation, rendering, and interactive review all happen in the same ChatGPT task or Work task. Offline opening of `index.html` and Codex-only repository work are fallback workflows, not the default handoff.
 
 Do not add Python scripts or Python dependencies. Keep the reusable methodology and tooling in this repository rather than recreating them in each consuming project.
