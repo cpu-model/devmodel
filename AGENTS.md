@@ -26,7 +26,7 @@ When ChatGPT has access to a CPU project's GitHub repository, the repository is 
 - When the GitHub connector's high-level file create/update operation is unavailable or blocked, use the verified Git object write sequence: create blob → create tree based on the current branch head → create commit with that head as parent → update the branch ref without force.
 - After every write, read the changed files back from the updated branch and verify that their content is exactly the intended model state before reporting success.
 - Never force-update a branch for normal CPU model work.
-- Keep the default branch unchanged until the user explicitly approves the integration path, such as merging an reviewed pull request.
+- Keep the default branch unchanged until the user explicitly approves the integration path, such as merging a reviewed pull request.
 
 ## Modeling discipline
 
