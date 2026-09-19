@@ -74,7 +74,7 @@ This repository embeds the Context-Pulse-UI methodology and tools under `CPU/`.
 
 Before creating, interpreting, validating, rendering, or changing a CPU model, read and follow `CPU/AGENTS.md`, `CPU/SPEC.md`, and both specifications under `CPU/PROCESS/`. Those instructions apply in addition to this repository's other instructions.
 
-In a ChatGPT task or Work task, use the current conversation for questions and decisions, perform model edits and validation through Codex, then render and open the interactive diagrams in the task's integrated browser. Keep the review available so the user can click `r` circles and inspect exact requirements, and iterate until the user approves the model.
+In a ChatGPT task or Work task, use the current conversation for questions and decisions. When GitHub repository access is available, ChatGPT may read and update the semantic model directly according to `CPU/AGENTS.md`; Codex is not required merely to persist model-file changes. Use Codex when repository execution is needed, including strict validation, rendering, tests, or implementation work. Keep the interactive review available so the user can click `r` circles and inspect exact requirements, and iterate until the user approves the model.
 
 In standalone Codex use, perform the same edits, strict validation, rendering, and interaction checks. Produce the self-contained review page and report its exact location, but do not claim user review or approval. When Codex runs inside a ChatGPT task or Work task, both sets of responsibilities apply.
 <!-- cpu-model:end -->
