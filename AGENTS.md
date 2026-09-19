@@ -16,6 +16,18 @@ Resolve the methodology root as the directory containing this file. Read its `SP
 - Treat D2, SVG, PNG, and HTML as generated output. Never infer missing semantics from generated layout.
 - Do not edit generated artifacts to change meaning; change the semantic YAML or normative Markdown and regenerate.
 
+## GitHub-backed model access
+
+When ChatGPT has access to a CPU project's GitHub repository, the repository is the source of truth for the concrete model.
+
+- Before normative model work, read the current `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml` from the repository. Read all five even when the requested change appears to affect only one artifact, so cross-artifact consequences are evaluated against one current baseline.
+- Do not use conversational memory, previous chat summaries, generated diagrams, local copies, or Library artifacts as substitutes for current repository state.
+- Make ChatGPT-originated model changes on a dedicated branch unless the user explicitly requests a direct default-branch change.
+- When the GitHub connector's high-level file create/update operation is unavailable or blocked, use the verified Git object write sequence: create blob → create tree based on the current branch head → create commit with that head as parent → update the branch ref without force.
+- After every write, read the changed files back from the updated branch and verify that their content is exactly the intended model state before reporting success.
+- Never force-update a branch for normal CPU model work.
+- Keep the default branch unchanged until the user explicitly approves the integration path, such as merging an reviewed pull request.
+
 ## Modeling discipline
 
 - Preserve the boundaries between Context, Pulse, and UI.
