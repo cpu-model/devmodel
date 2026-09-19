@@ -304,5 +304,5 @@ for(const key of Object.keys(data.requirements)){
 </script>
 </html>`;
 
-fs.writeFileSync(path.join(out, 'index.html'), html);
+fs.writeFileSync(path.join(out, 'index.html'), html.replace(/[ \t]+$/gm, ''));
 console.log('Interactive review ready:', path.join(out, 'index.html'));
