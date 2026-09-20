@@ -52,4 +52,12 @@ invalidDeployment(deployment => {
   deployment.programs[1].services = [];
 }, /requires services/);
 
+invalidDeployment(deployment => {
+  deployment.programs[0].ports[0]['host-port'] = {variable: 'UNDECLARED_PORT', default: 8080};
+}, /host-port.variable is not declared/);
+
+invalidDeployment(deployment => {
+  deployment.programs[0].ports[0]['host-port'] = {variable: 'HTTP_HOST_PORT', default: 70000};
+}, /host-port.default is invalid/);
+
 console.log('Validated strict Deployment rejection cases.');
