@@ -5,6 +5,9 @@ deployment:
       - name: HTTP_ADDR
         required: false
         default: 127.0.0.1:8080
+      - name: HTTP_HOST_PORT
+        required: false
+        default: 8080
   hosts:
     - id: application-host
       name: Application host
@@ -27,6 +30,9 @@ deployment:
         - id: web
           name: Web UI
           port: 8080
+          host-port:
+            variable: HTTP_HOST_PORT
+            default: 8080
           application: http
           exposure: host
       health-check:
