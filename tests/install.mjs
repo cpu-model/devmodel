@@ -7,6 +7,7 @@ import {fileURLToPath} from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const target = fs.mkdtempSync(path.join(os.tmpdir(), 'cpu-model-install-test-'));
+const targetWithoutIgnore = fs.mkdtempSync(path.join(os.tmpdir(), 'cpu-model-install-no-ignore-test-'));
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {encoding: 'utf8', ...options});
@@ -17,10 +18,21 @@ function run(command, args, options = {}) {
 try {
   run('git', ['init', '-q', target]);
   fs.writeFileSync(path.join(target, 'AGENTS.md'), '# Existing instructions\n\nKeep this text.\n');
+  const existingIgnore = 'dist/\n*.local\n';
+  fs.writeFileSync(path.join(target, '.gitignore'), existingIgnore);
 
   const environment = {...process.env, CPU_MODEL_SOURCE_DIR: root};
   run(path.join(root, 'install.sh'), [target], {env: environment});
   run(path.join(root, 'install.sh'), [target], {env: environment});
+
+  const installedIgnore = fs.readFileSync(path.join(target, '.gitignore'), 'utf8');
+  assert.ok(installedIgnore.startsWith(existingIgnore), 'Existing .gitignore content was not preserved');
+  assert.equal((installedIgnore.match(/^CPU\/node_modules\/$/gm) || []).length, 1);
+
+  run('git', ['init', '-q', targetWithoutIgnore]);
+  assert.ok(!fs.existsSync(path.join(targetWithoutIgnore, '.gitignore')));
+  run(path.join(root, 'install.sh'), [targetWithoutIgnore], {env: environment});
+  assert.equal(fs.readFileSync(path.join(targetWithoutIgnore, '.gitignore'), 'utf8'), 'CPU/node_modules/\n');
 
   const agents = fs.readFileSync(path.join(target, 'AGENTS.md'), 'utf8');
   assert.match(agents, /Keep this text\./);
@@ -76,4 +88,5 @@ try {
   console.log('Validated repeatable CPU installation into a target repository.');
 } finally {
   fs.rmSync(target, {recursive: true, force: true});
+  fs.rmSync(targetWithoutIgnore, {recursive: true, force: true});
 }

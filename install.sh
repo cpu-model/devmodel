@@ -17,6 +17,19 @@ if [ ! -d "$target/.git" ]; then
   exit 1
 fi
 
+gitignore="$target/.gitignore"
+node_modules_rule='CPU/node_modules/'
+if [ -f "$gitignore" ]; then
+  if ! grep -Fxq "$node_modules_rule" "$gitignore"; then
+    if [ -s "$gitignore" ] && [ "$(tail -c 1 "$gitignore" | od -An -t u1 | tr -d ' ')" != '10' ]; then
+      printf '\n' >> "$gitignore"
+    fi
+    printf '%s\n' "$node_modules_rule" >> "$gitignore"
+  fi
+else
+  printf '%s\n' "$node_modules_rule" > "$gitignore"
+fi
+
 temporary=$(mktemp -d "${TMPDIR:-/tmp}/cpu-model-install.XXXXXX")
 trap 'rm -rf "$temporary"' EXIT HUP INT TERM
 
