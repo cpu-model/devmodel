@@ -82,4 +82,4 @@ The normal workflow is collaborative and in-app: discussion, model edit, validat
 
 A new increment must be startable from verified repository state without relying on previous chat history. Store the normative model and any durable work information needed beyond the current conversation in the project repository. A completed conversation should in principle be deletable without losing the project's normative state or information required to continue the work. This does not require saving all discussion or temporary working notes.
 
-Do not add Python scripts or Python dependencies. Keep the reusable methodology and tooling in this repository rather than recreating them in each consuming project.
+Do not add Python scripts or Python dependencies. Keep the reusable general CPU methodology and tooling normatively in `cpu-model/devmodel`; consuming projects receive them through an installer-managed, pinned `CPU/` copy and must not recreate or develop them as a project-specific fork.

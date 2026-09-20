@@ -16,10 +16,12 @@ The three artifacts are complementary. None of them is an implementation archite
 
 ## Normative sources
 
-The authoritative methodology is defined by:
+The normative responsibilities in `cpu-model/devmodel` are divided as follows:
 
-1. [`CPU/PROCESS/CPU-Artifact-Formats-v1.md`](CPU/PROCESS/CPU-Artifact-Formats-v1.md)
-2. [`CPU/PROCESS/CPU-Visual-Language-v1.md`](CPU/PROCESS/CPU-Visual-Language-v1.md)
+1. `SPEC.md` defines the general CPU specification.
+2. `AGENTS.md` defines the normative CPU workflow and agent/repository rules.
+3. `CPU/PROCESS/CPU-Artifact-Formats-v1.md` defines the normative artifact formats.
+4. `CPU/PROCESS/CPU-Visual-Language-v1.md` defines the normative visual language.
 
 The repository does not maintain PDF counterparts. Markdown is the only documentation source.
 
