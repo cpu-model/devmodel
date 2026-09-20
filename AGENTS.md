@@ -34,6 +34,23 @@ The normal CPU increment workflow is:
 
 The default branch is the normal development line. After the increment has been implemented, verified, reviewed when relevant, and accepted, the user normally performs `git commit` and `git push`. Branches, pull requests, merges, and repository housekeeping are not part of the normal CPU workflow. Codex may perform those Git operations only when the user explicitly requests the specific operation.
 
+## Self-instructing implementation work
+
+CPU repositories carry the general working method so that task prompts can normally describe the desired outcome rather than repeat CPU procedure.
+
+When asked to implement the current CPU model, or to make the project buildable or runnable according to the model:
+
+- Treat the complete current five-file semantic model and project-specific repository instructions as the implementation contract.
+- Inspect the existing implementation before changing it and implement only what is needed to satisfy the requested outcome and the current model.
+- Derive build, runtime, topology, configuration, ports, mounts, health checks, and other deployment behavior from `deployment.yaml`. Do not assume Docker, Compose, or any other deployment technology unless the concrete model selects or requires it.
+- Do not change the semantic model merely to make an implementation convenient or to match existing code.
+- If implementation requires information that the normative model and project instructions do not provide, do not guess. Stop or continue only with unblocked work as appropriate, and report the concrete model gap for user resolution.
+- Build and test the implementation using the repository's declared mechanisms, then run the CPU tests and strict validation required by this workflow.
+- After implementation, compare the result back against all five semantic artifacts and report any remaining model-to-implementation gaps.
+- Follow the repository-backed incremental workflow above and stop after verification and reporting for user review. Git administration remains the user's responsibility unless explicitly delegated.
+
+Therefore a normal Codex task prompt does not need to restate synchronization, source hierarchy, model-reading, validation, reporting, or Git-administration rules already defined here. Project-specific prompts should primarily state what outcome the user wants.
+
 ## Modeling discipline
 
 - Preserve the boundaries between Context, Pulse, and UI.

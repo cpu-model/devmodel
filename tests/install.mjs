@@ -81,6 +81,12 @@ try {
   assert.match(installedWorkflow, /user normally performs `git commit` and `git push`/i);
   assert.match(installedWorkflow, /Branches, pull requests, merges, and repository housekeeping are not part of the normal CPU workflow/i);
   assert.match(installedWorkflow, /does not normally create branches or commits, push, create pull requests, merge, delete branches/i);
+  assert.match(installedWorkflow, /task prompts can normally describe the desired outcome rather than repeat CPU procedure/i);
+  assert.match(installedWorkflow, /complete current five-file semantic model[^\n]+implementation contract/i);
+  assert.match(installedWorkflow, /Derive build, runtime, topology, configuration, ports, mounts, health checks[^\n]+deployment\.yaml/i);
+  assert.match(installedWorkflow, /Do not assume Docker, Compose[^\n]+unless the concrete model selects or requires it/i);
+  assert.match(installedWorkflow, /do not guess[^\n]+model gap/i);
+  assert.match(installedWorkflow, /compare the result back against all five semantic artifacts/i);
 
   for (const script of ['tools/render_model.mjs', 'tools/finish_model.mjs', 'tools/serve_model.mjs']) {
     run(process.execPath, ['--check', script], {cwd: path.join(target, 'CPU')});
