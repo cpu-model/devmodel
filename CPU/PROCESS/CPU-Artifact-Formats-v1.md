@@ -561,10 +561,17 @@ Port mapping:
 | `id` | non-empty string ID | yes | Unique inside its Program or Service; no period. |
 | `name` | non-empty string | yes | none |
 | `port` | integer | yes | `1` through `65535`; process or container listening port. |
-| `host-port` | integer | no | `1` through `65535`; published host port. |
+| `host-port` | integer or Host-port mapping | no | Fixed `1` through `65535`, or variable-backed publication as defined below. |
 | `transport` | string enum | no | `tcp` by default; alternatively `udp`. |
 | `application` | non-empty string | no | Application protocol such as `http`, `https`, or `postgres`. |
 | `exposure` | string enum | no | `internal` by default; alternatively `host` or `public`. |
+
+Host-port mapping:
+
+| Field | Type | Required | Default/constraint |
+| --- | --- | --- | --- |
+| `variable` | non-empty string | yes | Must be declared in the applicable deployment, program, or service Environment mapping. |
+| `default` | integer | no | `1` through `65535`; used when the variable is absent. |
 
 Volume mapping:
 
