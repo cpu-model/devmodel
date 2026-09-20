@@ -16,10 +16,12 @@ The three artifacts are complementary. None of them is an implementation archite
 
 ## Normative sources
 
-The authoritative methodology is defined by:
+The normative responsibilities in `cpu-model/devmodel` are divided as follows:
 
-1. [`CPU/PROCESS/CPU-Artifact-Formats-v1.md`](CPU/PROCESS/CPU-Artifact-Formats-v1.md)
-2. [`CPU/PROCESS/CPU-Visual-Language-v1.md`](CPU/PROCESS/CPU-Visual-Language-v1.md)
+1. `SPEC.md` defines the general CPU specification.
+2. `AGENTS.md` defines the normative CPU workflow and agent/repository rules.
+3. `CPU/PROCESS/CPU-Artifact-Formats-v1.md` defines the normative artifact formats.
+4. `CPU/PROCESS/CPU-Visual-Language-v1.md` defines the normative visual language.
 
 The repository does not maintain PDF counterparts. Markdown is the only documentation source.
 
@@ -46,9 +48,11 @@ Generated D2, SVG, PNG, and HTML files are derived artifacts.
 
 ## Project adoption
 
-A project using CPU should not copy this methodology into project-local documents. It should reference a released or committed version of this repository, keep only its own semantic model sources, and use the tools here to validate and render them.
+`cpu-model/devmodel` is the normative source of truth for the general CPU methodology, including the specification, artifact formats, visual language, workflow, tools, and installation/update mechanism. A project repository is the source of truth for its own concrete semantic model, project-specific instructions, and durable project artifacts.
 
-Project-specific decisions may extend CPU only when they are clearly separated from the normative v1 model. They must not silently change the meaning of existing fields or notation.
+The intended project installation is an installer-managed, pinned copy of a `cpu-model/devmodel` version under `CPU/`. That installed copy is not an independent general-methodology fork. General methodology changes are made in `cpu-model/devmodel` and then distributed to projects through the installation/update mechanism; projects must not create divergent rewrites of the general methodology in project-local documents.
+
+Project-specific instructions and decisions remain in the project repository and must be kept separate from installer-managed methodology files where the installation mechanism requires it. They may extend CPU only when clearly separated from the normative v1 model and must not silently change the meaning of existing fields or notation.
 
 ## Collaborative review workflow
 
