@@ -25,8 +25,14 @@ try {
   const agents = fs.readFileSync(path.join(target, 'AGENTS.md'), 'utf8');
   assert.match(agents, /Keep this text\./);
   assert.equal((agents.match(/<!-- cpu-model:begin -->/g) || []).length, 1);
-  assert.match(agents, /ChatGPT task or Work task/);
-  assert.match(agents, /standalone Codex use/);
+  assert.equal((agents.match(/Keep this text\./g) || []).length, 1);
+  assert.match(agents, /cpu-model\/devmodel[^\n]+normative source/i);
+  assert.match(agents, /project repository[^\n]+source of truth[^\n]+concrete semantic model/i);
+  assert.match(agents, /ChatGPT[^\n]+directly[^\n]+semantic model[^\n]+GitHub/i);
+  assert.match(agents, /Codex[^\n]+local repository execution/i);
+  assert.match(agents, /Codex[^\n]+edit semantic YAML[^\n]+delegated/i);
+  assert.match(agents, /complete workflow in `CPU\/AGENTS\.md`/i);
+  assert.match(agents, /Project-specific instructions outside this managed block complement/i);
 
   for (const file of [
     'CPU/AGENTS.md',
@@ -42,6 +48,14 @@ try {
     'CPU/tests/artifact_validation.mjs',
   ]) {
     assert.ok(fs.existsSync(path.join(target, file)), `Missing installed file: ${file}`);
+  }
+
+  for (const file of ['AGENTS.md', 'SPEC.md']) {
+    assert.equal(
+      fs.readFileSync(path.join(target, 'CPU', file), 'utf8'),
+      fs.readFileSync(path.join(root, file), 'utf8'),
+      `Installed CPU/${file} does not match its normative source`,
+    );
   }
 
   for (const script of ['tools/render_model.mjs', 'tools/finish_model.mjs', 'tools/serve_model.mjs']) {
