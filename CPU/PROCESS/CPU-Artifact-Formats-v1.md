@@ -445,7 +445,7 @@ Programs and services may declare:
 - `restart`: `no`, `on-failure`, `always`, or `unless-stopped`;
 - `resources`: optional CPU and memory constraints.
 
-A port contains `id`, `name`, and numeric `port`. `host-port` is the published host port when applicable. `transport` defaults to `tcp`; `application` records an application protocol such as `http`, `https`, or `postgres`; `exposure` defaults to `internal` and is `internal`, `host`, or `public`.
+A port contains `id`, `name`, and numeric `port`. `host-port` is the published host port when applicable. It is either a numeric port or a mapping `{variable: <environment-variable>, default: <port>}`. The mapping form makes host publication instance-configurable while keeping the service/container `port` fixed. `variable` names an environment variable declared in the applicable deployment, program, or service environment. `default` is optional and, when present, is a valid numeric port. At runtime the environment-variable value selects the published host port; when it is absent, `default` is used. A variable-backed `host-port` without `default` therefore requires that variable to be supplied. `transport` defaults to `tcp`; `application` records an application protocol such as `http`, `https`, or `postgres`; `exposure` defaults to `internal` and is `internal`, `host`, or `public`.
 
 ### 6.5 Connections
 
@@ -489,6 +489,15 @@ Variable mapping:
 | `secret` | boolean | no | `false` | Whether the supplied value is secret. |
 
 `secret: true` and `default` are mutually exclusive. A model never contains a secret value.
+
+Host-port mapping, when a port's `host-port` is variable-backed:
+
+| Field | Type | Required | Default | Meaning |
+| --- | --- | --- | --- | --- |
+| `variable` | non-empty string | yes | none | Name of an environment variable declared in the applicable deployment, program, or service environment. |
+| `default` | integer port | no | none | Published host port used when the variable is not supplied. |
+
+No other fields are allowed in a Host-port mapping.
 
 Host mapping:
 
