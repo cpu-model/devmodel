@@ -294,8 +294,27 @@ function deploymentD2(deployment, targets) {
       fields(port, ['id', 'name', 'port', 'host-port', 'transport', 'application', 'exposure'], ['id', 'name', 'port'], `${targetPrefix}.port.${port.id}`);
       nonEmpty(port.name, `${targetPrefix}.port.${port.id}.name`);
       if (!Number.isInteger(port.port) || port.port < 1 || port.port > 65535) throw new Error(`${targetPrefix}.port.${port.id}.port is invalid`);
-      if ('host-port' in port && (!Number.isInteger(port['host-port']) || port['host-port'] < 1 || port['host-port'] > 65535)) {
-        throw new Error(`${targetPrefix}.port.${port.id}.host-port is invalid`);
+      if ('host-port' in port) {
+        const hostPort = port['host-port'];
+        if (Number.isInteger(hostPort)) {
+          if (hostPort < 1 || hostPort > 65535) throw new Error(`${targetPrefix}.port.${port.id}.host-port is invalid`);
+        } else {
+          object(hostPort, `${targetPrefix}.port.${port.id}.host-port`);
+          fields(hostPort, ['variable', 'default'], ['variable'], `${targetPrefix}.port.${port.id}.host-port`);
+          nonEmpty(hostPort.variable, `${targetPrefix}.port.${port.id}.host-port.variable`);
+          if ('default' in hostPort && (!Number.isInteger(hostPort.default) || hostPort.default < 1 || hostPort.default > 65535)) {
+            throw new Error(`${targetPrefix}.port.${port.id}.host-port.default is invalid`);
+          }
+          const declared = new Set([
+            ...(deployment.environment?.variables || []).map(variable => variable.name),
+            ...(owner.includes('.') ? [] : (deployment.programs.find(program => program.id === owner)?.environment?.variables || []).map(variable => variable.name)),
+          ]);
+          const [programId, serviceId] = owner.split('.');
+          const program = deployment.programs.find(item => item.id === programId);
+          for (const variable of program?.environment?.variables || []) declared.add(variable.name);
+          for (const variable of program?.services?.find(item => item.id === serviceId)?.environment?.variables || []) declared.add(variable.name);
+          if (!declared.has(hostPort.variable)) throw new Error(`${targetPrefix}.port.${port.id}.host-port.variable is not declared in the applicable environment: ${hostPort.variable}`);
+        }
       }
       const transport = port.transport || 'tcp';
       if (!['tcp', 'udp'].includes(transport)) throw new Error(`${targetPrefix}.port.${port.id}.transport is invalid`);
@@ -306,7 +325,7 @@ function deploymentD2(deployment, targets) {
       endpointIds.add(endpoint);
       const diagramId = `${d2Prefix}.ports.${port.id}`;
       endpointNodes.set(endpoint, diagramId);
-      const mapping = 'host-port' in port ? ` → host ${port['host-port']}` : '';
+      const mapping = 'host-port' in port ? ` → host ${Number.isInteger(port['host-port']) ? port['host-port'] : `\${${port['host-port'].variable}}${'default' in port['host-port'] ? ` (default ${port['host-port'].default})` : ''}`}` : '';
       result.push(node(port.id, `${port.name}\n${port.application || transport} ${port.port}${mapping}\n${exposure}`, 'rectangle', 'style.border-radius: 8'));
       targets.add(`${targetPrefix}.port.${port.id}`);
     }
