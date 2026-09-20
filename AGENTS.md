@@ -18,20 +18,21 @@ Resolve the methodology root as the directory containing this file. Read its `SP
 - Do not edit generated artifacts to change meaning; change the semantic YAML or normative Markdown and regenerate.
 - In a consuming project, treat `CPU/` as an installed, pinned copy of the methodology version obtained from `cpu-model/devmodel`, not as an independent general-methodology fork. Correct general methodology defects in `cpu-model/devmodel`, then distribute the correction through the installer/update mechanism. Keep project-specific instructions outside installer-managed methodology files.
 
-## GitHub-backed model access
+## Repository-backed incremental development
 
-When ChatGPT has access to a CPU project's GitHub repository, that project repository is the source of truth for its concrete model, project-specific instructions, and durable project artifacts.
+A CPU project repository is the source of truth for its concrete model, project-specific instructions, and durable project artifacts. CPU projects normally have one user and advance through a strict sequence of increments on the default branch. Each new increment starts from the latest accepted and pushed project state.
 
-- Before normative model work, fetch or otherwise query the remote and verify the current default-branch head. Base the work on that verified state; a clean but stale local clone is not sufficient.
+- Before implementation or normative model work, Codex may use `git pull` to synchronize the local working copy with the repository. Git is the transport for the current CPU model and project state; a clean but stale local copy is not sufficient.
+- If pull cannot be completed safely because of local changes or a conflict, stop and report the problem. Do not automatically stash, reset, create or switch branches, or perform other Git interventions.
 - Before normative model work, read the current `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml` from the repository. Read all five even when the requested change appears to affect only one artifact, so cross-artifact consequences are evaluated against one current baseline.
 - Do not use conversational memory, previous chat summaries, generated diagrams, local copies, or Library artifacts as substitutes for current repository state.
-- Make normative changes on a dedicated branch from the verified current default branch, regardless of whether ChatGPT, Codex, or another approved repository client performs the write. Change the default branch directly only when the user explicitly requests it.
-- When the GitHub connector's high-level file create/update operation is unavailable or blocked, use the verified Git object write sequence: create blob → create tree based on the current branch head → create commit with that head as parent → update the branch ref without force.
-- After every write, read the changed files back from the updated branch and verify that their content is exactly the intended model state before reporting success.
-- Never force-update a branch for normal CPU model work.
-- Keep the default branch unchanged before merge. Normally create a pull request from the work branch to the default branch after validation and review.
-- Passing tests is not merge approval, and approval of the model review is not automatically merge approval. Merge only after the user explicitly approves the merge.
-- After merge, verify the new remote default-branch head and synchronize the working base before starting further work.
+- Read changed files back and verify their content before reporting success.
+
+The normal CPU increment workflow is:
+
+`pull → implement/model edit → build/test/validate/review → report → user commit → user push`
+
+The default branch is the normal development line. After the increment has been implemented, verified, reviewed when relevant, and accepted, the user normally performs `git commit` and `git push`. Branches, pull requests, merges, and repository housekeeping are not part of the normal CPU workflow. Codex may perform those Git operations only when the user explicitly requests the specific operation.
 
 ## Modeling discipline
 
@@ -68,13 +69,15 @@ These steps apply after semantic model changes regardless of which approved acto
 
 ### ChatGPT task or Work task
 
-ChatGPT typically leads discussion with the user, model analysis and modeling, and the collaborative review loop. When its tools support the operation, ChatGPT may perform GitHub-native repository work directly: create a branch, edit semantic YAML, read written files back, and create a pull request. Codex is not required merely to persist semantic YAML, and ChatGPT is not limited to reviewing work previously performed by Codex. ChatGPT must not merge until the user explicitly approves the merge.
+ChatGPT typically leads discussion with the user, model analysis and modeling, and the collaborative review loop. When its tools support the operation, ChatGPT may edit semantic YAML and read the written files back. Codex is not required merely to persist semantic YAML, and ChatGPT is not limited to reviewing work previously performed by Codex. The normal increment still ends with a report for user acceptance; Git administration is performed only when the user explicitly requests it.
 
 ### Codex
 
-Codex typically performs local repository execution: local inspection, implementation, tests, strict validation, rendering, the local review server, interactive review, and other local tool execution. Codex may also edit semantic YAML when that work is explicitly delegated to it. Codex is not the exclusive owner of semantic model editing or repository changes. When Codex is operating inside a ChatGPT task or Work task, it must start the review server and open the result in that task's integrated browser when review is required. In standalone or offline Codex use, produce the same self-contained review output and report its exact location, but do not claim that the user reviewed or approved it.
+Codex typically performs local technical execution: read the applicable instructions and project files, implement code or model changes, build, test, strictly validate, render, run the local review server, perform interactive review when relevant, troubleshoot, and report the result. Codex may edit semantic YAML when that work is delegated to it, but is not the exclusive owner of semantic model editing. When Codex is operating inside a ChatGPT task or Work task, it must start the review server and open the result in that task's integrated browser when review is required. In standalone or offline Codex use, produce the same self-contained review output and report its exact location, but do not claim that the user reviewed or approved it.
 
-When Codex operates inside a ChatGPT task or Work task, both responsibility sections apply: the task provides the conversation and review surface, while work may be divided between GitHub-native operations and local execution according to the available tools and explicit delegation.
+After completing and verifying the requested work, Codex normally stops. It does not normally create branches or commits, push, create pull requests, merge, delete branches, or perform repository housekeeping. Codex may perform a specific Git-administration operation only when the user explicitly requests that operation.
+
+When Codex operates inside a ChatGPT task or Work task, both responsibility sections apply: the task provides the conversation and review surface, while work may be divided according to the available tools and explicit delegation.
 
 The normal workflow is collaborative and in-app: discussion, model edit, validation, rendering, and interactive review all happen in the same ChatGPT task or Work task. Offline opening of `index.html` and standalone Codex repository work are fallback workflows, not the default handoff.
 

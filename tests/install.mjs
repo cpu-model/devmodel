@@ -28,9 +28,13 @@ try {
   assert.equal((agents.match(/Keep this text\./g) || []).length, 1);
   assert.match(agents, /cpu-model\/devmodel[^\n]+normative source/i);
   assert.match(agents, /project repository[^\n]+source of truth[^\n]+concrete semantic model/i);
-  assert.match(agents, /ChatGPT[^\n]+directly[^\n]+semantic model[^\n]+GitHub/i);
   assert.match(agents, /Codex[^\n]+local repository execution/i);
   assert.match(agents, /Codex[^\n]+edit semantic YAML[^\n]+delegated/i);
+  assert.match(agents, /default branch[^\n]+normal line[^\n]+incremental development/i);
+  assert.match(agents, /Codex[^\n]+`git pull`[^\n]+safely synchronize/i);
+  assert.match(agents, /Codex[^\n]+local implementation[^\n]+testing[^\n]+validation/i);
+  assert.match(agents, /user normally commits and pushes/i);
+  assert.match(agents, /Branches, pull requests, and merges[^\n]+only when the user explicitly requests/i);
   assert.match(agents, /complete workflow in `CPU\/AGENTS\.md`/i);
   assert.match(agents, /Project-specific instructions outside this managed block complement/i);
 
@@ -57,6 +61,14 @@ try {
       `Installed CPU/${file} does not match its normative source`,
     );
   }
+
+  const installedWorkflow = fs.readFileSync(path.join(target, 'CPU', 'AGENTS.md'), 'utf8');
+  assert.match(installedWorkflow, /default branch is the normal development line/i);
+  assert.match(installedWorkflow, /Codex may use `git pull`/i);
+  assert.match(installedWorkflow, /pull → implement\/model edit → build\/test\/validate\/review → report → user commit → user push/i);
+  assert.match(installedWorkflow, /user normally performs `git commit` and `git push`/i);
+  assert.match(installedWorkflow, /Branches, pull requests, merges, and repository housekeeping are not part of the normal CPU workflow/i);
+  assert.match(installedWorkflow, /does not normally create branches or commits, push, create pull requests, merge, delete branches/i);
 
   for (const script of ['tools/render_model.mjs', 'tools/finish_model.mjs', 'tools/serve_model.mjs']) {
     run(process.execPath, ['--check', script], {cwd: path.join(target, 'CPU')});
