@@ -325,7 +325,7 @@ function deploymentD2(deployment, targets) {
       endpointIds.add(endpoint);
       const diagramId = `${d2Prefix}.ports.${port.id}`;
       endpointNodes.set(endpoint, diagramId);
-      const mapping = 'host-port' in port ? ` → host ${Number.isInteger(port['host-port']) ? port['host-port'] : `\${${port['host-port'].variable}}${'default' in port['host-port'] ? ` (default ${port['host-port'].default})` : ''}`}` : '';
+      const mapping = 'host-port' in port ? ` → host ${Number.isInteger(port['host-port']) ? port['host-port'] : `env ${port['host-port'].variable}${'default' in port['host-port'] ? ` (default ${port['host-port'].default})` : ''}`}` : '';
       result.push(node(port.id, `${port.name}\n${port.application || transport} ${port.port}${mapping}\n${exposure}`, 'rectangle', 'style.border-radius: 8'));
       targets.add(`${targetPrefix}.port.${port.id}`);
     }
