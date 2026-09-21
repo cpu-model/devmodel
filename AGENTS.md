@@ -11,12 +11,12 @@ Resolve the methodology root as the directory containing this file. Read its `SP
 
 ## Source hierarchy
 
-- Treat `cpu-model/devmodel` as the normative source of truth for the general CPU methodology, including its specifications, workflow, validation, rendering and review tools, and installation mechanism.
+- Treat the current `cpu-model/devmodel` default branch as the normative source of truth for the general CPU methodology, including its specifications, workflow, validation, rendering, and review tools.
 - Treat Markdown specifications in `cpu-model/devmodel` as authoritative methodology.
 - Treat `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml` as authoritative for a concrete system.
 - Treat D2, SVG, PNG, and HTML as generated output. Never infer missing semantics from generated layout.
 - Do not edit generated artifacts to change meaning; change the semantic YAML or normative Markdown and regenerate.
-- In a consuming project, treat `CPU/` as an installed, pinned copy of the methodology version obtained from `cpu-model/devmodel`, not as an independent general-methodology fork. Correct general methodology defects in `cpu-model/devmodel`, then distribute the correction through the installer/update mechanism. Keep project-specific instructions outside installer-managed methodology files.
+- In a consuming project, `CPU/` contains the project's concrete five-file semantic model. It does not contain a copied CPU methodology. General methodology is read from the current `cpu-model/devmodel` repository. In the normal local workspace, the project exposes that sibling clone through an ignored `devmodel -> ../devmodel` symbolic link so local agents can read `./devmodel/AGENTS.md`. ChatGPT may read the same repository directly from GitHub.
 
 ## Repository-backed incremental development
 
@@ -102,4 +102,4 @@ The normal workflow is collaborative and uses the capabilities available in the 
 
 A new increment must be startable from verified repository state without relying on previous chat history. Store the normative model and any durable work information needed beyond the current conversation in the project repository. A completed conversation should in principle be deletable without losing the project's normative state or information required to continue the work. This does not require saving all discussion or temporary working notes.
 
-Do not add Python scripts or Python dependencies. Keep the reusable general CPU methodology and tooling normatively in `cpu-model/devmodel`; consuming projects receive them through an installer-managed, pinned `CPU/` copy and must not recreate or develop them as a project-specific fork.
+Do not add Python scripts or Python dependencies. Keep the reusable general CPU methodology and tooling normatively in `cpu-model/devmodel`. Consuming projects use the current methodology directly and must not copy, recreate, pin, or develop it as a project-specific fork. A specific historical methodology version, when exceptionally needed, is selected outside the project repository.
