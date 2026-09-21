@@ -11,6 +11,7 @@ This repository contains the reusable methodology and tooling for the Context-Pu
 - [`CPU Artifact Formats v1`](CPU/PROCESS/CPU-Artifact-Formats-v1.md) defines the semantic YAML formats and requirement attachments.
 - [`CPU Visual Language v1`](CPU/PROCESS/CPU-Visual-Language-v1.md) defines diagram notation, rendering, and interactive requirement review.
 - [`examples/model`](examples/model) is a minimal valid model.
+- [`CPU - lathund för ett nytt projekt`](CPU-nytt-projekt-lathund.md) is a concise Swedish guide from an empty repository to incremental CPU development.
 
 Markdown is the only documentation source. The repository contains no PDF documents or PDF build chain.
 
