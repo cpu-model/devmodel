@@ -53,6 +53,7 @@ try {
   for (const file of [
     'CPU/AGENTS.md',
     'CPU/SPEC.md',
+    'CPU/CPU-nytt-projekt-lathund.md',
     'CPU/PROCESS/CPU-Artifact-Formats-v1.md',
     'CPU/PROCESS/CPU-Visual-Language-v1.md',
     'CPU/tools/render_model.mjs',
