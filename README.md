@@ -45,17 +45,19 @@ The toolchain has no Python dependencies.
 
 If D2 is not on `PATH`, set `D2_BIN` or pass `--d2`.
 
-### Embed CPU in another repository
+### Use CPU from a project repository
 
-From any directory, download and run the installer with the target repository path:
+Clone `cpu-model/devmodel` beside the project repository and expose it through an ignored symbolic link named `devmodel`:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/cpu-model/devmodel/main/install.sh \
-  -o /tmp/cpu-model-install.sh
-sh /tmp/cpu-model-install.sh /path/to/target-project
+cd /path/to/workspace
+git clone git@github.com:cpu-model/devmodel.git
+git clone git@github.com:cpu-model/my-project.git
+cd my-project
+ln -s ../devmodel devmodel
 ```
 
-The installer fetches this repository, copies the methodology and Node.js tools into `<target-project>/CPU`, and adds a managed CPU instruction section to the target's root `AGENTS.md` without replacing other project instructions. Running it again updates the embedded CPU files and the managed instruction section.
+The project keeps only its concrete five-file model under `CPU/`. It does not copy or pin the methodology. Its root `AGENTS.md` can bootstrap local agents with `./devmodel/AGENTS.md`. Add `/devmodel` to the project's `.gitignore` so the workspace link is not committed.
 
 ## Validate a model
 
