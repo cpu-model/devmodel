@@ -13,13 +13,17 @@ Skapa ett repo i `cpu-model`, exempelvis `cpu-model/min-app`. Normal utveckling 
 ```sh
 mkdir -p /Users/lehswe/codex-projects/CPU
 cd /Users/lehswe/codex-projects/CPU
+git clone git@github.com:cpu-model/devmodel.git
 git clone git@github.com:cpu-model/min-app.git
 cd min-app
+ln -s ../devmodel devmodel
 ```
 
-## 2. Installera CPU-metodiken
+## 2. Anslut aktuell CPU-metodik
 
-Installera aktuell normativ version från `cpu-model/devmodel`. Hårdkoda inte en gammal SHA från denna lathund. Installationen ger projektet en installerad/pinnad `CPU/`-kopia av metodik, specifikationer, verktyg och tester samt ett installer-managed block i root `AGENTS.md`. Installera därefter dependencies i CPU-katalogen och kör CPU-testsuiten.
+`cpu-model/devmodel` klonas bredvid arbetsprojektet och används direkt i aktuell version. Projektet ska inte innehålla en installerad eller pinnad kopia av metodiken. Den lokala symboliska länken `devmodel -> ../devmodel` ger Codex och andra lokala agenter en stabil sökväg till `./devmodel/AGENTS.md`. Lägg `/devmodel` i projektets `.gitignore`; länken är lokal workspace-konfiguration och ska inte committas.
+
+Projektets `CPU/` innehåller endast `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml` och `requirements.yaml`. Root `AGENTS.md` innehåller endast bootstrap till aktuell devmodel och eventuella projektspecifika instruktioner.
 
 ## 3. ChatGPT Project
 
@@ -34,12 +38,13 @@ GitHub-repot är source of truth för den aktuella CPU-modellen. Läs alltid akt
 repositoryts instruktioner från GitHub före modellarbete; rekonstruera inte aktuellt
 tillstånd från chattminne.
 
-cpu-model/devmodel är source of truth för den generella CPU-metodiken.
+cpu-model/devmodel är source of truth för den generella CPU-metodiken. Läs aktuell
+AGENTS.md därifrån före CPU-arbete.
 
 När instruktioner till Codex behövs ska de ges som ett enda komplett kopierbart fragment.
 ```
 
-Femfilsmodell, valideringsregler, Git-flöde och Codex arbetsgräns ska normalt inte kopieras hit. De hör hemma i repots `AGENTS.md` och installerade CPU-styrdokument.
+Femfilsmodell, valideringsregler, Git-flöde och Codex arbetsgräns ska normalt inte kopieras hit. Generell arbetsmetod hör hemma i `cpu-model/devmodel/AGENTS.md`; arbetsprojektets repo innehåller bara projektspecifika instruktioner.
 
 ## 4. Chattar
 
@@ -47,7 +52,7 @@ Använd en uppstartschatt för första modellen och första inkrementet. Däreft
 
 ## 5. Codex: självinstruerande repo
 
-Öppna den permanenta lokala repokatalogen i Codex. Codex läser root `AGENTS.md` och installerad CPU-metodik. Uppdragsprompten ska därför normalt bara beskriva önskat resultat.
+Öppna den permanenta lokala repokatalogen i Codex. Root `AGENTS.md` pekar Codex vidare till `./devmodel/AGENTS.md`, som nås via den lokala symboliska länken. Uppdragsprompten ska därför normalt bara beskriva önskat resultat.
 
 ```text
 Implementera aktuell CPU-modell.
@@ -73,7 +78,7 @@ Inte för normal CPU-utveckling. Huvudvägen är ChatGPT Project + projektchatta
 |---:|---|---|
 | 1 | Skapa GitHub-repo | `cpu-model/<projekt>` |
 | 2 | Klona lokalt | permanent arbetskopia |
-| 3 | Installera CPU | aktuell `cpu-model/devmodel` |
+| 3 | Länka devmodel | `devmodel -> ../devmodel` |
 | 4 | Skapa ChatGPT Project | korta projektspecifika instruktioner |
 | 5 | Modellera | Context -> Pulse -> UI -> Deployment -> requirements |
 | 6 | Definiera inkrement | önskat resultat och scope |
@@ -85,7 +90,7 @@ Inte för normal CPU-utveckling. Huvudvägen är ChatGPT Project + projektchatta
 
 ## 9. Vad är normativt var?
 
-- `cpu-model/devmodel`: generell metodik, format, workflow, Visual Language, installer och verktyg.
+- `cpu-model/devmodel`: generell metodik, format, workflow, Visual Language och verktyg.
 - `cpu-model/<projekt>`: konkret modell, projektspecifika instruktioner och implementation.
 - Lokal klon: arbetsyta, inte separat källa till sanning.
 - Codex-prompt: det aktuella uppdraget, inte en kopia av arbetsmetoden.
