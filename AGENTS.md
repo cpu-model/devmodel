@@ -28,11 +28,17 @@ A CPU project repository is the source of truth for its concrete model, project-
 - Do not use conversational memory, previous chat summaries, generated diagrams, local copies, or Library artifacts as substitutes for current repository state.
 - Read changed files back and verify their content before reporting success.
 
-The normal CPU increment workflow is:
+Repository/Git responsibility depends on the acting environment:
 
-`pull → implement/model edit → build/test/validate/review → report → user commit → user push`
+- When ChatGPT performs normative model or methodology work directly against the source-of-truth repository through repository tools, an accepted change should normally be written and committed directly to that repository. User acceptance of the change is sufficient authorization for that commit unless the user has requested a different workflow.
+- When Codex works from a local repository clone, the normal workflow is:
 
-The default branch is the normal development line. After the increment has been implemented, verified, reviewed when relevant, and accepted, the user normally performs `git commit` and `git push`. Branches, pull requests, merges, and repository housekeeping are not part of the normal CPU workflow. An agent may perform those Git operations only when the user explicitly requests the specific operation.
+  `pull → implement/model edit → build/test/validate/review → report → user commit → user push`
+
+  Codex normally stops after verification and reporting. It performs commit, push, branch, pull-request, merge, or other Git-administration operations only when the user explicitly delegates the specific operation.
+- Do not hand work from ChatGPT to Codex merely to persist or commit a normative change that ChatGPT can write directly through repository tools.
+
+The default branch is the normal development line. Branches, pull requests, merges, and repository housekeeping are not part of the normal CPU workflow unless explicitly requested.
 
 ## Self-instructing implementation work
 
@@ -86,7 +92,7 @@ These steps apply after semantic model changes regardless of which approved acto
 
 ### ChatGPT Chat or Work
 
-ChatGPT typically leads discussion with the user, model analysis and modeling, and the collaborative review loop. Ordinary ChatGPT Chat is a valid CPU working environment; Work is not required merely because the work concerns a CPU model. When the available tools support repository access, ChatGPT may read and edit normative repository files directly and must read the written files back before reporting success. Codex is not required merely to persist model or methodology changes, and ChatGPT is not limited to reviewing work previously performed by Codex. Work may be used when its additional execution environment is useful for the requested work. The normal increment still ends with a report for user acceptance; Git administration is performed only when the user explicitly requests it.
+ChatGPT typically leads discussion with the user, model analysis and modeling, and the collaborative review loop. Ordinary ChatGPT Chat is a valid CPU working environment; Work is not required merely because the work concerns a CPU model. When the available tools support repository access, ChatGPT may read and edit normative repository files directly and must read the written files back before reporting success. Codex is not required merely to persist model or methodology changes, and ChatGPT is not limited to reviewing work previously performed by Codex. Work may be used when its additional execution environment is useful for the requested work. When ChatGPT works directly against the source-of-truth repository, a normative change accepted by the user should normally be written and committed directly there; separate explicit authorization for that commit is not required unless the user has requested a different workflow. The normal increment still ends with a report for user acceptance.
 
 ### Codex
 
