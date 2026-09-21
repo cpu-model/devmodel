@@ -60,4 +60,23 @@ invalidDeployment(deployment => {
   deployment.programs[0].ports[0]['host-port'] = {variable: 'HTTP_HOST_PORT', default: 70000};
 }, /host-port.default is invalid/);
 
+function renderedDeploymentContains(expected) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'cpu-deployment-render-'));
+  try {
+    const result = spawnSync(process.execPath, [
+      path.join(root, 'tools', 'render_model.mjs'),
+      '--source', example,
+      '--out', directory,
+      '--no-finish',
+    ], {encoding: 'utf8'});
+    assert.equal(result.status, 0, `Expected deployment rendering to succeed: ${result.stderr}`);
+    const rendered = fs.readFileSync(path.join(directory, 'deployment.d2'), 'utf8');
+    assert.match(rendered, expected);
+  } finally {
+    fs.rmSync(directory, {recursive: true, force: true});
+  }
+}
+
+renderedDeploymentContains(/env HTTP_HOST_PORT \(default 8080\)/);
+
 console.log('Validated strict Deployment rejection cases.');
