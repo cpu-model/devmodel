@@ -88,9 +88,9 @@ This repository contains an installed, pinned copy of the Context-Pulse-UI metho
 
 Before creating, interpreting, validating, rendering, or changing a CPU model, read and follow the complete workflow in `CPU/AGENTS.md`, together with `CPU/SPEC.md` and both specifications under `CPU/PROCESS/`.
 
-The default branch is the normal line for incremental development. Codex is used for local repository execution and may use `git pull` when it can safely synchronize the current project state, then performs local implementation, testing, validation, and model review as relevant. After Codex reports the verified result, the user normally commits and pushes it. Branches, pull requests, and merges are used only when the user explicitly requests them.
+The default branch is the normal line for incremental development. ChatGPT Chat, Work, and Codex may participate according to the capabilities available in the current environment. A local repository actor may use `git pull` when it can safely synchronize the current project state; an actor working directly through repository tools must read the current repository state before changing it. After the requested work is verified and reported, the user normally commits and pushes it. Branches, pull requests, and merges are used only when the user explicitly requests them.
 
-Codex may edit semantic YAML when delegated. Project-specific instructions outside this managed block complement the installed methodology. Follow `CPU/AGENTS.md` for the complete incremental workflow, safe synchronization, tests, strict validation, rendering, and interactive review.
+ChatGPT or Codex may edit normative repository files when the available tools support the operation. Project-specific instructions outside this managed block complement the installed methodology. Follow `CPU/AGENTS.md` for the complete incremental workflow, safe synchronization, tests, strict validation, rendering, and interactive review.
 <!-- cpu-model:end -->
 EOF
 
