@@ -45,7 +45,7 @@ else
   source_root="$temporary/source"
 fi
 
-for required in AGENTS.md SPEC.md README.md package.json package-lock.json CPU/PROCESS tools tests examples/model; do
+for required in AGENTS.md SPEC.md README.md CPU-nytt-projekt-lathund.md package.json package-lock.json CPU/PROCESS tools tests examples/model; do
   if [ ! -e "$source_root/$required" ]; then
     printf 'CPU source is incomplete; missing %s\n' "$required" >&2
     exit 1
@@ -58,6 +58,7 @@ mkdir -p "$cpu_dir/PROCESS" "$cpu_dir/tools" "$cpu_dir/tests" "$cpu_dir/examples
 cp "$source_root/AGENTS.md" "$cpu_dir/AGENTS.md"
 cp "$source_root/SPEC.md" "$cpu_dir/SPEC.md"
 sed 's#CPU/PROCESS/#PROCESS/#g' "$source_root/README.md" > "$cpu_dir/README.md"
+cp "$source_root/CPU-nytt-projekt-lathund.md" "$cpu_dir/CPU-nytt-projekt-lathund.md"
 cp "$source_root/package.json" "$cpu_dir/package.json"
 cp "$source_root/package-lock.json" "$cpu_dir/package-lock.json"
 cp "$source_root/CPU/PROCESS/CPU-Artifact-Formats-v1.md" "$cpu_dir/PROCESS/CPU-Artifact-Formats-v1.md"
