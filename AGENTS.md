@@ -22,7 +22,7 @@ Resolve the methodology root as the directory containing this file. Read its `SP
 
 A CPU project repository is the source of truth for its concrete model, project-specific instructions, and durable project artifacts. CPU projects normally have one user and advance through a strict sequence of increments on the default branch. Each new increment starts from the latest accepted and pushed project state.
 
-- Before implementation or normative model work, Codex may use `git pull` to synchronize the local working copy with the repository. Git is the transport for the current CPU model and project state; a clean but stale local copy is not sufficient.
+- Before implementation or normative model work from a local working copy, the acting agent may use `git pull` to synchronize it with the repository. Git is the transport for the current CPU model and project state; a clean but stale local copy is not sufficient. An agent working directly against the repository through repository tools must instead read the current repository state before changing it.
 - If pull cannot be completed safely because of local changes or a conflict, stop and report the problem. Do not automatically stash, reset, create or switch branches, or perform other Git interventions.
 - Before normative model work, read the current `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml` from the repository. Read all five even when the requested change appears to affect only one artifact, so cross-artifact consequences are evaluated against one current baseline.
 - Do not use conversational memory, previous chat summaries, generated diagrams, local copies, or Library artifacts as substitutes for current repository state.
@@ -32,7 +32,7 @@ The normal CPU increment workflow is:
 
 `pull → implement/model edit → build/test/validate/review → report → user commit → user push`
 
-The default branch is the normal development line. After the increment has been implemented, verified, reviewed when relevant, and accepted, the user normally performs `git commit` and `git push`. Branches, pull requests, merges, and repository housekeeping are not part of the normal CPU workflow. Codex may perform those Git operations only when the user explicitly requests the specific operation.
+The default branch is the normal development line. After the increment has been implemented, verified, reviewed when relevant, and accepted, the user normally performs `git commit` and `git push`. Branches, pull requests, merges, and repository housekeeping are not part of the normal CPU workflow. An agent may perform those Git operations only when the user explicitly requests the specific operation.
 
 ## Self-instructing implementation work
 
@@ -49,7 +49,7 @@ When asked to implement the current CPU model, or to make the project buildable 
 - After implementation, compare the result back against all five semantic artifacts and report any remaining model-to-implementation gaps.
 - Follow the repository-backed incremental workflow above and stop after verification and reporting for user review. Git administration remains the user's responsibility unless explicitly delegated.
 
-Therefore a normal Codex task prompt does not need to restate synchronization, source hierarchy, model-reading, validation, reporting, or Git-administration rules already defined here. Project-specific prompts should primarily state what outcome the user wants.
+Therefore a normal task prompt does not need to restate synchronization, source hierarchy, model-reading, validation, reporting, or Git-administration rules already defined here. Project-specific prompts should primarily state what outcome the user wants.
 
 ## Modeling discipline
 
@@ -62,7 +62,7 @@ Therefore a normal Codex task prompt does not need to restate synchronization, s
 - Do not introduce generic abstractions, global registries, or cross-artifact relations unless the normative model explicitly adds them.
 - Treat Deployment commands, environment declarations, ports, mounts, health checks, restart policies, and resource constraints as normative implementation instructions.
 - Default a server implementation language to Go when none is stated. Select and record an explicit platform for every Web UI; there is no Web UI platform default.
-- Codex may choose an unspecified Web UI platform or port, but must write the choice into `deployment.yaml` and expose it for user review.
+- An implementing agent may choose an unspecified Web UI platform or port, but must write the choice into `deployment.yaml` and expose it for user review.
 - Never place secret values in `deployment.yaml`; record only variable names and secret classification.
 
 ## Shared change workflow
@@ -74,7 +74,7 @@ Therefore a normal Codex task prompt does not need to restate synchronization, s
 5. Run strict validation of the complete five-file model, using `npm run validate -- --source <model-directory>` or the equivalent validation performed by rendering.
 6. From that root, run `npm run render -- --source <model-directory> --out <output-directory>` after model changes.
 7. From that root, start `npm run review -- --dir <output-directory>` and keep the local server running.
-8. Open the printed localhost URL in the current ChatGPT task or Work task's integrated browser. Do this yourself; do not merely give the URL or ask the user to open another application.
+8. When the current environment provides an integrated browser and local execution, open the printed localhost URL there. Do this yourself; do not merely give the URL or ask the user to open another application.
 9. Verify that Context, Pulse, UI, and Deployment are visible. Verify every `r` circle against its exact target address and complete ordered requirement text, including pointer activation and the keyboard activation required by the Visual Language.
 10. Tell the user that the interactive model is ready in the current task and ask for review. Keep the browser tab and server available while discussing feedback.
 11. Apply requested changes, rerun the tests, validation, and rendering, reload the same review surface, and continue until the user approves the model.
@@ -84,9 +84,9 @@ These steps apply after semantic model changes regardless of which approved acto
 
 ## Environment responsibilities
 
-### ChatGPT task or Work task
+### ChatGPT Chat or Work
 
-ChatGPT typically leads discussion with the user, model analysis and modeling, and the collaborative review loop. When its tools support the operation, ChatGPT may edit semantic YAML and read the written files back. Codex is not required merely to persist semantic YAML, and ChatGPT is not limited to reviewing work previously performed by Codex. The normal increment still ends with a report for user acceptance; Git administration is performed only when the user explicitly requests it.
+ChatGPT typically leads discussion with the user, model analysis and modeling, and the collaborative review loop. Ordinary ChatGPT Chat is a valid CPU working environment; Work is not required merely because the work concerns a CPU model. When the available tools support repository access, ChatGPT may read and edit normative repository files directly and must read the written files back before reporting success. Codex is not required merely to persist model or methodology changes, and ChatGPT is not limited to reviewing work previously performed by Codex. Work may be used when its additional execution environment is useful for the requested work. The normal increment still ends with a report for user acceptance; Git administration is performed only when the user explicitly requests it.
 
 ### Codex
 
@@ -94,9 +94,9 @@ Codex typically performs local technical execution: read the applicable instruct
 
 After completing and verifying the requested work, Codex normally stops. It does not normally create branches or commits, push, create pull requests, merge, delete branches, or perform repository housekeeping. Codex may perform a specific Git-administration operation only when the user explicitly requests that operation.
 
-When Codex operates inside a ChatGPT task or Work task, both responsibility sections apply: the task provides the conversation and review surface, while work may be divided according to the available tools and explicit delegation.
+When Codex operates inside ChatGPT Chat or Work, both responsibility sections apply: the ChatGPT environment provides the conversation and available review surface, while work may be divided according to the available tools and explicit delegation.
 
-The normal workflow is collaborative and in-app: discussion, model edit, validation, rendering, and interactive review all happen in the same ChatGPT task or Work task. Offline opening of `index.html` and standalone Codex repository work are fallback workflows, not the default handoff.
+The normal workflow is collaborative and uses the capabilities available in the current ChatGPT environment. Discussion and model editing may take place in ordinary ChatGPT Chat. When local execution and an integrated browser are available, validation, rendering, and interactive review should remain in the same environment. Offline opening of `index.html` and standalone Codex repository work are fallback workflows, not the default handoff.
 
 ## Increment and conversation continuity
 
