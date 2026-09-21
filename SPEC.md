@@ -48,11 +48,13 @@ Generated D2, SVG, PNG, and HTML files are derived artifacts.
 
 ## Project adoption
 
-`cpu-model/devmodel` is the normative source of truth for the general CPU methodology, including the specification, artifact formats, visual language, workflow, tools, and installation/update mechanism. A project repository is the source of truth for its own concrete semantic model, project-specific instructions, and durable project artifacts.
+`cpu-model/devmodel` is the normative source of truth for the general CPU methodology, including the specification, artifact formats, visual language, workflow, and tools. CPU projects normally use the current default-branch version of `cpu-model/devmodel`; they do not carry a pinned copy of the methodology. A project repository is the source of truth for its own concrete semantic model, project-specific instructions, and durable project artifacts.
 
-The intended project installation is an installer-managed, pinned copy of a `cpu-model/devmodel` version under `CPU/`. That installed copy is not an independent general-methodology fork. General methodology changes are made in `cpu-model/devmodel` and then distributed to projects through the installation/update mechanism; projects must not create divergent rewrites of the general methodology in project-local documents.
+The concrete five-file model is kept under the project's `CPU/` directory. General methodology changes are made only in `cpu-model/devmodel` and become applicable to projects when the current devmodel is read. Projects must not create divergent rewrites or copies of the general methodology in project-local documents.
 
-Project-specific instructions and decisions remain in the project repository and must be kept separate from installer-managed methodology files where the installation mechanism requires it. They may extend CPU only when clearly separated from the normative v1 model and must not silently change the meaning of existing fields or notation.
+For local agent work, sibling clones are the normal workspace arrangement: for example `devmodel/`, `evc/`, and `nibe/` under one parent directory. A project may expose the sibling methodology clone through an ignored `devmodel -> ../devmodel` symbolic link. The project's root `AGENTS.md` may use that stable local path as its bootstrap to `./devmodel/AGENTS.md`. ChatGPT project instructions instead identify `cpu-model/devmodel` and the working project repository on GitHub. If a historical methodology version is exceptionally required, that selection is managed outside the project repositories.
+
+Project-specific instructions and decisions remain in the project repository. They may extend CPU only when clearly separated from the normative v1 model and must not silently change the meaning of existing fields or notation.
 
 ## Collaborative review workflow
 
