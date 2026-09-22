@@ -15,5 +15,6 @@ run('tests/validate_naming.mjs');
 run('tools/render_model.mjs', ['--source', path.join(root, 'examples', 'model'), '--validate-only']);
 run('tests/deployment_validation.mjs');
 run('tests/artifact_validation.mjs');
+run('tests/pdf_review.mjs');
 
 if (fs.existsSync(path.join(root, 'install.sh'))) run('tests/install.mjs');
