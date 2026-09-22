@@ -9,7 +9,8 @@ assert.match(source,/Contents:PDFHexString\.fromText\(data\.requirements\[b\.key
 assert.match(source,/x\+\.5\*r,y\+\.866\*r/);
 assert.doesNotMatch(source,/Tillbaka till diagrammet/);
 assert.match(source,/convertSvgs\(diagramSources,basePdf\)/);
-assert.match(source,/copyPages\\(base,base\\.getPageIndices\\(\\)\\)/);
-assert.match(source,/base\\.getPageCount\\(\\)!==diagramSources\\.length/);\nassert.doesNotMatch(source,/reqPages|StandardFonts|drawText/);
+assert.match(source,/copyPages\(base,base\.getPageIndices\(\)\)/);
+assert.match(source,/base\.getPageCount\(\)!==diagramSources\.length/);
+assert.doesNotMatch(source,/reqPages|StandardFonts|drawText/);
 assert.doesNotMatch(source,/drawCircle|drawLine|drawRectangle/);
 console.log('PDF review contract checks passed');
