@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
-import {PDFDocument, PDFName, PDFHexString, StandardFonts, rgb} from 'pdf-lib';
+import {PDFDocument, PDFName, PDFHexString, PDFString, StandardFonts, rgb, degrees} from 'pdf-lib';
 
 const out=path.resolve(process.argv[2]||'output/model');
 const data=JSON.parse(fs.readFileSync(path.join(out,'model.json'),'utf8'));
@@ -20,6 +20,9 @@ const pdfText=s=>s.replaceAll('▶','>').replaceAll('●','*').replace(/[\u2010-
 const box=svg=>{const m=svg.match(/<svg\b[^>]*\bviewBox="([^"]+)"/);if(!m)throw Error('SVG has no viewBox');const [x,y,w,h]=m[1].split(/\s+/).map(Number);return{x,y,w,h};};
 const yPdf=(b,y)=>(b.y+b.h-y)*scale;
 function addAnnot(page,doc,obj){let a=page.node.lookup(PDFName.of('Annots'));if(!a){a=doc.context.obj([]);page.node.set(PDFName.of('Annots'),a);}a.push(doc.context.register(doc.context.obj(obj)));}
+function pathEnd(d){const nums=[...d.matchAll(/[-+]?(?:\d*\.\d+|\d+)/g)].map(m=>+m[0]);return nums.length>=2?{x:nums.at(-2),y:nums.at(-1)}:null;}
+function pathPrev(d){const pts=[...d.matchAll(/(?:M|L)\s*([-+\d.]+)\s+([-+\d.]+)/g)].map(m=>({x:+m[1],y:+m[2]}));return pts.length>=2?pts.at(-2):null;}
+function arrow(page,b,a){if(!a['marker-end'])return;const end=pathEnd(a.d),prev=pathPrev(a.d);if(!end||!prev)return;const angle=Math.atan2(end.y-prev.y,end.x-prev.x);const len=9,w=5;const p1={x:end.x-len*Math.cos(angle)+w*Math.sin(angle),y:end.y-len*Math.sin(angle)-w*Math.cos(angle)};const p2={x:end.x-len*Math.cos(angle)-w*Math.sin(angle),y:end.y-len*Math.sin(angle)+w*Math.cos(angle)};page.drawSvgPath(`M ${(end.x-b.x)*scale} ${yPdf(b,end.y)} L ${(p1.x-b.x)*scale} ${yPdf(b,p1.y)} L ${(p2.x-b.x)*scale} ${yPdf(b,p2.y)} Z`,{color:hex(a.stroke)||rgb(13/255,50/255,178/255)});}
 
 const doc=await PDFDocument.create();
 const regular=await doc.embedFont(StandardFonts.Helvetica);
@@ -44,6 +47,7 @@ for(const name of names){
     if(!fill&&!stroke)continue;
     const o={x:-b.x*scale,y:(b.y+b.h)*scale,scale}; if(fill)o.color=fill;if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;}
     page.drawSvgPath(a.d,o);
+    arrow(page,b,a);
   }
   for(const m of svg.matchAll(/<circle\b[^>]*>/g)){
     const a=attrs(m[0]),s=style(a);const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
@@ -51,20 +55,18 @@ for(const name of names){
     page.drawCircle(o);
   }
   for(const m of svg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)){
-    const a=attrs('<text '+m[1]+'>'),s=style(a),text=pdfText(decode(m[2].replace(/<[^>]+>/g,'')).trim());if(!text)continue;
-    const size=+(a['font-size']||s['font-size']?.replace('px','')||16)*scale;
-    const font=(a.class||'').includes('text-bold')?bold:(a.class||'').includes('text-italic')?italic:regular;
-    let x=(+a.x-b.x)*scale; const width=font.widthOfTextAtSize(text,size);
-    const anchor=a['text-anchor']||s['text-anchor'];if(anchor==='middle')x-=width/2;else if(anchor==='end')x-=width;
-    const y=yPdf(b,+a.y)-size*.22;
-    page.drawText(text,{x,y,size,font,color:hex(a.fill||s.fill)||rgb(0,0,0)});
+    const a=attrs('<text '+m[1]+'>'),s=style(a),raw=m[2],size=+(a['font-size']||s['font-size']?.replace('px','')||16)*scale;
+    const font=(a.class||'').includes('text-bold')?bold:(a.class||'').includes('text-italic')?italic:regular,anchor=a['text-anchor']||s['text-anchor'],color=hex(a.fill||s.fill)||rgb(0,0,0);
+    const spans=[...raw.matchAll(/<tspan\\b([^>]*)>([\\s\\S]*?)<\\/tspan>/g)];
+    const lines=spans.length?spans.map(t=>{const ta=attrs('<tspan '+t[1]+'>');return{x:+(ta.x??a.x),dy:+(ta.dy||0),text:pdfText(decode(t[2].replace(/<[^>]+>/g,'')).trim())};}):[{x:+a.x,dy:0,text:pdfText(decode(raw.replace(/<[^>]+>/g,'')).trim())}];
+    let yy=+a.y;for(const line of lines){yy+=line.dy; if(!line.text)continue;let x=(line.x-b.x)*scale,w=font.widthOfTextAtSize(line.text,size);if(anchor==='middle')x-=w/2;else if(anchor==='end')x-=w;page.drawText(line.text,{x,y:yPdf(b,yy)-size*.22,size,font,color});}
   }
 
   const re=/<g\b([^>]*data-requirement-badge="true"[^>]*)>([\s\S]*?)<\/g>/g;
   for(const m of svg.matchAll(re)){
     const ga=attrs('<g '+m[1]+'>'),c=m[2].match(/<circle\b[^>]*>/);if(!c)continue;const ca=attrs(c[0]);
     const x=(+ca.cx-b.x)*scale,y=yPdf(b,+ca.cy),r=(+ca.r)*scale,key=decode(ga['data-key']),label=decode(ga['data-label']);
-    addAnnot(page,doc,{Type:'Annot',Subtype:'Text',Rect:[x+.5*r,y+.866*r,x+.5*r+8,y+.866*r+8],Contents:PDFHexString.fromText(data.requirements[key].join('\n\n')),T:PDFHexString.fromText(label),Name:'Comment',Open:false,F:4});
+    addAnnot(page,doc,{Type:PDFName.of('Annot'),Subtype:PDFName.of('Text'),Rect:[x+.5*r,y+.866*r,x+.5*r+12,y+.866*r+12],Contents:PDFHexString.fromText(data.requirements[key].join('\n\n')),T:PDFHexString.fromText(label),Name:PDFName.of('Comment'),Open:false,F:4});
   }
 }
 fs.writeFileSync(path.join(out,'review-native.pdf'),await doc.save({useObjectStreams:false}));
