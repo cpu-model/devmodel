@@ -382,20 +382,17 @@ If space is unavailable, adjust deterministic generation or layout spacing. Do n
 
 The permanent review surface is a PDF generated from the finished decorated SVG. PDF generation must not redraw, relayout, or reinterpret the diagram. The diagram page uses the exact finished SVG rendering as its graphical source.
 
-Every visible `r` indicator has two PDF interactions:
+Every visible `r` indicator has one PDF Text annotation whose contents are the complete requirement strings directly attached to the target, in declared order and without paraphrasing or omission.
 
-- a Text annotation whose contents are the complete requirement strings directly attached to the target, in declared order and without paraphrasing or omission;
-- a borderless internal link from the `r` indicator to the corresponding requirement section in the same PDF.
+The Text annotation's note icon is placed deterministically outside the `r` circle, attached at approximately the 14 o'clock position. It must not obscure the circle or its letter.
 
-The Text annotation's note icon is placed deterministically outside the `r` circle, attached at approximately the 14 o'clock position. It must not obscure the circle or its letter. The internal link remains associated with the `r` indicator itself.
+The permanent PDF deliberately contains no internal requirement pages or link annotations. This keeps the artifact smaller and structurally simpler and makes the popup annotation the single requirement-review interaction.
 
-Each requirement section identifies the element by display name and stable target address and reproduces every attached requirement exactly and in declared order. A visible `Tillbaka till diagrammet` internal link appears both above and below the requirement text so return navigation never depends on scrolling to one particular end of the section.
-
-Chrome is the reference reader for the complete popup review interaction. The internal PDF links are the portable fallback for readers where Text-annotation popup presentation is absent or unusable, including observed Safari, Preview, and ChatGPT/iPad behavior. Reader-specific popup appearance is not part of the Visual Language.
+Chrome is the reference reader for the complete popup review interaction. Reader-specific popup appearance is not part of the Visual Language.
 
 ### 12.5 Accessibility and supplementary interactive surfaces
 
-The permanent PDF review must remain usable through its visible `r` indicators and internal navigation without requiring popup support.
+The permanent PDF review uses its visible `r` indicators and Text annotations for requirement access. A PDF reader that does not expose Text annotations cannot provide the complete requirement-review interaction.
 
 An HTML review surface may additionally be generated for browser-based exploration, keyboard interaction, or source inspection. It is supplementary and is not the permanent reviewed artifact. If supplied, its requirement selection must preserve the same target binding and exact ordered requirement text.
 
@@ -416,6 +413,5 @@ The repository-backed review output retains the finished SVG and the permanent P
 - No indicators, labels, note icons, or semantic symbols collide or become clipped at normal review size.
 - The PDF diagram rendering is graphically identical to the finished SVG apart from PDF viewer annotation UI.
 - Every indicator's Text annotation contains exactly its target's complete ordered requirements.
-- Every indicator links to its matching requirement section, and every requirement section has working return links both above and below the requirement text.
 - The note icon attaches at approximately 14 o'clock without obscuring the `r` indicator.
 - Given identical semantic sources, requirements, Visual Language version, D2 version, and PDF generator version, output is deterministic.
