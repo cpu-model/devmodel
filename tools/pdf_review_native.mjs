@@ -63,10 +63,28 @@ for(const name of names){
   }
 
   const re=/<g\b([^>]*data-requirement-badge="true"[^>]*)>([\s\S]*?)<\/g>/g;
+  let badgeIndex=0;
   for(const m of svg.matchAll(re)){
-    const ga=attrs('<g '+m[1]+'>'),c=m[2].match(/<circle\b[^>]*>/);if(!c)continue;const ca=attrs(c[0]);
-    const x=(+ca.cx-b.x)*scale,y=yPdf(b,+ca.cy),r=(+ca.r)*scale,key=decode(ga['data-key']),label=decode(ga['data-label']);
-    addAnnot(page,doc,{Type:PDFName.of('Annot'),Subtype:PDFName.of('Text'),Rect:[x+.5*r,y+.866*r,x+.5*r+12,y+.866*r+12],Contents:PDFHexString.fromText(data.requirements[key].join('\n\n')),T:PDFHexString.fromText(label),Name:PDFName.of('Comment'),Open:false,F:4});
+    const ga=attrs('<g '+m[1]+'>'),circle=m[2].match(/<circle\b[^>]*>/);if(!circle)continue;const ca=attrs(circle[0]);
+    const x=(+ca.cx-b.x)*scale,y=yPdf(b,+ca.cy),r=(+ca.r)*scale,key=decode(ga['data-key']||''),label=decode(ga['data-label']||key);
+    if(name==='context' && badgeIndex===0){
+      const reqs=data.requirements[key];
+      if(!Array.isArray(reqs)||!reqs.length)throw Error('First Context requirement badge has no requirements: '+key);
+      const annot=doc.context.obj({
+        Type:PDFName.of('Annot'),
+        Subtype:PDFName.of('Text'),
+        Rect:[x+.5*r,y+.866*r,x+.5*r+20,y+.866*r+20],
+        Contents:PDFHexString.fromText(reqs.join('\n\n')),
+        T:PDFHexString.fromText(label),
+        Name:PDFName.of('Comment'),
+        Open:false,
+        F:4,
+      });
+      const ref=doc.context.register(annot);
+      page.node.set(PDFName.of('Annots'),doc.context.obj([ref]));
+      console.log('Native PDF diagnostic annotation:',{page:name,key,label,requirements:reqs.length,x,y});
+    }
+    badgeIndex++;
   }
 }
 fs.writeFileSync(path.join(out,'review-native.pdf'),await doc.save({useObjectStreams:false}));
