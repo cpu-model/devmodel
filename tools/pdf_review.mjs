@@ -29,13 +29,14 @@ function badges(svg) {
   }
   return out;
 }
-function convertSvg(svgPath,pdfPath,width,height){
-  // CSS px are 96/in while PDF points are 72/in. Chromium therefore emits
-  // a page at 0.75 of the SVG viewBox dimensions; annotations are mapped
-  // against the imported page dimensions below.
+function convertSvgs(items,pdfPath){
+  // Render all finished SVGs in one Chromium print job. Each SVG is used
+  // unchanged as the graphical source; pdf-lib only adds annotations/pages.
   const html=path.join(out,'.pdf-source.html');
-  const src='file://'+svgPath;
-  fs.writeFileSync(html,'<!doctype html><style>@page{size:'+width+'px '+height+'px;margin:0}html,body{margin:0;width:'+width+'px;height:'+height+'px;overflow:hidden}img{display:block;width:'+width+'px;height:'+height+'px}</style><img src="'+src+'">');
+  const width=Math.max(...items.map(i=>i.box.width));
+  const height=Math.max(...items.map(i=>i.box.height));
+  const pages=items.map(i=>'<section class="page"><img src="file://'+i.svgPath+'" style="width:'+i.box.width+'px;height:'+i.box.height+'px"></section>').join('');
+  fs.writeFileSync(html,'<!doctype html><style>@page{size:'+width+'px '+height+'px;margin:0}html,body{margin:0}.page{width:'+width+'px;height:'+height+'px;page-break-after:always;display:flex;align-items:flex-start;justify-content:flex-start;overflow:hidden}.page:last-child{page-break-after:auto}img{display:block}</style>'+pages);
   const r=spawnSync(browser,['--headless','--disable-gpu','--no-sandbox','--print-to-pdf-no-header','--print-to-pdf='+pdfPath,html],{encoding:'utf8'});
   fs.rmSync(html,{force:true});
   if(r.status!==0||!fs.existsSync(pdfPath)) throw new Error('Browser SVG-to-PDF conversion failed: '+(r.stderr||r.stdout));
@@ -61,21 +62,22 @@ function winAnsiText(text){
   // unavailable in PDF's built-in WinAnsi font for visible fallback text.
   return text.replaceAll('\u2212','-').replaceAll('\u2011','-').replaceAll('\u2013','-').replaceAll('\u2014','-');
 }
-const diagrams=[];
-
-for(const name of names){
+const diagramSources=names.map(name=>{
   const svgPath=path.join(out,name+'.svg');
   const svg=fs.readFileSync(svgPath,'utf8');
-  const box=viewBox(svg);
-  const temp=path.join(out,'.'+name+'.pdf');
-  convertSvg(svgPath,temp,box.width,box.height);
-  const src=await PDFDocument.load(fs.readFileSync(temp)); fs.rmSync(temp,{force:true});
-  const [embedded]=await doc.embedPdf(src,[0]);
-  const page=doc.addPage([embedded.width,embedded.height]);
-  page.drawPage(embedded,{x:0,y:0,width:embedded.width,height:embedded.height});
-  diagrams.push({name,page,box,badges:badges(svg)});
-}
-
+  return {name,svgPath,svg,box:viewBox(svg),badges:badges(svg)};
+});
+const basePdf=path.join(out,'.diagrams.pdf');
+convertSvgs(diagramSources,basePdf);
+const base=await PDFDocument.load(fs.readFileSync(basePdf));
+fs.rmSync(basePdf,{force:true});
+if(base.getPageCount()!==diagramSources.length) throw new Error('Browser PDF page count does not match diagram count');
+const copied=await doc.copyPages(base,base.getPageIndices());
+const diagrams=diagramSources.map((d,i)=>{
+  const page=copied[i];
+  doc.addPage(page);
+  return {...d,page};
+});
 const reqPages=new Map();
 for(const d of diagrams) for(const b of d.badges){
   if(reqPages.has(b.key))continue;
@@ -103,5 +105,5 @@ for(const [key,page] of reqPages){
   addAnnot(page,doc,{Type:'Annot',Subtype:'Link',Rect:[52,page._cpuBackY-4,200,page._cpuBackY+14],Border:[0,0,0],Dest:[diagram.ref,'Fit']});
   delete page._cpuBackY;
 }
-fs.writeFileSync(path.join(out,'review.pdf'),await doc.save({useObjectStreams:false}));
+fs.writeFileSync(path.join(out,'review.pdf'),await doc.save());
 console.log('Permanent PDF review ready:',path.join(out,'review.pdf'));
