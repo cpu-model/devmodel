@@ -56,6 +56,8 @@ jobs:
 
       - name: Render project review
         working-directory: devmodel
+        env:
+          CPU_REVIEW_BROWSER: /usr/bin/google-chrome
         run: npm run render -- --source ../project/CPU --out ../project/CPU/review --review-title "${{ github.event.repository.name }} model review"
 
       - name: Commit changed review artifacts
