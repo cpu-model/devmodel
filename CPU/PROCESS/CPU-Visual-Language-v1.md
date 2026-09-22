@@ -3,7 +3,8 @@
 - Status: Normative v1
 - Renderer baseline: D2 0.9.0
 - Layout engine: ELK
-- Primary output: SVG
+- Primary diagram output: SVG
+- Primary permanent review output: PDF derived from the finished SVG
 - Raster output: PNG derived from SVG
 
 ## 1. Purpose
@@ -377,27 +378,44 @@ An indicator must not overlap another indicator, label, arrowhead, initiative sy
 
 If space is unavailable, adjust deterministic generation or layout spacing. Do not weaken notation or introduce an unstable second layout engine. Keep indicators inside the exported viewport without clipping.
 
-### 12.4 Interactive behavior
+### 12.4 PDF review behavior
 
-Activating an `r` circle in the interactive review surface displays the complete requirements directly attached to its element. The surface displays the element's name, stable target address, and every requirement string in declared order, without paraphrasing or omission.
+The permanent review surface is a PDF generated from the finished decorated SVG. PDF generation must not redraw, relayout, or reinterpret the diagram. The diagram page uses the exact finished SVG rendering as its graphical source.
 
-The active target is clear. Selecting another indicator replaces the displayed requirement list. An Action or Information indicator opens its own requirements rather than those of its containing View.
+Every visible `r` indicator has two PDF interactions:
 
-Indicators are keyboard-focusable, have a visible focus state, and activate with Enter or Space. Each has an accessible name identifying the element and the purpose of opening its requirements. Hover may supplement but never replace keyboard and pointer access.
+- a Text annotation whose contents are the complete requirement strings directly attached to the target, in declared order and without paraphrasing or omission;
+- a borderless internal link from the `r` indicator to the corresponding requirement section in the same PDF.
 
-Clicking the model element itself may additionally open its requirements. This is optional and does not replace the visible indicator.
+The Text annotation's note icon is placed deterministically outside the `r` circle, attached at approximately the 14 o'clock position. It must not obscure the circle or its letter. The internal link remains associated with the `r` indicator itself.
 
-### 12.5 Export and rendering
+Each requirement section identifies the element by display name and stable target address and reproduces every attached requirement exactly and in declared order. A visible `Tillbaka till diagrammet` internal link appears both above and below the requirement text so return navigation never depends on scrolling to one particular end of the section.
+
+Chrome is the reference reader for the complete popup review interaction. The internal PDF links are the portable fallback for readers where Text-annotation popup presentation is absent or unusable, including observed Safari, Preview, and ChatGPT/iPad behavior. Reader-specific popup appearance is not part of the Visual Language.
+
+### 12.5 Accessibility and supplementary interactive surfaces
+
+The permanent PDF review must remain usable through its visible `r` indicators and internal navigation without requiring popup support.
+
+An HTML review surface may additionally be generated for browser-based exploration, keyboard interaction, or source inspection. It is supplementary and is not the permanent reviewed artifact. If supplied, its requirement selection must preserve the same target binding and exact ordered requirement text.
+
+Standalone SVG and PNG retain visible requirement indicators and the legend explaining that `r` denotes directly attached requirements. They are diagram artifacts, not substitutes for the permanent PDF review.
+
+### 12.6 Export and rendering
 
 Generate indicators as minimal deterministic SVG decoration after D2/ELK rendering. Do not add badge fields to semantic YAML or model indicators as layout nodes. Bindings derive from validated attachments; positions derive from rendered element geometry.
 
-Interactive behavior is guaranteed by the interactive review surface, which may embed SVG in HTML. Standalone SVG or static PNG need not offer click behavior. Static exports retain visible indicators and include a legend explaining that `r` denotes directly attached requirements. Static diagrams alone do not replace access to requirements during review.
+After SVG decoration is complete, generate the PDF from that finished SVG. PDF annotation and link geometry derives from the actual rendered `r` positions. PDF finishing must not alter diagram geometry.
 
-### 12.6 Acceptance
+The repository-backed review output retains the finished SVG and the permanent PDF. PNG and supplementary HTML may also be emitted. Generated review artifacts never replace the semantic YAML sources.
+
+### 12.7 Acceptance
 
 - Every rendered occurrence with directly attached requirements has one readable indicator; occurrences without attachments have none.
 - Indicators preserve all existing semantics and notation, including Pulse-circle and initiative geometry.
-- No indicators, labels, or semantic symbols collide or become clipped at normal review size.
-- Every indicator opens exactly its target's complete ordered requirements. Repeated Pulse occurrences open the same target; child View items retain their own targets.
-- Pointer and keyboard activation work, and keyboard focus is visible.
-- Given identical semantic sources, requirements, renderer version, and layout settings, placement and bindings are reproducible.
+- No indicators, labels, note icons, or semantic symbols collide or become clipped at normal review size.
+- The PDF diagram rendering is graphically identical to the finished SVG apart from PDF viewer annotation UI.
+- Every indicator's Text annotation contains exactly its target's complete ordered requirements.
+- Every indicator links to its matching requirement section, and every requirement section has working return links both above and below the requirement text.
+- The note icon attaches at approximately 14 o'clock without obscuring the `r` indicator.
+- Given identical semantic sources, requirements, Visual Language version, D2 version, and PDF generator version, output is deterministic.
