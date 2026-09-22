@@ -46,6 +46,7 @@ function addAnnot(page,doc,obj){
   annots.push(doc.context.register(doc.context.obj(obj)));
 }
 function wrap(font,text,size,max){
+  text=winAnsiText(text);
   const words=text.split(/\s+/); const lines=[]; let line='';
   for(const word of words){const n=line?line+' '+word:word;if(font.widthOfTextAtSize(n,size)>max&&line){lines.push(line);line=word}else line=n}
   if(line)lines.push(line); return lines;
@@ -54,6 +55,12 @@ function wrap(font,text,size,max){
 const doc=await PDFDocument.create();
 const normal=await doc.embedFont(StandardFonts.Helvetica);
 const bold=await doc.embedFont(StandardFonts.HelveticaBold);
+function winAnsiText(text){
+  // Visible requirement pages are a navigation fallback. Preserve exact
+  // Unicode requirement text in the Text annotation; replace only glyphs
+  // unavailable in PDF's built-in WinAnsi font for visible fallback text.
+  return text.replaceAll('\u2212','-').replaceAll('\u2011','-').replaceAll('\u2013','-').replaceAll('\u2014','-');
+}
 const diagrams=[];
 
 for(const name of names){
