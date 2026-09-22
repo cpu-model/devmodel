@@ -11,7 +11,12 @@ function decorate(root, {name, model, requirements}) {
   const namespace = 'http://www.w3.org/2000/svg';
   const groups = [...svg.querySelectorAll('g[class]')];
   const decoded = group => {
-    try { return atob(group.getAttribute('class')); } catch { return ''; }
+    try {
+      const value = group.getAttribute('class') || '';
+      return typeof Buffer !== 'undefined'
+        ? Buffer.from(value, 'base64').toString('utf8')
+        : atob(value);
+    } catch { return ''; }
   };
   const find = id => groups.find(group => decoded(group) === id);
   const connections = groups.filter(group => group.querySelector(':scope > path.connection'));
