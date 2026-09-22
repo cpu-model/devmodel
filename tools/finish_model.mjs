@@ -2,6 +2,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import {execFileSync} from 'node:child_process';
 
 const out = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve('output/model');
 const data = JSON.parse(fs.readFileSync(path.join(out, 'model.json'), 'utf8'));
@@ -303,5 +304,40 @@ for(const key of Object.keys(data.requirements)){
 </script>
 </html>`;
 
-fs.writeFileSync(path.join(out, 'index.html'), html.replace(/[ \t]+$/gm, ''));
-console.log('Interactive review ready:', path.join(out, 'index.html'));
+const indexPath = path.join(out, 'index.html');
+fs.writeFileSync(indexPath, html.replace(/[ \t]+$/gm, ''));
+
+// Materialize the browser-decorated diagrams as durable standalone SVGs.
+// This deliberately uses a real browser geometry engine: Visual Language v1
+// requires positions derived from the actual rendered SVG geometry.
+const browser = process.env.CPU_REVIEW_BROWSER;
+if (browser) {
+  const materializeScript = `
+    const names = ${JSON.stringify(names)};
+    const payload = {};
+    for (const name of names) payload[name] = document.querySelector('#' + name + ' .diagram > svg').outerHTML;
+    document.body.replaceChildren(document.createTextNode(JSON.stringify(payload)));
+  `;
+  const materializeHtml = html.replace('</script>\n</html>', materializeScript + '\n</script>\n</html>');
+  const materializePath = path.join(out, '.materialize.html');
+  fs.writeFileSync(materializePath, materializeHtml);
+  try {
+    const dumped = execFileSync(browser, [
+      '--headless',
+      '--disable-gpu',
+      '--no-sandbox',
+      '--dump-dom',
+      'file://' + materializePath,
+    ], {encoding: 'utf8', maxBuffer: 32 * 1024 * 1024});
+    const body = dumped.match(/<body>([\\s\\S]*?)<\\/body>/i);
+    if (!body) throw Error('Browser did not return a materialized review body');
+    const decoded = body[1]
+      .replaceAll('&quot;', '"').replaceAll('&#39;', "'")
+      .replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&');
+    const materialized = JSON.parse(decoded);
+    for (const name of names) fs.writeFileSync(path.join(out, name + '.svg'), materialized[name]);
+  } finally {
+    fs.rmSync(materializePath, {force: true});
+  }
+}
+console.log('Interactive review ready:', indexPath);
