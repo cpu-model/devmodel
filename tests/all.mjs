@@ -16,4 +16,4 @@ run('tools/render_model.mjs', ['--source', path.join(root, 'examples', 'model'),
 run('tests/deployment_validation.mjs');
 run('tests/artifact_validation.mjs');
 
-if (fs.existsSync(path.join(root, 'CPU', 'PROCESS'))) run('tests/install.mjs');
+if (fs.existsSync(path.join(root, 'install.sh'))) run('tests/install.mjs');
