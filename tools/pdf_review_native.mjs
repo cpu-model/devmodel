@@ -16,6 +16,7 @@ const hex=value=>{
 const attrs=tag=>Object.fromEntries([...tag.matchAll(/([:\w-]+)="([^"]*)"/g)].map(m=>[m[1],m[2]]));
 const style=a=>Object.fromEntries((a.style||'').split(';').filter(Boolean).map(x=>x.split(':').map(y=>y.trim())));
 const decode=s=>s.replaceAll('&amp;','&').replaceAll('&quot;','"').replaceAll('&lt;','<').replaceAll('&gt;','>');
+const pdfText=s=>s.replaceAll('▶','>').replaceAll('●','*').replace(/[\u2010-\u2015]/g,'-').replace(/[\u2018\u2019]/g,"'").replace(/[\u201c\u201d]/g,'"').replace(/[^\x20-\x7E\xA0-\xFF]/g,'?');
 const box=svg=>{const m=svg.match(/<svg\b[^>]*\bviewBox="([^"]+)"/);if(!m)throw Error('SVG has no viewBox');const [x,y,w,h]=m[1].split(/\s+/).map(Number);return{x,y,w,h};};
 const yPdf=(b,y)=>(b.y+b.h-y)*scale;
 function addAnnot(page,doc,obj){let a=page.node.lookup(PDFName.of('Annots'));if(!a){a=doc.context.obj([]);page.node.set(PDFName.of('Annots'),a);}a.push(doc.context.register(doc.context.obj(obj)));}
@@ -50,7 +51,7 @@ for(const name of names){
     page.drawCircle(o);
   }
   for(const m of svg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)){
-    const a=attrs('<text '+m[1]+'>'),s=style(a),text=decode(m[2].replace(/<[^>]+>/g,'')).trim();if(!text)continue;
+    const a=attrs('<text '+m[1]+'>'),s=style(a),text=pdfText(decode(m[2].replace(/<[^>]+>/g,'')).trim());if(!text)continue;
     const size=+(a['font-size']||s['font-size']?.replace('px','')||16)*scale;
     const font=(a.class||'').includes('text-bold')?bold:(a.class||'').includes('text-italic')?italic:regular;
     let x=(+a.x-b.x)*scale; const width=font.widthOfTextAtSize(text,size);
