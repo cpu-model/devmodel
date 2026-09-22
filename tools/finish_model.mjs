@@ -2,6 +2,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 
 const out = process.argv[2] ? path.resolve(process.argv[2]) : path.resolve('output/model');
@@ -338,6 +339,10 @@ if (browser) {
       .replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&');
     const materialized = JSON.parse(decoded);
     for (const name of names) fs.writeFileSync(path.join(out, name + '.svg'), materialized[name]);
+    execFileSync(process.execPath, [path.join(path.dirname(fileURLToPath(import.meta.url)), 'pdf_review.mjs'), out], {
+      stdio: 'inherit',
+      env: process.env,
+    });
   } finally {
     fs.rmSync(materializePath, {force: true});
   }
