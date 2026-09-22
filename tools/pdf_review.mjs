@@ -11,19 +11,19 @@ const data = JSON.parse(fs.readFileSync(path.join(out, 'model.json'), 'utf8'));
 const names = ['context','pulse','ui','deployment'];
 
 function viewBox(svg) {
-  const m = svg.match(/<svg\\b[^>]*\\bviewBox="([^"]+)"/);
+  const m = svg.match(/<svg\b[^>]*\bviewBox="([^"]+)"/);
   if (!m) throw new Error('Finished SVG has no outer viewBox');
-  const [x,y,width,height] = m[1].trim().split(/\\s+/).map(Number);
+  const [x,y,width,height] = m[1].trim().split(/\s+/).map(Number);
   return {x,y,width,height};
 }
 function decode(s){return s.replaceAll('&amp;','&').replaceAll('&quot;','"').replaceAll('&lt;','<').replaceAll('&gt;','>');}
 function badges(svg) {
   const out=[];
-  const re=/<g\\b([^>]*data-requirement-badge="true"[^>]*)>([\\s\\S]*?)<\\/g>/g;
+  const re=/<g\b([^>]*data-requirement-badge="true"[^>]*)>([\s\\S]*?)<\\/g>/g;
   for(const m of svg.matchAll(re)){
     const key=m[1].match(/data-key="([^"]+)"/)?.[1];
     const label=m[1].match(/data-label="([^"]+)"/)?.[1];
-    const c=m[2].match(/<circle\\b[^>]*\\bcx="([^"]+)"[^>]*\\bcy="([^"]+)"[^>]*\\br="([^"]+)"/);
+    const c=m[2].match(/<circle\b[^>]*\bcx="([^"]+)"[^>]*\bcy="([^"]+)"[^>]*\br="([^"]+)"/);
     if(!key||!label||!c) throw new Error('Malformed requirement badge');
     out.push({key:decode(key),label:decode(label),x:+c[1],y:+c[2],r:+c[3]});
   }
@@ -66,7 +66,7 @@ const diagrams=diagramSources.map((d,i)=>{
 for(const d of diagrams) for(const b of d.badges){
   const sx=d.page.getWidth()/d.box.width, sy=d.page.getHeight()/d.box.height;
   const x=(b.x-d.box.x)*sx, y=d.page.getHeight()-(b.y-d.box.y)*sy, r=b.r*Math.min(sx,sy);
-  addAnnot(d.page,doc,{Type:'Annot',Subtype:'Text',Rect:[x+.5*r,y+.866*r,x+.5*r+8,y+.866*r+8],Contents:PDFHexString.fromText(data.requirements[b.key].join('\\n\\n')),T:PDFHexString.fromText(b.label),Name:'Comment',Open:false,F:4});
+  addAnnot(d.page,doc,{Type:'Annot',Subtype:'Text',Rect:[x+.5*r,y+.866*r,x+.5*r+8,y+.866*r+8],Contents:PDFHexString.fromText(data.requirements[b.key].join('\n\n')),T:PDFHexString.fromText(b.label),Name:'Comment',Open:false,F:4});
 }
 
 fs.writeFileSync(path.join(out,'review.pdf'),await doc.save());
