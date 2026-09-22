@@ -329,9 +329,11 @@ if (browser) {
       '--dump-dom',
       'file://' + materializePath,
     ], {encoding: 'utf8', maxBuffer: 32 * 1024 * 1024});
-    const body = dumped.match(/<body>([\\s\\S]*?)<\\/body>/i);
+    const bodyStart = dumped.indexOf('<body>');
+    const bodyEnd = dumped.lastIndexOf('</body>');
+    const body = bodyStart >= 0 && bodyEnd > bodyStart ? dumped.slice(bodyStart + 6, bodyEnd) : null;
     if (!body) throw Error('Browser did not return a materialized review body');
-    const decoded = body[1]
+    const decoded = body
       .replaceAll('&quot;', '"').replaceAll('&#39;', "'")
       .replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&');
     const materialized = JSON.parse(decoded);
