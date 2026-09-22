@@ -82,3 +82,5 @@ The repository provides a Node.js toolchain that:
 6. serves the review page on localhost so the agent can open it in the current ChatGPT task or Work task.
 
 No Python runtime or Python packages are required.
+
+If the active ChatGPT execution environment cannot execute the normative renderer locally, the methodology's GitHub Actions project-review workflow is the normative fallback. It runs the same devmodel tests, strict validation, D2 0.9.0 rendering, and review finishing against the project's five semantic files, writes the result to `CPU/review/`, and commits changed generated review artifacts to the project repository. This automation produces review material; it does not itself constitute user review or acceptance.
