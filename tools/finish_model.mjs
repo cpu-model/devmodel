@@ -11,12 +11,7 @@ function decorate(root, {name, model, requirements}) {
   const namespace = 'http://www.w3.org/2000/svg';
   const groups = [...svg.querySelectorAll('g[class]')];
   const decoded = group => {
-    try {
-      const value = group.getAttribute('class') || '';
-      return typeof Buffer !== 'undefined'
-        ? Buffer.from(value, 'base64').toString('utf8')
-        : atob(value);
-    } catch { return ''; }
+    try { return atob(group.getAttribute('class')); } catch { return ''; }
   };
   const find = id => groups.find(group => decoded(group) === id);
   const connections = groups.filter(group => group.querySelector(':scope > path.connection'));
@@ -224,28 +219,8 @@ function decorate(root, {name, model, requirements}) {
 }
 
 const names = ['context', 'pulse', 'ui', 'deployment'];
-
-// Materialize the fully decorated diagrams as durable SVG review artifacts.
-// The HTML review may add interaction, but the visual notation must not depend
-// on browser-side JavaScript being executed.
-const {JSDOM} = await import('jsdom');
-for (const name of names) {
-  const raw = fs.readFileSync(path.join(out, `${name}.raw.svg`), 'utf8');
-  const dom = new JSDOM(`<!doctype html><body><section id="${name}">${raw}</section></body>`, {pretendToBeVisual: true});
-  const previous = {document: globalThis.document, atob: globalThis.atob};
-  globalThis.document = dom.window.document;
-  globalThis.atob = dom.window.atob.bind(dom.window);
-  try {
-    decorate(dom.window.document.querySelector('#' + name), {name, model: data.models[name], requirements: data.requirements});
-    fs.writeFileSync(path.join(out, `${name}.svg`), dom.window.document.querySelector('#' + name + ' > svg').outerHTML);
-  } finally {
-    globalThis.document = previous.document;
-    globalThis.atob = previous.atob;
-    dom.window.close();
-  }
-}
 const svgs = Object.fromEntries(names.map(name =>
-  [name, fs.readFileSync(path.join(out, `${name}.svg`), 'utf8')]));
+  [name, fs.readFileSync(path.join(out, `${name}.raw.svg`), 'utf8')]));
 const embeddedData = JSON.stringify(data).replaceAll('<', '\\u003c');
 const decorateSource = decorate.toString();
 const escapeHtml = value => value
@@ -304,7 +279,8 @@ const html = `<!doctype html>
 <div class="sources" id="yaml"><h2>YAML-källor</h2><p>De semantiska källfilerna som diagrammen genereras från.</p>${sourceSections}</div></main>
 <script>
 const data=${embeddedData};
-
+const decorate=${decorateSource};
+for(const name of ${JSON.stringify(names)}) decorate(document.querySelector('#'+name),{name,model:data.models[name],requirements:data.requirements});
 function select(group){
   document.querySelectorAll('.selected').forEach(element=>element.classList.remove('selected'));
   group.classList.add('selected');
