@@ -347,6 +347,10 @@ if (browser) {
       stdio: 'inherit',
       env: process.env,
     });
+    execFileSync(process.execPath, [path.join(path.dirname(fileURLToPath(import.meta.url)), 'pdf_annotation_test.mjs'), out], {
+      stdio: 'inherit',
+      env: process.env,
+    });
   } finally {
     fs.rmSync(materializePath, {force: true});
   }
