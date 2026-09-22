@@ -19,7 +19,7 @@ function viewBox(svg) {
 function decode(s){return s.replaceAll('&amp;','&').replaceAll('&quot;','"').replaceAll('&lt;','<').replaceAll('&gt;','>');}
 function badges(svg) {
   const out=[];
-  const re=/<g\b([^>]*data-requirement-badge="true"[^>]*)>([\s\\S]*?)<\\/g>/g;
+  const re=/<g\b([^>]*data-requirement-badge="true"[^>]*)>([\s\S]*?)<\/g>/g;
   for(const m of svg.matchAll(re)){
     const key=m[1].match(/data-key="([^"]+)"/)?.[1];
     const label=m[1].match(/data-label="([^"]+)"/)?.[1];
