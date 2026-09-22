@@ -30,6 +30,9 @@ function badges(svg) {
   return out;
 }
 function convertSvg(svgPath,pdfPath,width,height){
+  // CSS px are 96/in while PDF points are 72/in. Chromium therefore emits
+  // a page at 0.75 of the SVG viewBox dimensions; annotations are mapped
+  // against the imported page dimensions below.
   const html=path.join(out,'.pdf-source.html');
   const src='file://'+svgPath;
   fs.writeFileSync(html,'<!doctype html><style>@page{size:'+width+'px '+height+'px;margin:0}html,body{margin:0;width:'+width+'px;height:'+height+'px;overflow:hidden}img{display:block;width:'+width+'px;height:'+height+'px}</style><img src="'+src+'">');
