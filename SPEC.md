@@ -63,7 +63,7 @@ The normal CPU process is a conversation between the user and the agent:
 1. discuss the desired change and resolve questions;
 2. create or update the semantic model files;
 3. validate the complete model;
-4. render Context, Pulse, UI, and Deployment into a durable, version-controlled location in the concrete project repository; these generated review artifacts are committed with the accepted model change so the exact reviewed diagrams remain recoverable from repository history;
+4. render Context, Pulse, UI, and Deployment into the concrete project's standard durable review location, `CPU/review/`; these generated review artifacts are committed with the accepted model change so the exact reviewed diagrams remain recoverable from repository history;
 5. make the interactive review surface from those repository-backed artifacts available inside the current ChatGPT task or Work task;
 6. let the user inspect diagrams and activate `r` circles to read exact requirements;
 7. iterate in the same task until the user approves the model.
