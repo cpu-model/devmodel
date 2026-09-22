@@ -9,6 +9,8 @@ assert.match(source,/Contents:PDFHexString\.fromText\(data\.requirements\[b\.key
 assert.match(source,/replaceAll\('\\u2212','-'\)/);
 assert.match(source,/x\+\.5\*r,y\+\.866\*r/);
 assert.match(source,/Tillbaka till diagrammet/);
-assert.match(source,/drawPage\(embedded/);
+assert.match(source,/convertSvgs\(diagramSources,basePdf\)/);
+assert.match(source,/copyPages\(base,base\.getPageIndices\(\)\)/);
+assert.match(source,/base\.getPageCount\(\)!==diagramSources\.length/);
 assert.doesNotMatch(source,/drawCircle|drawLine|drawRectangle/);
 console.log('PDF review contract checks passed');
