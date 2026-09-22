@@ -5,7 +5,8 @@ const source=fs.readFileSync(new URL('../tools/pdf_review.mjs',import.meta.url),
 assert.match(source,/data-requirement-badge="true"/);
 assert.match(source,/Subtype:'Text'/);
 assert.match(source,/Subtype:'Link'/);
-assert.match(source,/Contents:PDFString\.of\(data\.requirements\[b\.key\]\.join\('\\n\\n'\)\)/);
+assert.match(source,/Contents:PDFHexString\.fromText\(data\.requirements\[b\.key\]\.join\('\\n\\n'\)\)/);
+assert.match(source,/replaceAll\('\\u2212','-'\)/);
 assert.match(source,/x\+\.5\*r,y\+\.866\*r/);
 assert.match(source,/Tillbaka till diagrammet/);
 assert.match(source,/drawPage\(embedded/);
