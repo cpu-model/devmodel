@@ -64,9 +64,9 @@ The normal CPU process is a conversation between the user and the agent:
 2. create or update the semantic model files;
 3. validate the complete model;
 4. render Context, Pulse, UI, and Deployment into the concrete project's standard durable review location, `CPU/review/`;
-5. generate the permanent PDF review from the finished decorated SVG diagrams, with exact-requirement popup annotations and internal requirement navigation;
+5. generate the permanent PDF review from the finished decorated SVG diagrams, with exact-requirement popup annotations;
 6. present the repository-backed PDF to the user in the current ChatGPT task or Work task;
-7. let the user inspect diagrams, activate `r` annotations where the reader supports them, and use the internal requirement links as the portable fallback;
+7. let the user inspect diagrams and activate `r` popup annotations in a reader that supports PDF Text annotations;
 8. iterate in the same task until the user approves the model.
 
 The user must not be required to switch to an external editor or terminal for normal review. Chrome is the reference PDF reader for the full popup interaction. Other PDF readers remain supported through the internal links. A supplementary HTML explorer may be generated but is not the permanent reviewed artifact.
@@ -80,9 +80,8 @@ The repository provides a Node.js toolchain that:
 3. invokes D2 0.9.0 with ELK;
 4. applies the normative CPU SVG decoration and materializes the finished SVG;
 5. generates the permanent PDF directly from that finished SVG without changing diagram geometry;
-6. adds a Text annotation and internal requirement link for every `r` indicator;
-7. adds exact requirement sections with return links above and below each requirement text;
-8. may additionally provide a self-contained HTML explorer and static PNG output.
+6. adds a Text annotation containing the exact attached requirements for every `r` indicator;
+7. may additionally provide a self-contained HTML explorer and static PNG output.
 
 No Python runtime or Python packages are required.
 
