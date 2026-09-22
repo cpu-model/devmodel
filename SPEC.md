@@ -33,7 +33,7 @@ For a concrete system model, the authoritative semantic sources are:
 - `deployment.yaml`
 - `requirements.yaml`
 
-Generated D2, SVG, PNG, and HTML files are derived artifacts.
+Generated D2, SVG, PNG, PDF, and supplementary HTML files are derived artifacts. The repository-backed PDF is the primary permanent review artifact; the semantic YAML remains authoritative.
 
 ## Interpretation rules
 
@@ -63,12 +63,13 @@ The normal CPU process is a conversation between the user and the agent:
 1. discuss the desired change and resolve questions;
 2. create or update the semantic model files;
 3. validate the complete model;
-4. render Context, Pulse, UI, and Deployment into the concrete project's standard durable review location, `CPU/review/`; these generated review artifacts are committed with the accepted model change so the exact reviewed diagrams remain recoverable from repository history;
-5. make the interactive review surface from those repository-backed artifacts available inside the current ChatGPT task or Work task;
-6. let the user inspect diagrams and activate `r` circles to read exact requirements;
-7. iterate in the same task until the user approves the model.
+4. render Context, Pulse, UI, and Deployment into the concrete project's standard durable review location, `CPU/review/`;
+5. generate the permanent PDF review from the finished decorated SVG diagrams, with exact-requirement popup annotations and internal requirement navigation;
+6. present the repository-backed PDF to the user in the current ChatGPT task or Work task;
+7. let the user inspect diagrams, activate `r` annotations where the reader supports them, and use the internal requirement links as the portable fallback;
+8. iterate in the same task until the user approves the model.
 
-The user must not be required to switch to an external editor, terminal, or browser application for normal review. Offline files remain available as a fallback.
+The user must not be required to switch to an external editor or terminal for normal review. Chrome is the reference PDF reader for the full popup interaction. Other PDF readers remain supported through the internal links. A supplementary HTML explorer may be generated but is not the permanent reviewed artifact.
 
 ## Tool contract
 
@@ -77,9 +78,11 @@ The repository provides a Node.js toolchain that:
 1. parses and validates the five semantic YAML files;
 2. generates deterministic D2;
 3. invokes D2 0.9.0 with ELK;
-4. embeds SVG and applies the normative CPU decoration in a self-contained review page;
-5. provides interactive access to exact requirement attachments;
-6. serves the review page on localhost so the agent can open it in the current ChatGPT task or Work task.
+4. applies the normative CPU SVG decoration and materializes the finished SVG;
+5. generates the permanent PDF directly from that finished SVG without changing diagram geometry;
+6. adds a Text annotation and internal requirement link for every `r` indicator;
+7. adds exact requirement sections with return links above and below each requirement text;
+8. may additionally provide a self-contained HTML explorer and static PNG output.
 
 No Python runtime or Python packages are required.
 
