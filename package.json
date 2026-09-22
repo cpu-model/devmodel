@@ -13,7 +13,6 @@
     "review": "node tools/serve_model.mjs"
   },
   "dependencies": {
-    "yaml": "2.9.1",
-    "jsdom": "^27.0.0"
+    "yaml": "2.9.1"
   }
 }
