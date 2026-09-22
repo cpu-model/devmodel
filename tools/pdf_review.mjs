@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
-import {PDFDocument, PDFName, PDFString, StandardFonts, rgb} from 'pdf-lib';
+import {PDFDocument, PDFName, PDFHexString, StandardFonts, rgb} from 'pdf-lib';
 
 const out = path.resolve(process.argv[2] || 'output/model');
 const browser = process.env.CPU_REVIEW_BROWSER;
@@ -81,8 +81,8 @@ for(const d of diagrams) for(const b of d.badges){
   if(reqPages.has(b.key))continue;
   const reqs=data.requirements[b.key];
   const page=doc.addPage([595.28,841.89]); reqPages.set(b.key,page);
-  page.drawText(b.label,{x:54,y:785,size:18,font:bold});
-  page.drawText(b.key,{x:54,y:762,size:9,font:normal,color:rgb(.25,.3,.4)});
+  page.drawText(winAnsiText(b.label),{x:54,y:785,size:18,font:bold});
+  page.drawText(winAnsiText(b.key),{x:54,y:762,size:9,font:normal,color:rgb(.25,.3,.4)});
   const back='Tillbaka till diagrammet';
   page.drawText(back,{x:54,y:730,size:10,font:bold,color:rgb(.05,.2,.7)});
   let y=694;
@@ -94,7 +94,7 @@ for(const d of diagrams) for(const b of d.badges){
 for(const d of diagrams) for(const b of d.badges){
   const sx=d.page.getWidth()/d.box.width, sy=d.page.getHeight()/d.box.height;
   const x=(b.x-d.box.x)*sx, y=d.page.getHeight()-(b.y-d.box.y)*sy, r=b.r*Math.min(sx,sy);
-  addAnnot(d.page,doc,{Type:'Annot',Subtype:'Text',Rect:[x+.5*r,y+.866*r,x+.5*r+8,y+.866*r+8],Contents:PDFString.of(data.requirements[b.key].join('\n\n')),T:PDFString.of(b.label),Name:'Comment',Open:false,F:4});
+  addAnnot(d.page,doc,{Type:'Annot',Subtype:'Text',Rect:[x+.5*r,y+.866*r,x+.5*r+8,y+.866*r+8],Contents:PDFHexString.fromText(data.requirements[b.key].join('\n\n')),T:PDFHexString.fromText(b.label),Name:'Comment',Open:false,F:4});
   addAnnot(d.page,doc,{Type:'Annot',Subtype:'Link',Rect:[x-r-2,y-r-2,x+r+2,y+r+2],Border:[0,0,0],Dest:[reqPages.get(b.key).ref,'Fit']});
 }
 for(const [key,page] of reqPages){
