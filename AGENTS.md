@@ -86,6 +86,8 @@ Therefore a normal task prompt does not need to restate synchronization, source 
 11. Apply requested changes, rerun the tests, validation, and rendering, reload the same review surface, and continue until the user approves the model.
 12. Report remaining uses of potentially ambiguous terminology and why each is intentional.
 
+When the current ChatGPT execution environment cannot run the normative renderer locally, use the devmodel-provided GitHub Actions project-review workflow rather than recreating or approximating the renderer. The project repository may carry the workflow file supplied by devmodel; it checks out the current devmodel, installs its declared Node dependencies and D2 0.9.0, tests and strictly validates the model, renders into `CPU/review/`, and commits changed review artifacts. The generated artifacts must still be presented to the user for review; successful automation is not user acceptance.
+
 These steps apply after semantic model changes regardless of which approved actor or repository client wrote the YAML files. For concrete project models, the generated review artifacts are durable project artifacts and must remain versioned in the project repository so the exact reviewed diagrams can be recovered from repository history. Generated D2, SVG, PNG, and HTML remain derived artifacts and never replace the semantic sources.
 
 ## Environment responsibilities
