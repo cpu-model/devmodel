@@ -20,9 +20,32 @@ const pdfText=s=>s.replaceAll('▶','>').replaceAll('●','*').replace(/[\u2010-
 const box=svg=>{const m=svg.match(/<svg\b[^>]*\bviewBox="([^"]+)"/);if(!m)throw Error('SVG has no viewBox');const [x,y,w,h]=m[1].split(/\s+/).map(Number);return{x,y,w,h};};
 const yPdf=(b,y)=>(b.y+b.h-y)*scale;
 function addAnnot(page,doc,obj){let a=page.node.lookup(PDFName.of('Annots'));if(!a){a=doc.context.obj([]);page.node.set(PDFName.of('Annots'),a);}a.push(doc.context.register(doc.context.obj(obj)));}
-function pathEnd(d){const nums=[...d.matchAll(/[-+]?(?:\d*\.\d+|\d+)/g)].map(m=>+m[0]);return nums.length>=2?{x:nums.at(-2),y:nums.at(-1)}:null;}
-function pathPrev(d){const pts=[...d.matchAll(/(?:M|L)\s*([-+\d.]+)\s+([-+\d.]+)/g)].map(m=>({x:+m[1],y:+m[2]}));return pts.length>=2?pts.at(-2):null;}
-function arrow(page,b,a){if(!a['marker-end'])return;const end=pathEnd(a.d),prev=pathPrev(a.d);if(!end||!prev)return;const angle=Math.atan2(end.y-prev.y,end.x-prev.x);const len=9,w=5;const p1={x:end.x-len*Math.cos(angle)+w*Math.sin(angle),y:end.y-len*Math.sin(angle)-w*Math.cos(angle)};const p2={x:end.x-len*Math.cos(angle)-w*Math.sin(angle),y:end.y-len*Math.sin(angle)+w*Math.cos(angle)};page.drawSvgPath(`M ${(end.x-b.x)*scale} ${yPdf(b,end.y)} L ${(p1.x-b.x)*scale} ${yPdf(b,p1.y)} L ${(p2.x-b.x)*scale} ${yPdf(b,p2.y)} Z`,{color:hex(a.stroke)||rgb(13/255,50/255,178/255)});}
+function pathGeometry(d){
+  const tokens=[...d.matchAll(/[MLSC]|[-+]?(?:\\d*\\.\\d+|\\d+)/g)].map(m=>m[0]);
+  let i=0,cmd=null,current=null,lastStart=null,lastEnd=null;
+  while(i<tokens.length){
+    if(/^[MLSC]$/.test(tokens[i]))cmd=tokens[i++];
+    if(cmd==='M'||cmd==='L'){
+      const p={x:+tokens[i++],y:+tokens[i++]};lastStart=current;current=p;lastEnd=p;
+    }else if(cmd==='S'){
+      const control={x:+tokens[i++],y:+tokens[i++]},p={x:+tokens[i++],y:+tokens[i++]};lastStart=control;current=p;lastEnd=p;
+    }else if(cmd==='C'){
+      i+=2;const control={x:+tokens[i++],y:+tokens[i++]},p={x:+tokens[i++],y:+tokens[i++]};lastStart=control;current=p;lastEnd=p;
+    }else break;
+  }
+  return lastEnd&&lastStart?{end:lastEnd,tangentFrom:lastStart}:null;
+}
+function arrow(page,b,a){
+  if(!a['marker-end'])return;
+  const g=pathGeometry(a.d);if(!g)return;
+  const {end,tangentFrom:prev}=g,angle=Math.atan2(end.y-prev.y,end.x-prev.x);
+  const refX=7,tip=10-refX,len=10,w=6;
+  const tipPoint={x:end.x+tip*Math.cos(angle),y:end.y+tip*Math.sin(angle)};
+  const base={x:tipPoint.x-len*Math.cos(angle),y:tipPoint.y-len*Math.sin(angle)};
+  const p1={x:base.x+w*Math.sin(angle),y:base.y-w*Math.cos(angle)};
+  const p2={x:base.x-w*Math.sin(angle),y:base.y+w*Math.cos(angle)};
+  page.drawSvgPath(`M ${(tipPoint.x-b.x)*scale} ${yPdf(b,tipPoint.y)} L ${(p1.x-b.x)*scale} ${yPdf(b,p1.y)} L ${(p2.x-b.x)*scale} ${yPdf(b,p2.y)} Z`,{color:hex(a.stroke)||rgb(13/255,50/255,178/255)});
+}
 
 const doc=await PDFDocument.create();
 const regular=await doc.embedFont(StandardFonts.Helvetica);
