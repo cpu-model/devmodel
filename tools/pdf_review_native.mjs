@@ -53,12 +53,11 @@ function arrow(page,b,a){
   page.drawLine({start:a2,end:tip,color,thickness:2*scale});
 }
 
-const doc=await PDFDocument.create();
-const regular=await doc.embedFont(StandardFonts.Helvetica);
-const bold=await doc.embedFont(StandardFonts.HelveticaBold);
-const italic=await doc.embedFont(StandardFonts.HelveticaOblique);
-
 for(const name of names){
+  const doc=await PDFDocument.create();
+  const regular=await doc.embedFont(StandardFonts.Helvetica);
+  const bold=await doc.embedFont(StandardFonts.HelveticaBold);
+  const italic=await doc.embedFont(StandardFonts.HelveticaOblique);
   const svg=fs.readFileSync(path.join(out,name+'.svg'),'utf8');
   const b=box(svg);
   // Requirement badges remain in the finished SVG as stable annotation anchors,
@@ -221,6 +220,7 @@ for(const name of names){
     annotationRefs.push(doc.context.register(annot));
   }
   if(annotationRefs.length)page.node.set(PDFName.of('Annots'),doc.context.obj(annotationRefs));
+  const pdfPath=path.join(out,`${name}.pdf`);
+  fs.writeFileSync(pdfPath,await doc.save({useObjectStreams:false}));
+  console.log('Native PDF diagram ready:',pdfPath);
 }
-fs.writeFileSync(path.join(out,'review.pdf'),await doc.save({useObjectStreams:false}));
-console.log('Native PDF review ready:',path.join(out,'review.pdf'));
