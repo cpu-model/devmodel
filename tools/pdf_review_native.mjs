@@ -71,7 +71,12 @@ for(const name of names){
     const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
     if((a.fill||s.fill)==='none'&&!stroke)continue;
     if(!fill&&!stroke)continue;
-    const o={x:-b.x*scale,y:(b.y+b.h)*scale,scale}; if(fill)o.color=fill;if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;}
+    const o={x:-b.x*scale,y:(b.y+b.h)*scale,scale};
+    // pdf-lib drawSvgPath fills paths black by default when color is omitted.
+    // D2 connections are open fill="none" paths, so force a transparent fill
+    // while retaining the requested stroke.
+    o.color=fill||rgb(1,1,1);o.opacity=fill?1:0;
+    if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;}
     page.drawSvgPath(a.d,o);
     arrow(page,b,a);
   }
