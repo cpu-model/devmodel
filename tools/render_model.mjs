@@ -174,15 +174,46 @@ function pulseD2(pulse, targets) {
 }
 
 function uiD2(ui, targets) {
-  fields(ui, ['views'], ['views'], 'ui');
+  fields(ui, ['subviews', 'views'], ['views'], 'ui');
+  const subviews = ui.subviews || [];
+  unique(list(subviews, 'ui.subviews'), 'ui.subviews');
   unique(list(ui.views, 'ui.views'), 'ui.views');
   const viewIds = new Set(ui.views.map(view => view.id));
+  const subviewIds = new Set(subviews.map(subview => subview.id));
+  for (const id of subviewIds) if (viewIds.has(id)) throw new Error(`UI View and SubView IDs must be distinct: ${id}`);
+  const subviewById = new Map(subviews.map(subview => [subview.id, subview]));
+  for (const subview of subviews) {
+    fields(subview, ['id', 'name', 'navigation'], ['id', 'name'], `ui.subview.${subview.id}`);
+    nonEmpty(subview.name, `ui.subview.${subview.id}.name`);
+    for (const [index, navigation] of (subview.navigation || []).entries()) {
+      fields(navigation, ['to'], ['to'], `ui.subview.${subview.id}.navigation[${index}]`);
+      if (!viewIds.has(navigation.to)) throw new Error(`Invalid Navigation from SubView ${subview.id}`);
+    }
+  }
   const lines = ['direction: right'];
   for (const view of ui.views) {
-    fields(view, ['id', 'name', 'actions', 'information', 'navigation'], ['id', 'name'], `ui.view.${view.id}`);
+    fields(view, ['id', 'name', 'includes', 'actions', 'information', 'navigation'], ['id', 'name'], `ui.view.${view.id}`);
     nonEmpty(view.name, `ui.view.${view.id}.name`);
     targets.add(`ui.view.${view.id}`);
+    const includes = view.includes || [];
+    list(includes, `ui.view.${view.id}.includes`);
+    if (includes.some(id => typeof id !== 'string' || !id.trim())) throw new Error(`ui.view.${view.id}.includes must contain non-empty SubView IDs`);
+    if (new Set(includes).size !== includes.length) throw new Error(`ui.view.${view.id}.includes must not contain duplicates`);
+    for (const id of includes) if (!subviewIds.has(id)) throw new Error(`Unresolved SubView include from ${view.id}: ${id}`);
     lines.push(`${quote(view.id)}: ${quote(view.name)} {\nstyle.border-radius: 12\ngrid-columns: 2\ngrid-gap: 24`);
+    if (includes.length) {
+      lines.push('subviews: "" {\nstyle.stroke: transparent\nstyle.fill: transparent\ngrid-columns: 1\ngrid-gap: 12');
+      for (const id of includes) {
+        const subview = subviewById.get(id);
+        lines.push(`${quote(id)}: ${quote(subview.name)} {\nstyle.border-radius: 8\ngrid-columns: 1\ngrid-gap: 8`);
+        for (const [index, navigation] of (subview.navigation || []).entries()) {
+          const destination = ui.views.find(item => item.id === navigation.to);
+          lines.push(node(`nav_${index}`, `→ ${destination.name}`, 'rectangle', 'style.stroke: transparent\nstyle.fill: transparent'));
+        }
+        lines.push('}');
+      }
+      lines.push('}');
+    }
     for (const [kind, symbol, targetKind] of [['actions', '▶', 'action'], ['information', '●', 'info']]) {
       const items = view[kind] || [];
       unique(items, `ui.view.${view.id}.${kind}`);
