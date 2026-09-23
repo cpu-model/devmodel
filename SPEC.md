@@ -8,7 +8,7 @@ Context-Pulse-UI (CPU) is a small, artifact-specific development model for descr
 
 - **Context:** What system is being described, who communicates directly with it, what domain information crosses its boundary, and who can initiate those interactions?
 - **Pulse:** What domain events can start or propagate causal behavior through the system?
-- **UI:** What user-visible capabilities exist as Views, Information, Actions, and meaningful Navigation?
+- **UI:** What user-visible capabilities exist as Views, reusable SubViews, Information, Actions, and meaningful Navigation?
 
 The three artifacts are complementary. None of them is an implementation architecture, runtime trace, screen design, protocol description, or generic metamodel.
 
@@ -37,7 +37,7 @@ Generated D2, SVG, PNG, PDF, and supplementary HTML files are derived artifacts.
 
 ## Interpretation rules
 
-- `UI` is the top-level artifact. A `View` is an individual user-relevant surface inside that artifact.
+- `UI` is the top-level artifact. A `View` is an individual user-relevant surface inside that artifact. A `SubView` is a reusable user-visible fragment included by one or more Views.
 - Data direction in Context and initiative are independent semantics.
 - Pulse represents possible causal event propagation, not data dependencies or exact execution traces.
 - UI describes user capability and intent, not widgets, layout, gestures, responsive rules, or technical components.
