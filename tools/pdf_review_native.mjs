@@ -79,7 +79,7 @@ for(const name of names){
       // D2 connection paths are fill="none". Render this orthogonal M/L/S
       // subset as native PDF line segments so no implicit black fill can occur.
       if(!stroke)continue;
-      const pts=[...a.d.matchAll(/(?:M|L)\\s*([-+\\d.]+)\\s+([-+\\d.]+)/g)].map(x=>({x:+x[1],y:+x[2]}));
+      const pts=[...a.d.matchAll(/(?:M|L)\s*([-+\d.]+)\s+([-+\d.]+)/g)].map(x=>({x:+x[1],y:+x[2]}));
       for(let j=1;j<pts.length;j++)page.drawLine({start:{x:(pts[j-1].x-b.x)*scale,y:yPdf(b,pts[j-1].y)},end:{x:(pts[j].x-b.x)*scale,y:yPdf(b,pts[j].y)},color:stroke,thickness:+(s['stroke-width']||a['stroke-width']||1)*scale});
       continue;
     }
