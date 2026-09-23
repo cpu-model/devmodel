@@ -152,6 +152,13 @@ for(const name of names){
   // Temporary paint-order correction: paths currently render after the first
   // rectangle pass, so redraw boxes here and then redraw text on top of them.
   for(const o of page.__boxes||[])page.drawRectangle(o);
+  // Redraw circles after restored box fills so requirement and Pulse circles
+  // remain visible above boxes and continue to mask connector lines.
+  for(const m of svg.matchAll(/<circle\b[^>]*>/g)){
+    const a=attrs(m[0]),s=style(a);const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
+    const o={x:(+a.cx-b.x)*scale,y:yPdf(b,+a.cy),size:(+a.r)*scale};if(fill)o.color=fill;if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;}
+    page.drawCircle(o);
+  }
   for(const m of svg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)){
     const a=attrs('<text '+m[1]+'>'),s=style(a),raw=m[2],size=+(a['font-size']||s['font-size']?.replace('px','')||16)*scale;
     const font=(a.class||'').includes('text-bold')?bold:(a.class||'').includes('text-italic')?italic:regular,anchor=a['text-anchor']||s['text-anchor'],color=hex(a.fill||s.fill)||rgb(0,0,0);
@@ -161,13 +168,6 @@ for(const name of names){
   }
 
 
-  // Redraw circles after restored box fills so requirement and Pulse circles
-  // remain visible above boxes and continue to mask connector lines.
-  for(const m of svg.matchAll(/<circle\b[^>]*>/g)){
-    const a=attrs(m[0]),s=style(a);const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
-    const o={x:(+a.cx-b.x)*scale,y:yPdf(b,+a.cy),size:(+a.r)*scale};if(fill)o.color=fill;if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;}
-    page.drawCircle(o);
-  }
   const re=/<g\b([^>]*data-requirement-badge="true"[^>]*)>([\s\S]*?)<\/g>/g;
   const annotationRefs=[];
   for(const m of svg.matchAll(re)){
