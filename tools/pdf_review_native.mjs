@@ -64,7 +64,8 @@ for(const name of names){
   // Draw SVG rectangles explicitly. pdf-lib defaults rectangle fill to black
   // when color is omitted, so never call drawRectangle without an explicit
   // fill color. SVG fill="none" becomes transparent (opacity 0).
-  const rectTags=[...svg.matchAll(/<rect\b[^>]*>/g)];
+  const svgWithoutMasks=svg.replace(/<mask\b[^>]*>[\s\S]*?<\/mask>/g,'');
+  const rectTags=[...svgWithoutMasks.matchAll(/<rect\b[^>]*>/g)];
   console.log('Native PDF rectangles found:',{page:name,count:rectTags.length,sample:rectTags[0]?.[0]});
   for(const m of rectTags){
     const a=attrs(m[0]),s=style(a);if(a['aria-hidden']==='true')continue;
