@@ -206,7 +206,7 @@ function uiD2(ui, targets) {
     lines.push(`${quote(view.id)}: ${quote(view.name)} {\nstyle.border-radius: 12\ngrid-columns: 2\ngrid-gap: 24`);
     for (const id of includes) {
       const subview = subviewById.get(id);
-      lines.push(`${quote(`included_subview_${id}`)}: ${quote(subview.name)} {\nstyle.border-radius: 8\nstyle.stroke-dash: 4\n}`);
+      lines.push(`${quote(`included_subview_${id}`)}: ${quote(subview.name)} {\nstyle.border-radius: 4\nstyle.stroke-dash: 4\nwidth: 1\nheight: 1\n}`);
     }
     for (const [kind, symbol, targetKind] of [['actions', '▶', 'action'], ['information', '●', 'info']]) {
       const items = view[kind] || [];
