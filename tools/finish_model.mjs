@@ -383,11 +383,9 @@ if (browser) {
       stdio: 'inherit',
       env: process.env,
     });
-    const publishDir = process.env.CPU_REVIEW_PUBLISH_DIR;
-    if (publishDir) {
-      fs.mkdirSync(publishDir, {recursive: true});
-      for (const name of names) fs.copyFileSync(path.join(out, name + '.pdf'), path.join(publishDir, name + '.pdf'));
-    }
+    const publishDir = process.env.CPU_REVIEW_PUBLISH_DIR || path.resolve(out, '..');
+    fs.mkdirSync(publishDir, {recursive: true});
+    for (const name of names) fs.copyFileSync(path.join(out, name + '.pdf'), path.join(publishDir, name + '.pdf'));
   } finally {
     fs.rmSync(materializePath, {force: true});
   }
