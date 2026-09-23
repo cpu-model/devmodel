@@ -69,7 +69,6 @@ for(const name of names){
   // fill color. SVG fill="none" becomes transparent (opacity 0).
   const svgWithoutMasks=svg.replace(/<mask\b[^>]*>[\s\S]*?<\/mask>/g,'');
   const rectTags=[...svgWithoutMasks.matchAll(/<rect\b[^>]*>/g)];
-  console.log('Native PDF rectangles found:',{page:name,count:rectTags.length,sample:rectTags[0]?.[0]});
   for(const m of rectTags){
     const a=attrs(m[0]),s=style(a);if(a['aria-hidden']==='true')continue;
     const x=(+a.x-b.x)*scale,y=yPdf(b,+a.y+(+a.height)),w=(+a.width)*scale,h=(+a.height)*scale;
@@ -80,9 +79,7 @@ for(const name of names){
     if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;o.borderOpacity=1;}
     page.drawRectangle(o);
     if(stroke){
-      console.log('Native PDF visible box:',{page:name,x:+a.x,y:+a.y,w:+a.width,h:+a.height,fill:rawFill,stroke:a.stroke||s.stroke,pdf:{x,y,w,h}});
-      // Diagnostic overlay: redraw the border after all other SVG primitives.
-      // If this is visible, a later primitive is covering the normal box pass.
+      // Preserve visible boxes for the final paint-order pass.
       (page.__boxes??=[]).push({x,y,width:w,height:h,color:fill,opacity:1,borderColor:stroke,borderWidth:+(s['stroke-width']||a['stroke-width']||1)*scale,borderOpacity:1});
     }
   }
@@ -90,8 +87,7 @@ for(const name of names){
   for(const m of svg.matchAll(/<path\b[^>]*>/g)){
     const a=attrs(m[0]),s=style(a);if(a.stroke==='transparent'||a['aria-hidden']==='true')continue;
     const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
-    // Keep connection paths omitted during this diagnostic phase, but render
-    // filled shape paths such as the Context "Användare" actor symbol.
+    // Render filled shape paths such as the Context "Användare" actor symbol.
     if(!fill){
       // D2 connection paths are fill="none". Render this orthogonal M/L/S
       // subset as native PDF line segments so no implicit black fill can occur.
@@ -161,8 +157,8 @@ for(const name of names){
     let yy=+a.y;for(const line of lines){yy+=line.dy; if(!line.text)continue;let x=(line.x-b.x)*scale,w=font.widthOfTextAtSize(line.text,size);if(anchor==='middle')x-=w/2;else if(anchor==='end')x-=w;page.drawText(line.text,{x,y:yPdf(b,yy)-size*.22,size,font,color});}
   }
 
-  // Temporary paint-order correction: paths currently render after the first
-  // rectangle pass, so redraw boxes here and then redraw text on top of them.
+  // Final paint order: connections first, then boxes, circles and text.
+  // This preserves the visually verified D2 layering in the native PDF.
   for(const o of page.__boxes||[])page.drawRectangle(o);
   // Redraw circles after restored box fills so requirement and Pulse circles
   // remain visible above boxes and continue to mask connector lines.
@@ -179,20 +175,6 @@ for(const name of names){
     let yy=+a.y;for(const line of lines){yy+=line.dy;let x=(line.x-b.x)*scale,y=yPdf(b,yy),w=font.widthOfTextAtSize(line.text,size);if(anchor==='middle')x-=w/2;else if(anchor==='end')x-=w;page.drawText(line.text,{x,y:yPdf(b,yy)-size*.22,size,font,color});}
   }
 
-
-  // Diagnose why flat document-order regex traversal loses primitives.
-  // Count the primitives seen by the current type-specific passes versus a
-  // single source-order regex, without changing PDF rendering.
-  const typeCounts={
-    rect:[...svg.matchAll(/<rect\b[^>]*>/g)].length,
-    path:[...svg.matchAll(/<path\b[^>]*>/g)].length,
-    circle:[...svg.matchAll(/<circle\b[^>]*>/g)].length,
-    text:[...svg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)].length,
-  };
-  const ordered=[...svg.matchAll(/<rect\b[^>]*>|<path\b[^>]*>|<circle\b[^>]*>|<text\b[^>]*>[\s\S]*?<\/text>/g)];
-  const orderedCounts={rect:0,path:0,circle:0,text:0};
-  for(const m of ordered){const k=(m[0].match(/^<(rect|path|circle|text)\b/)||[])[1];if(k)orderedCounts[k]++;}
-  console.log('Native PDF source-order diagnostic:',{page:name,typeCounts,orderedCounts,total:ordered.length});
 
   const re=/<g\b([^>]*data-requirement-badge="true"[^>]*)>([\s\S]*?)<\/g>/g;
   const annotationRefs=[];
@@ -214,7 +196,6 @@ for(const name of names){
     annotationRefs.push(doc.context.register(annot));
   }
   if(annotationRefs.length)page.node.set(PDFName.of('Annots'),doc.context.obj(annotationRefs));
-  console.log('Native PDF annotations:',{page:name,count:annotationRefs.length});
 }
 fs.writeFileSync(path.join(out,'review-native.pdf'),await doc.save({useObjectStreams:false}));
-console.log('Experimental native PDF review ready:',path.join(out,'review-native.pdf'));
+console.log('Native PDF review ready:',path.join(out,'review-native.pdf'));
