@@ -79,8 +79,35 @@ for(const name of names){
       // D2 connection paths are fill="none". Render this orthogonal M/L/S
       // subset as native PDF line segments so no implicit black fill can occur.
       if(!stroke)continue;
-      const pts=[...a.d.matchAll(/(?:M|L)\s*([-+\d.]+)\s+([-+\d.]+)/g)].map(x=>({x:+x[1],y:+x[2]}));
-      for(let j=1;j<pts.length;j++)page.drawLine({start:{x:(pts[j-1].x-b.x)*scale,y:yPdf(b,pts[j-1].y)},end:{x:(pts[j].x-b.x)*scale,y:yPdf(b,pts[j].y)},color:stroke,thickness:+(s['stroke-width']||a['stroke-width']||1)*scale});
+      const tokens=[...a.d.matchAll(/[MLSC]|[-+]?(?:\\d*\\.\\d+|\\d+)/g)].map(x=>x[0]);
+      let i=0,cmd=null,current=null,previousControl=null;
+      const thickness=+(s['stroke-width']||a['stroke-width']||1)*scale;
+      while(i<tokens.length){
+        if(/^[MLSC]$/.test(tokens[i]))cmd=tokens[i++];
+        if(cmd==='M'){current={x:+tokens[i++],y:+tokens[i++]};previousControl=null;continue;}
+        if(cmd==='L'){
+          const p={x:+tokens[i++],y:+tokens[i++]};
+          page.drawLine({start:{x:(current.x-b.x)*scale,y:yPdf(b,current.y)},end:{x:(p.x-b.x)*scale,y:yPdf(b,p.y)},color:stroke,thickness});
+          current=p;previousControl=null;continue;
+        }
+        if(cmd==='S'){
+          const c2={x:+tokens[i++],y:+tokens[i++]},p={x:+tokens[i++],y:+tokens[i++]};
+          // D2 uses S only for small rounded orthogonal corners. Approximate
+          // the curve with short native line segments so the route follows
+          // the actual SVG instead of jumping between non-adjacent L points.
+          const c1=previousControl?{x:2*current.x-previousControl.x,y:2*current.y-previousControl.y}:current;
+          let prev=current;
+          for(let step=1;step<=4;step++){
+            const t=step/4,u=1-t;
+            const q={x:u*u*u*current.x+3*u*u*t*c1.x+3*u*t*t*c2.x+t*t*t*p.x,y:u*u*u*current.y+3*u*u*t*c1.y+3*u*t*t*c2.y+t*t*t*p.y};
+            page.drawLine({start:{x:(prev.x-b.x)*scale,y:yPdf(b,prev.y)},end:{x:(q.x-b.x)*scale,y:yPdf(b,q.y)},color:stroke,thickness});
+            prev=q;
+          }
+          current=p;previousControl=c2;continue;
+        }
+        if(cmd==='C'){i+=6;previousControl=null;continue;}
+        break;
+      }
       continue;
     }
     const o={x:-b.x*scale,y:(b.y+b.h)*scale,scale,color:fill};
