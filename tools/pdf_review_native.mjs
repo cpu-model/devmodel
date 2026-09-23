@@ -10,6 +10,8 @@ const scale=.75;
 
 const hex=value=>{
   if(!value||value==='none'||value==='transparent') return undefined;
+  if(value.toLowerCase()==='white') return rgb(1,1,1);
+  if(value.toLowerCase()==='black') return rgb(0,0,0);
   const m=value.match(/^#([0-9a-f]{6})$/i); if(!m) return undefined;
   const n=parseInt(m[1],16); return rgb(((n>>16)&255)/255,((n>>8)&255)/255,(n&255)/255);
 };
@@ -105,7 +107,17 @@ for(const name of names){
           }
           current=p;previousControl=c2;continue;
         }
-        if(cmd==='C'){i+=6;previousControl=null;continue;}
+        if(cmd==='C'){
+          const c1={x:+tokens[i++],y:+tokens[i++]},c2={x:+tokens[i++],y:+tokens[i++]},p={x:+tokens[i++],y:+tokens[i++]};
+          let prev=current;
+          for(let step=1;step<=8;step++){
+            const t=step/8,u=1-t;
+            const q={x:u*u*u*current.x+3*u*u*t*c1.x+3*u*t*t*c2.x+t*t*t*p.x,y:u*u*u*current.y+3*u*u*t*c1.y+3*u*t*t*c2.y+t*t*t*p.y};
+            page.drawLine({start:{x:(prev.x-b.x)*scale,y:yPdf(b,prev.y)},end:{x:(q.x-b.x)*scale,y:yPdf(b,q.y)},color:stroke,thickness});
+            prev=q;
+          }
+          current=p;previousControl=c2;continue;
+        }
         break;
       }
       continue;
