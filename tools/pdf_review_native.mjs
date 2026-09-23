@@ -47,7 +47,10 @@ function arrow(page,b,a){
   const p1={x:base.x+w*Math.sin(angle),y:base.y-w*Math.cos(angle)};
   const p2={x:base.x-w*Math.sin(angle),y:base.y+w*Math.cos(angle)};
   const pts=[tipPoint,p1,p2];if(pts.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)))return;
-  page.drawSvgPath(`M ${tipPoint.x} ${tipPoint.y} L ${p1.x} ${p1.y} L ${p2.x} ${p2.y} Z`,{x:-b.x*scale,y:(b.y+b.h)*scale,scale,color:hex(a.stroke)||rgb(13/255,50/255,178/255)});
+  const color=hex(a.stroke)||rgb(13/255,50/255,178/255);
+  const pdfPoint=p=>({x:(p.x-b.x)*scale,y:yPdf(b,p.y)});
+  const tipPdf=pdfPoint(tipPoint),p1Pdf=pdfPoint(p1),p2Pdf=pdfPoint(p2);
+  page.drawSvgPath(`M ${tipPdf.x} ${tipPdf.y} L ${p1Pdf.x} ${p1Pdf.y} L ${p2Pdf.x} ${p2Pdf.y} Z`,{color});
 }
 
 const doc=await PDFDocument.create();
