@@ -61,13 +61,16 @@ const italic=await doc.embedFont(StandardFonts.HelveticaOblique);
 for(const name of names){
   const svg=fs.readFileSync(path.join(out,name+'.svg'),'utf8');
   const b=box(svg);
+  // Requirement badges remain in the finished SVG as stable annotation anchors,
+  // but the PDF shows only the reader's Text-annotation icon, not the SVG r badge.
+  const visibleSvg=svg.replace(/<g\b[^>]*data-requirement-badge="true"[^>]*>[\s\S]*?<\/g>/g,'');
   const page=doc.addPage([b.w*scale,b.h*scale]);
   page.drawRectangle({x:0,y:0,width:b.w*scale,height:b.h*scale,color:rgb(1,1,1)});
 
   // Draw SVG rectangles explicitly. pdf-lib defaults rectangle fill to black
   // when color is omitted, so never call drawRectangle without an explicit
   // fill color. SVG fill="none" becomes transparent (opacity 0).
-  const svgWithoutMasks=svg.replace(/<mask\b[^>]*>[\s\S]*?<\/mask>/g,'');
+  const svgWithoutMasks=visibleSvg.replace(/<mask\b[^>]*>[\s\S]*?<\/mask>/g,'');
   const rectTags=[...svgWithoutMasks.matchAll(/<rect\b[^>]*>/g)];
   for(const m of rectTags){
     const a=attrs(m[0]),s=style(a);if(a['aria-hidden']==='true')continue;
@@ -84,7 +87,7 @@ for(const name of names){
     }
   }
   const maskBlackRects=[...svg.matchAll(/<mask\b[^>]*>([\s\S]*?)<\/mask>/g)].flatMap(mm=>[...mm[1].matchAll(/<rect\b[^>]*fill="black"[^>]*>/g)].map(r=>attrs(r[0])));
-  for(const m of svg.matchAll(/<path\b[^>]*>/g)){
+  for(const m of visibleSvg.matchAll(/<path\b[^>]*>/g)){
     const a=attrs(m[0]),s=style(a);if(a.stroke==='transparent'||a['aria-hidden']==='true')continue;
     const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
     // Render filled shape paths such as the Context "Användare" actor symbol.
@@ -144,12 +147,12 @@ for(const name of names){
     if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;}
     page.drawSvgPath(a.d,o);
   }
-  for(const m of svg.matchAll(/<circle\b[^>]*>/g)){
+  for(const m of visibleSvg.matchAll(/<circle\b[^>]*>/g)){
     const a=attrs(m[0]),s=style(a);const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
     const o={x:(+a.cx-b.x)*scale,y:yPdf(b,+a.cy),size:(+a.r)*scale};if(fill)o.color=fill;if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;}
     page.drawCircle(o);
   }
-  for(const m of svg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)){
+  for(const m of visibleSvg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)){
     const a=attrs('<text '+m[1]+'>'),s=style(a),raw=m[2],size=+(a['font-size']||s['font-size']?.replace('px','')||16)*scale;
     const font=(a.class||'').includes('text-bold')?bold:(a.class||'').includes('text-italic')?italic:regular,anchor=a['text-anchor']||s['text-anchor'],color=hex(a.fill||s.fill)||rgb(0,0,0);
     const spans=[...raw.matchAll(/<tspan\b([^>]*)>([\s\S]*?)<\/tspan>/g)];
@@ -162,12 +165,12 @@ for(const name of names){
   for(const o of page.__boxes||[])page.drawRectangle(o);
   // Redraw circles after restored box fills so requirement and Pulse circles
   // remain visible above boxes and continue to mask connector lines.
-  for(const m of svg.matchAll(/<circle\b[^>]*>/g)){
+  for(const m of visibleSvg.matchAll(/<circle\b[^>]*>/g)){
     const a=attrs(m[0]),s=style(a);const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
     const o={x:(+a.cx-b.x)*scale,y:yPdf(b,+a.cy),size:(+a.r)*scale};if(fill)o.color=fill;if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;}
     page.drawCircle(o);
   }
-  for(const m of svg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)){
+  for(const m of visibleSvg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)){
     const a=attrs('<text '+m[1]+'>'),s=style(a),raw=m[2],size=+(a['font-size']||s['font-size']?.replace('px','')||16)*scale;
     const font=(a.class||'').includes('text-bold')?bold:(a.class||'').includes('text-italic')?italic:regular,anchor=a['text-anchor']||s['text-anchor'],color=hex(a.fill||s.fill)||rgb(0,0,0);
     const spans=[...raw.matchAll(/<tspan\b([^>]*)>([\s\S]*?)<\/tspan>/g)];
