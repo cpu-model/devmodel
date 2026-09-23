@@ -71,35 +71,10 @@ for(const name of names){
     const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
     if((a.fill||s.fill)==='none'&&!stroke)continue;
     if(!fill&&!stroke)continue;
-    // pdf-lib's SVG-path helper is fill-oriented and has produced black
-    // fills for D2's open connection paths.  Draw the D2 M/L/S/C subset as
-    // native PDF line/Bezier operators instead, so fill="none" really means
-    // no fill at all.
-    if(!fill&&stroke){
-      const tokens=[...a.d.matchAll(/[MLSC]|[-+]?(?:\\d*\\.\\d+|\\d+)/g)].map(x=>x[0]);
-      let i=0,cmd=null,current=null,lastControl=null;
-      const ops=[];
-      const px=x=>(x-b.x)*scale, py=y=>yPdf(b,y);
-      while(i<tokens.length){
-        if(/^[MLSC]$/.test(tokens[i]))cmd=tokens[i++];
-        if(cmd==='M'){const p={x:+tokens[i++],y:+tokens[i++]};ops.push({op:'M',p});current=p;lastControl=null;}
-        else if(cmd==='L'){const p={x:+tokens[i++],y:+tokens[i++]};ops.push({op:'L',p});current=p;lastControl=null;}
-        else if(cmd==='S'){const c2={x:+tokens[i++],y:+tokens[i++]},p={x:+tokens[i++],y:+tokens[i++]};const c1=lastControl?{x:2*current.x-lastControl.x,y:2*current.y-lastControl.y}:current;ops.push({op:'C',c1,c2,p});current=p;lastControl=c2;}
-        else if(cmd==='C'){const c1={x:+tokens[i++],y:+tokens[i++]},c2={x:+tokens[i++],y:+tokens[i++]},p={x:+tokens[i++],y:+tokens[i++]};ops.push({op:'C',c1,c2,p});current=p;lastControl=c2;}
-        else break;
-      }
-      for(let j=0;j<ops.length;j++){
-        const q=ops[j];
-        if(q.op==='M')page.moveTo(px(q.p.x),py(q.p.y));
-        else if(q.op==='L')page.drawLine({start:{x:px(ops[j-1].p.x),y:py(ops[j-1].p.y)},end:{x:px(q.p.x),y:py(q.p.y)},color:stroke,thickness:+(s['stroke-width']||a['stroke-width']||1)*scale});
-        else if(q.op==='C')page.drawLine({start:{x:px(ops[j-1].p.x),y:py(ops[j-1].p.y)},end:{x:px(q.p.x),y:py(q.p.y)},color:stroke,thickness:+(s['stroke-width']||a['stroke-width']||1)*scale});
-      }
-    }else{
-      const o={x:-b.x*scale,y:(b.y+b.h)*scale,scale,color:fill};
-      if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;}
-      page.drawSvgPath(a.d,o);
-    }
-    arrow(page,b,a);
+    // Diagnostic pass: omit D2 connection paths entirely. This isolates
+    // whether the black page is caused by pdf-lib SVG path rendering.
+    // Arrowheads are omitted with the connections for this pass.
+
   }
   for(const m of svg.matchAll(/<circle\b[^>]*>/g)){
     const a=attrs(m[0]),s=style(a);const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
