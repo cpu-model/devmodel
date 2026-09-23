@@ -197,5 +197,5 @@ for(const name of names){
   }
   if(annotationRefs.length)page.node.set(PDFName.of('Annots'),doc.context.obj(annotationRefs));
 }
-fs.writeFileSync(path.join(out,'review-native.pdf'),await doc.save({useObjectStreams:false}));
-console.log('Native PDF review ready:',path.join(out,'review-native.pdf'));
+fs.writeFileSync(path.join(out,'review.pdf'),await doc.save({useObjectStreams:false}));
+console.log('Native PDF review ready:',path.join(out,'review.pdf'));
