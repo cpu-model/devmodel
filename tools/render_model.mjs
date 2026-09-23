@@ -220,7 +220,7 @@ function uiD2(ui, targets) {
   }
   for (const view of ui.views) {
     for (const id of (view.includes || [])) {
-      lines.push(`${quote(view.id)} -> ${quote(`subview_${id}`)}: {source-arrowhead: diamond; target-arrowhead: none; style.stroke-width: 2}`);
+      lines.push(`${quote(`subview_${id}`)} -- ${quote(view.id)}: {target-arrowhead: diamond; style.stroke-width: 2}`);
     }
     for (const [index, navigation] of (view.navigation || []).entries()) {
       fields(navigation, ['to'], ['to'], `ui.view.${view.id}.navigation[${index}]`);
