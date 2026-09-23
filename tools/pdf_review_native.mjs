@@ -149,10 +149,16 @@ for(const name of names){
     let yy=+a.y;for(const line of lines){yy+=line.dy; if(!line.text)continue;let x=(line.x-b.x)*scale,w=font.widthOfTextAtSize(line.text,size);if(anchor==='middle')x-=w/2;else if(anchor==='end')x-=w;page.drawText(line.text,{x,y:yPdf(b,yy)-size*.22,size,font,color});}
   }
 
-  // SVG paint order cannot be reconstructed by type passes. Until the renderer
-  // walks the SVG DOM in source order, redraw visible boxes after paths so
-  // connection/filled-path passes cannot cover them.
+  // Temporary paint-order correction: paths currently render after the first
+  // rectangle pass, so redraw boxes here and then redraw text on top of them.
   for(const o of page.__boxes||[])page.drawRectangle(o);
+  for(const m of svg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)){
+    const a=attrs('<text '+m[1]+'>'),s=style(a),raw=m[2],size=+(a['font-size']||s['font-size']?.replace('px','')||16)*scale;
+    const font=(a.class||'').includes('text-bold')?bold:(a.class||'').includes('text-italic')?italic:regular,anchor=a['text-anchor']||s['text-anchor'],color=hex(a.fill||s.fill)||rgb(0,0,0);
+    const spans=[...raw.matchAll(/<tspan\b([^>]*)>([\s\S]*?)<\/tspan>/g)];
+    const lines=spans.length?spans.map(t=>{const ta=attrs('<tspan '+t[1]+'>');return{x:+(ta.x??a.x),dy:+(ta.dy||0),text:pdfText(strip(t[2]))};}):[{x:+a.x,dy:0,text:pdfText(strip(raw))}];
+    let yy=+a.y;for(const line of lines){yy+=line.dy;let x=(line.x-b.x)*scale,y=yPdf(b,yy),w=font.widthOfTextAtSize(line.text,size);if(anchor==='middle')x-=w/2;else if(anchor==='end')x-=w;page.drawText(line.text,{x,y:yPdf(b,yy)-size*.22,size,font,color});}
+  }
 
   const re=/<g\b([^>]*data-requirement-badge="true"[^>]*)>([\s\S]*?)<\/g>/g;
   const annotationRefs=[];
