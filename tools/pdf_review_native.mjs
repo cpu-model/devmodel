@@ -75,6 +75,7 @@ for(const name of names){
     const o={x,y,width:w,height:h,color:fill,opacity:1};
     if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;o.borderOpacity=1;}
     page.drawRectangle(o);
+    if(stroke) console.log('Native PDF visible box:',{page:name,x:+a.x,y:+a.y,w:+a.width,h:+a.height,fill:rawFill,stroke:a.stroke||s.stroke,pdf:{x,y,w,h}});
   }
   for(const m of svg.matchAll(/<path\b[^>]*>/g)){
     const a=attrs(m[0]),s=style(a);if(a.stroke==='transparent'||a['aria-hidden']==='true')continue;
