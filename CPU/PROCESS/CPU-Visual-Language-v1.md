@@ -223,20 +223,17 @@ This is a normative Visual Language rule, not a statement about the application'
 
 A View with no Actions naturally renders as an Information-only View.
 
-### 5.6 SubView, composition, and Navigation
+### 5.6 SubView inclusion and Navigation
 
-A SubView is a reusable user-visible fragment included in one or more Views. It is rendered once as a View-like rounded container on the same diagram level as Views. It is not rendered inside each including View.
+A SubView is a reusable user-visible fragment included in one or more Views.
 
-An `includes` relation is rendered as a UML-style composition relation from the including View to the SubView. The diamond is placed at the View end because the View is the whole and the SubView is the included part. The composition relation has no ordinary arrowhead.
+The SubView definition is rendered once as a View-like rounded container on the same diagram level as Views. Navigation entries declared by the SubView are rendered as directed navigation relations from this standalone SubView container to the referenced Views. The destination is represented by the relation itself rather than repeated as text inside the SubView.
 
-A Navigation entry declared by a SubView is rendered as a directed navigation relation from that SubView to the referenced View. The destination is therefore represented by the relation itself rather than repeated as text inside the SubView.
+An `includes` relation is rendered separately inside the including View. For each included SubView, the View contains a small SubView reference box showing only the SubView name. Its border is dashed or dotted so that it is visually distinguishable from ordinary View contents. No connector is drawn between this contained reference box and the standalone SubView definition.
 
-The combination deliberately distinguishes two semantics:
+The contained SubView reference box expresses inclusion only. It does not duplicate the SubView's Navigation or other semantics. The standalone SubView definition remains the single graphical place where the SubView's own relations are shown.
 
-- `View ◇── SubView`: the View includes the reusable SubView.
-- `SubView ──→ View`: the SubView provides navigation to the View.
-
-A SubView is drawn only once even when several Views include it. This keeps reuse explicit and avoids duplicating the SubView's contents in every View.
+Thus the same semantic SubView has two complementary graphical occurrences: one standalone definition and one small inclusion reference inside each View that includes it. Both occurrences represent the same SubView identity.
 
 View-local Navigation remains available for user-significant paths that are not represented by a SubView. Navigation relations use a lighter or dashed directed relation so they remain visually secondary to View and SubView contents.
 
