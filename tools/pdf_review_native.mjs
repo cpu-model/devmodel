@@ -160,6 +160,14 @@ for(const name of names){
     let yy=+a.y;for(const line of lines){yy+=line.dy;let x=(line.x-b.x)*scale,y=yPdf(b,yy),w=font.widthOfTextAtSize(line.text,size);if(anchor==='middle')x-=w/2;else if(anchor==='end')x-=w;page.drawText(line.text,{x,y:yPdf(b,yy)-size*.22,size,font,color});}
   }
 
+
+  // Redraw circles after restored box fills so requirement and Pulse circles
+  // remain visible above boxes and continue to mask connector lines.
+  for(const m of svg.matchAll(/<circle\b[^>]*>/g)){
+    const a=attrs(m[0]),s=style(a);const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
+    const o={x:(+a.cx-b.x)*scale,y:yPdf(b,+a.cy),size:(+a.r)*scale};if(fill)o.color=fill;if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;}
+    page.drawCircle(o);
+  }
   const re=/<g\b([^>]*data-requirement-badge="true"[^>]*)>([\s\S]*?)<\/g>/g;
   const annotationRefs=[];
   for(const m of svg.matchAll(re)){
