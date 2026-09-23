@@ -223,13 +223,17 @@ This is a normative Visual Language rule, not a statement about the application'
 
 A View with no Actions naturally renders as an Information-only View.
 
-### 5.6 Navigation
+### 5.6 SubView and Navigation
 
-Navigation is the only explicit relation between Views. It is modeled only when the path between Views has user significance.
+A SubView is a reusable user-visible fragment included in one or more Views. It is rendered as a smaller rounded container inside each including View. The SubView name is shown once in that contained instance.
 
-Generic or global access among main application Views need not be represented as a complete navigation graph.
+A Navigation SubView renders its destinations inside the SubView container in declared order. Each destination is shown as a lightweight navigation item. The notation communicates that the destination is available from the containing View; it does not prescribe tabs, buttons, menus, links, or any other implementation control.
 
-Navigation describes the meaningful relationship, not menu, tab, button, or other navigation implementation. When rendered, Navigation uses a lighter or dashed directed relation so it remains visually secondary to View contents.
+The same SubView definition is rendered consistently in every including View. Inclusion is represented by containment, not by a separate connector. This keeps shared navigation explicit without producing a dense graph of repeated View-to-View relations.
+
+A destination equal to the containing View remains visible because it is part of the shared SubView definition. Visual indication of which destination is current is presentation state and is not part of the semantic CPU model.
+
+View-local Navigation remains available for user-significant paths that are not represented by an included shared SubView. When rendered, View-local Navigation uses a lighter or dashed directed relation so it remains visually secondary to View contents.
 
 ### 5.7 Rendering status
 
