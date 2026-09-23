@@ -62,7 +62,7 @@ for(const name of names){
   // Draw SVG rectangles explicitly. pdf-lib defaults rectangle fill to black
   // when color is omitted, so never call drawRectangle without an explicit
   // fill color. SVG fill="none" becomes transparent (opacity 0).
-  for(const m of svg.matchAll(/<rect\\b[^>]*>/g)){
+  for(const m of svg.matchAll(/<rect\b[^>]*>/g)){
     const a=attrs(m[0]),s=style(a);if(a['aria-hidden']==='true')continue;
     const x=(+a.x-b.x)*scale,y=yPdf(b,+a.y+(+a.height)),w=(+a.width)*scale,h=(+a.height)*scale;
     const rawFill=a.fill||s.fill,fill=hex(rawFill),stroke=hex(a.stroke||s.stroke);
