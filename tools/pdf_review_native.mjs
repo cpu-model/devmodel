@@ -79,7 +79,7 @@ for(const name of names){
       console.log('Native PDF visible box:',{page:name,x:+a.x,y:+a.y,w:+a.width,h:+a.height,fill:rawFill,stroke:a.stroke||s.stroke,pdf:{x,y,w,h}});
       // Diagnostic overlay: redraw the border after all other SVG primitives.
       // If this is visible, a later primitive is covering the normal box pass.
-      (page.__boxBorders??=[]).push({x,y,width:w,height:h,borderColor:stroke,borderWidth:2});
+      (page.__boxes??=[]).push({x,y,width:w,height:h,color:fill,opacity:1,borderColor:stroke,borderWidth:+(s['stroke-width']||a['stroke-width']||1)*scale,borderOpacity:1});
     }
   }
   for(const m of svg.matchAll(/<path\b[^>]*>/g)){
@@ -149,7 +149,10 @@ for(const name of names){
     let yy=+a.y;for(const line of lines){yy+=line.dy; if(!line.text)continue;let x=(line.x-b.x)*scale,w=font.widthOfTextAtSize(line.text,size);if(anchor==='middle')x-=w/2;else if(anchor==='end')x-=w;page.drawText(line.text,{x,y:yPdf(b,yy)-size*.22,size,font,color});}
   }
 
-  for(const o of page.__boxBorders||[])page.drawRectangle({...o,color:rgb(1,1,1),opacity:0,borderOpacity:1});
+  // SVG paint order cannot be reconstructed by type passes. Until the renderer
+  // walks the SVG DOM in source order, redraw visible boxes after paths so
+  // connection/filled-path passes cannot cover them.
+  for(const o of page.__boxes||[])page.drawRectangle(o);
 
   const re=/<g\b([^>]*data-requirement-badge="true"[^>]*)>([\s\S]*?)<\/g>/g;
   const annotationRefs=[];
