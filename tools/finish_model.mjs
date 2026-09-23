@@ -71,22 +71,42 @@ function decorate(root, {name, model, requirements}) {
       }
     });
     const paths = connections.map(group => group.querySelector(':scope > path.connection'));
-    const samples = paths.flatMap(connection => {
-      const count = Math.ceil(connection.getTotalLength() / 3);
+    const pathSamples = paths.map(connection => {
+      const length = connection.getTotalLength();
+      const count = Math.ceil(length / 3);
       return Array.from({length: count + 1}, (_, index) =>
-        connection.getPointAtLength(connection.getTotalLength() * index / count));
+        connection.getPointAtLength(length * index / count));
     });
-    for (const group of connections) {
+    const placedLabelBoxes = [];
+    for (const [index, group] of connections.entries()) {
       const text = group.querySelector(':scope > text');
       const original = Number(text.getAttribute('y'));
+      const ownSamples = pathSamples[index];
+      const originalBox = text.getBBox();
+      const centerX = originalBox.x + originalBox.width / 2;
+      const nearest = ownSamples.reduce((best, point) =>
+        Math.abs(point.x - centerX) < Math.abs(best.x - centerX) ? point : best);
+      const preferredY = nearest.y - 10;
+      const candidates = Array.from({length: 25}, (_, step) =>
+        step === 0 ? preferredY - original : (preferredY - original) + (step % 2 ? -1 : 1) * Math.ceil(step / 2) * 4);
       let placed = false;
-      for (const delta of [-24, 24, -36, 36, -48, 48, -60, 60]) {
+      for (const delta of candidates) {
         text.setAttribute('y', original + delta);
         const box = text.getBBox();
-        const intersects = samples.some(point =>
-          point.x >= box.x - 8 && point.x <= box.x + box.width + 8 &&
-          point.y >= box.y - 8 && point.y <= box.y + box.height + 8);
-        if (!intersects) { placed = true; break; }
+        const intersectsOtherPath = pathSamples.some((samples, pathIndex) =>
+          pathIndex !== index && samples.some(point =>
+            point.x >= box.x - 6 && point.x <= box.x + box.width + 6 &&
+            point.y >= box.y - 5 && point.y <= box.y + box.height + 5));
+        const intersectsLabel = placedLabelBoxes.some(other =>
+          box.x - 6 <= other.x + other.width + 6 &&
+          box.x + box.width + 6 >= other.x - 6 &&
+          box.y - 3 <= other.y + other.height + 3 &&
+          box.y + box.height + 3 >= other.y - 3);
+        if (!intersectsOtherPath && !intersectsLabel) {
+          placedLabelBoxes.push({x:box.x,y:box.y,width:box.width,height:box.height});
+          placed = true;
+          break;
+        }
       }
       if (!placed) throw Error('Cannot establish Context label clearance');
     }
