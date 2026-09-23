@@ -33,7 +33,7 @@ For a concrete system model, the authoritative semantic sources are:
 - `deployment.yaml`
 - `requirements.yaml`
 
-Generated D2, SVG, PNG, PDF, and supplementary HTML files are derived artifacts. The repository-backed PDF is the primary permanent review artifact; the semantic YAML remains authoritative.
+Generated diagrams are derived artifacts. The four repository-backed files `context.pdf`, `pulse.pdf`, `ui.pdf`, and `deployment.pdf` are the permanent review artifacts; the semantic YAML remains authoritative. D2, SVG, PNG, HTML, JSON, and other intermediate renderer files are temporary and are not retained in a concrete project repository.
 
 ## Interpretation rules
 
@@ -63,9 +63,7 @@ The normal CPU process is a conversation between the user and the agent:
 1. discuss the desired change and resolve questions;
 2. create or update the semantic model files;
 3. validate the complete model;
-4. render Context, Pulse, UI, and Deployment into the concrete project's standard durable review location, `CPU/review/`;
-5. generate the permanent PDF review from the finished decorated SVG diagrams, with exact-requirement popup annotations;
-6. present the repository-backed PDF to the user in the current ChatGPT task or Work task;
+4. render Context, Pulse, UI, and Deployment through temporary intermediate artifacts;\n5. generate `CPU/context.pdf`, `CPU/pulse.pdf`, `CPU/ui.pdf`, and `CPU/deployment.pdf`, each containing exactly one diagram with exact-requirement popup annotations;\n6. present the repository-backed PDFs/ to the user in the current ChatGPT task or Work task;
 7. let the user inspect diagrams and activate `r` popup annotations in a reader that supports PDF Text annotations;
 8. iterate in the same task until the user approves the model.
 
@@ -85,4 +83,4 @@ The repository provides a Node.js toolchain that:
 
 No Python runtime or Python packages are required.
 
-If the active ChatGPT execution environment cannot execute the normative renderer locally, the methodology's GitHub Actions project-review workflow is the normative fallback. It runs the same devmodel tests, strict validation, D2 0.9.0 rendering, and review finishing against the project's five semantic files, writes the result to `CPU/review/`, and commits changed generated review artifacts to the project repository. This automation produces review material; it does not itself constitute user review or acceptance.
+If the active ChatGPT execution environment cannot execute the normative renderer locally, the methodology's GitHub Actions project-review workflow is the normative fallback. It runs the same devmodel tests, strict validation, D2 0.9.0 rendering, and review finishing against the project's five semantic files, writes the four diagram PDFs to `CPU/`, and commits changed generated review artifacts to the project repository. This automation produces review material; it does not itself constitute user review or acceptance.
