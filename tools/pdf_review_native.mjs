@@ -62,7 +62,7 @@ for(const name of names){
   for(const m of svg.matchAll(/<rect\b[^>]*>/g)){
     const a=attrs(m[0]), s=style(a); if(a['aria-hidden']==='true')continue;
     const x=(+a.x-b.x)*scale,y=yPdf(b,+a.y+(+a.height)),w=(+a.width)*scale,h=(+a.height)*scale;
-    const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
+    const fill=hex(a.fill||s.fill)||((a.class||'').includes('fill-N7')?rgb(1,1,1):(a.class||'').includes('fill-B6')?rgb(247/255,248/255,254/255):undefined),stroke=hex(a.stroke||s.stroke)||((a.class||'').includes('stroke-B1')||(a.class||'').includes('stroke-B2')?rgb(13/255,50/255,178/255):undefined);
     const o={x,y,width:w,height:h}; if(fill)o.color=fill;if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;}
     page.drawRectangle(o);
   }
