@@ -70,15 +70,15 @@ for(const name of names){
     if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;o.borderOpacity=1;}
     page.drawRectangle(o);
   }
-  for(const m of svg.matchAll(/<path\b[^>]*>/g)){
-    const a=attrs(m[0]),s=style(a); if(a.stroke==='transparent'||a['aria-hidden']==='true')continue;
+  for(const m of svg.matchAll(/<path\\b[^>]*>/g)){
+    const a=attrs(m[0]),s=style(a);if(a.stroke==='transparent'||a['aria-hidden']==='true')continue;
     const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
-    if((a.fill||s.fill)==='none'&&!stroke)continue;
-    if(!fill&&!stroke)continue;
-    // Diagnostic pass: omit D2 connection paths entirely. This isolates
-    // whether the black page is caused by pdf-lib SVG path rendering.
-    // Arrowheads are omitted with the connections for this pass.
-
+    // Keep connection paths omitted during this diagnostic phase, but render
+    // filled shape paths such as the Context "Användare" actor symbol.
+    if(!fill)continue;
+    const o={x:-b.x*scale,y:(b.y+b.h)*scale,scale,color:fill};
+    if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;}
+    page.drawSvgPath(a.d,o);
   }
   for(const m of svg.matchAll(/<circle\b[^>]*>/g)){
     const a=attrs(m[0]),s=style(a);const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
