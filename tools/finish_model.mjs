@@ -143,6 +143,26 @@ function decorate(root, {name, model, requirements}) {
   if (name === 'ui') {
     model.views.forEach(view => {
       clickable(find(view.id), `ui.view.${view.id}`, view.name);
+      for (const subviewId of (view.includes || [])) {
+        const group = find(`${view.id}.included_subview_${subviewId}`);
+        if (!group) throw Error(`Missing included SubView SVG element: ${view.id} / ${subviewId}`);
+        const rectangle = group.querySelector(':scope > g.shape > rect');
+        const textNode = group.querySelector(':scope > text');
+        if (!rectangle || !textNode) throw Error(`Incomplete included SubView SVG element: ${view.id} / ${subviewId}`);
+        const textBox = textNode.getBBox();
+        const padX = 10;
+        const padY = 6;
+        const x = textBox.x - padX;
+        const y = textBox.y - padY;
+        const width = textBox.width + 2 * padX;
+        const height = textBox.height + 2 * padY;
+        rectangle.setAttribute('x', x);
+        rectangle.setAttribute('y', y);
+        rectangle.setAttribute('width', width);
+        rectangle.setAttribute('height', height);
+        rectangle.setAttribute('rx', 4);
+        rectangle.setAttribute('style', 'stroke-width:2;stroke-dasharray:5,4;');
+      }
       for (const [kind, targetKind] of [['actions', 'action'], ['information', 'info']]) {
         (view[kind] || []).forEach(item => clickable(
           find(`${view.id}.${kind}.${item.id}`),
