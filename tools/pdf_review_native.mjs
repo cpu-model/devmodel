@@ -70,7 +70,7 @@ for(const name of names){
     if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;o.borderOpacity=1;}
     page.drawRectangle(o);
   }
-  for(const m of svg.matchAll(/<path\\b[^>]*>/g)){
+  for(const m of svg.matchAll(/<path\b[^>]*>/g)){
     const a=attrs(m[0]),s=style(a);if(a.stroke==='transparent'||a['aria-hidden']==='true')continue;
     const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
     // Keep connection paths omitted during this diagnostic phase, but render
