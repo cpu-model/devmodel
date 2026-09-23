@@ -255,33 +255,38 @@ pulses:
 
 ## 5. UI format
 
-UI describes user-visible Views, their Information and Actions, and only meaningful Navigation between Views.
+UI describes user-visible Views, reusable SubViews, their Information and Actions, and meaningful Navigation to Views.
+
+A SubView is a reusable user-visible surface fragment that can be included by multiple Views. In v1, a SubView contains Navigation only. This supports shared navigation without duplicating the same destinations in every View.
 
 ```yaml
 ui:
+  subviews:
+    - id: navigation
+      name: Navigation
+      navigation:
+        - to: charging
+        - to: planning
+        - to: economics
   views:
+    - id: charging
+      name: Charging
+      includes:
+        - navigation
+      information:
+        - id: charging-status
+          name: Charging status
     - id: planning
       name: Planning
+      includes:
+        - navigation
       actions:
         - id: select-target-soc
           name: Select target SoC
-        - id: select-deadline
-          name: Select deadline
-        - id: return-to-automatic-control
-          name: Return to automatic control
-      information:
-        - id: current-soc
-          name: Current SoC
-        - id: desired-target-soc
-          name: Desired target SoC
-        - id: effective-target-soc
-          name: Effective target SoC
-        - id: deadline
-          name: Deadline
-      navigation:
-        - to: economics
     - id: economics
       name: Economics
+      includes:
+        - navigation
       information:
         - id: charging-cost
           name: Charging cost
@@ -289,40 +294,61 @@ ui:
 
 ### 5.1 Views
 
-Each View contains `id` and `name`. `actions`, `information`, and `navigation` are optional when the View has none of that kind.
+Each View contains `id` and `name`. `includes`, `actions`, `information`, and View-local `navigation` are optional when the View has none of that kind.
 
-### 5.2 Actions
+`includes` is an ordered list of SubView IDs. Inclusion means that the SubView's user-visible capability is present in the containing View. It does not copy or redefine the SubView.
+
+### 5.2 SubViews
+
+Each SubView contains `id`, `name`, and optional `navigation`. SubView IDs are unique and distinct from View IDs.
+
+A SubView is defined once and may be included by any number of Views. A SubView does not include another SubView in v1, and does not contain Actions or Information in v1.
+
+### 5.3 Actions
 
 Each Action contains `id` and `name`. The name is a verb phrase expressing user intent, not a gesture or UI control.
 
-### 5.3 Information
+### 5.4 Information
 
 Each Information item contains `id` and `name`. The name is a noun or noun phrase representing a user-relevant concept independent of presentation.
 
-### 5.4 Navigation
+### 5.5 Navigation
 
-Navigation has no ID and no name in v1. A navigation entry contains only `to`, referencing another View.
+Navigation has no ID and no name. A navigation entry contains only `to`, referencing a View.
 
 ```yaml
 navigation:
   - to: economics
 ```
 
-Its complete semantics are: the user can navigate from the containing View to the referenced View. Navigation is included only when that path has user significance; generic global access need not be modeled.
+For View-local Navigation, the semantics are that the user can navigate from the containing View to the referenced View; self-navigation is rejected.
 
-### 5.5 UI validation
+For Navigation declared by a SubView, the semantics are that every View including that SubView exposes the declared destination set. A SubView may therefore contain a destination equal to an including View: this represents the shared navigation set, not a distinct self-navigation relation.
+
+Navigation describes user-significant navigation capability, not a menu, tab, button, gesture, or other navigation implementation.
+
+### 5.6 UI validation
 
 - View IDs are unique.
+- SubView IDs are unique and do not collide with View IDs.
 - Action IDs are unique within their containing View.
 - Information IDs are unique within their containing View.
-- Every `navigation.to` reference resolves to a declared View.
-- A View must not navigate to itself unless such self-navigation later gains explicit semantics; v1 rejects it.
-- Navigation entries contain only `to`; `name`, `id`, `style`, `control`, `gesture`, or `layout` fields are invalid.
-- Declared ordering of Actions and Information is semantically preserved for deterministic rendering.
+- Every `includes` reference resolves to a declared SubView and is unique within its View.
+- Every `navigation.to` reference in a View or SubView resolves to a declared View.
+- View-local Navigation must not navigate to the containing View.
+- SubView Navigation may reference any declared View, including a View that includes that SubView.
+- Navigation entries contain only `to`.
+- SubViews contain only `id`, `name`, and `navigation`.
+- Declared ordering of includes, Actions, Information, and Navigation is semantically preserved for deterministic rendering.
 
-### 5.6 UI field reference
+### 5.7 UI field reference
 
-The top-level document contains exactly `ui`. Its value contains exactly `views`, a required list of View mappings that may be empty.
+The top-level document contains exactly:
+
+| Field | Type | Required | Default | Meaning |
+| --- | --- | --- | --- | --- |
+| `subviews` | list of SubView mappings | no | empty list | Reusable user-visible surface fragments. |
+| `views` | list of View mappings | yes | none | User-relevant Views; may be empty. |
 
 View mapping:
 
@@ -330,41 +356,43 @@ View mapping:
 | --- | --- | --- | --- | --- |
 | `id` | non-empty string ID | yes | none | Unique View identity; no period. |
 | `name` | non-empty string | yes | none | Human-readable View name. |
+| `includes` | list of SubView IDs | no | empty list | Reusable SubViews present in this View, in declared order. |
 | `actions` | list of Action mappings | no | empty list | User intentions in declared order. |
 | `information` | list of Information mappings | no | empty list | User-relevant concepts in declared order. |
-| `navigation` | list of Navigation mappings | no | empty list | Meaningful paths from this View. |
+| `navigation` | list of Navigation mappings | no | empty list | Meaningful View-local paths. |
 
-Action and Information mappings have the same structural fields but different semantics:
+SubView mapping:
 
-| Field | Type | Required | Allowed/default |
-| --- | --- | --- | --- |
-| `id` | non-empty string ID | yes | Unique within its containing View and kind; no period. |
-| `name` | non-empty string | yes | Action: verb phrase. Information: noun phrase. |
+| Field | Type | Required | Default | Meaning |
+| --- | --- | --- | --- | --- |
+| `id` | non-empty string ID | yes | none | Unique SubView identity; no period. |
+| `name` | non-empty string | yes | none | Human-readable SubView name. |
+| `navigation` | list of Navigation mappings | no | empty list | Shared destinations exposed wherever the SubView is included. |
 
-Navigation mapping:
+Action and Information mappings contain exactly `id` and `name`.
 
-| Field | Type | Required | Allowed/default |
-| --- | --- | --- | --- |
-| `to` | View ID | yes | Resolves to another declared View. |
+Navigation mapping contains exactly `to`, a View ID.
 
-Navigation contains only `to`. No other fields are allowed at any UI level.
+No other fields are allowed at any UI level.
 
-### 5.7 Invalid UI examples
+### 5.8 Invalid UI examples
 
 ```yaml
-# Invalid: Navigation has presentation and identity fields.
-navigation:
-  - id: open-settings
-    to: settings
-    control: tab
+# Invalid: unresolved included SubView.
+views:
+  - id: planning
+    name: Planning
+    includes: [missing-navigation]
 ```
 
 ```yaml
-# Invalid: widget and layout details are not UI semantics.
-actions:
-  - id: save
-    name: Save changes
-    widget: blue-button
+# Invalid: SubViews do not contain implementation controls or layout.
+subviews:
+  - id: navigation
+    name: Navigation
+    control: tabs
+    navigation:
+      - to: planning
 ```
 
 ## 6. Deployment format
