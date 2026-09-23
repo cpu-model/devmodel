@@ -82,6 +82,7 @@ for(const name of names){
       (page.__boxes??=[]).push({x,y,width:w,height:h,color:fill,opacity:1,borderColor:stroke,borderWidth:+(s['stroke-width']||a['stroke-width']||1)*scale,borderOpacity:1});
     }
   }
+  const maskBlackRects=[...svg.matchAll(/<mask\b[^>]*>([\s\S]*?)<\/mask>/g)].flatMap(mm=>[...mm[1].matchAll(/<rect\b[^>]*fill="black"[^>]*>/g)].map(r=>attrs(r[0])));
   for(const m of svg.matchAll(/<path\b[^>]*>/g)){
     const a=attrs(m[0]),s=style(a);if(a.stroke==='transparent'||a['aria-hidden']==='true')continue;
     const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
@@ -129,6 +130,12 @@ for(const name of names){
           current=p;previousControl=c2;continue;
         }
         break;
+      }
+      // D2 masks use black rectangles to punch label-sized gaps out of
+      // connection paths. Reproduce those gaps natively by painting the page
+      // background over the masked rectangles after the connection path.
+      if(a.mask&&maskBlackRects.length){
+        for(const mr of maskBlackRects)page.drawRectangle({x:(+mr.x-b.x)*scale,y:yPdf(b,+mr.y+(+mr.height)),width:+mr.width*scale,height:+mr.height*scale,color:rgb(1,1,1)});
       }
       continue;
     }
