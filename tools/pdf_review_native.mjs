@@ -138,6 +138,7 @@ for(const name of names){
       if(a.mask&&maskBlackRects.length){
         for(const mr of maskBlackRects)page.drawRectangle({x:(+mr.x-b.x)*scale,y:yPdf(b,+mr.y+(+mr.height)),width:+mr.width*scale,height:+mr.height*scale,color:rgb(1,1,1)});
       }
+      arrow(page,b,a);
       continue;
     }
     const o={x:-b.x*scale,y:(b.y+b.h)*scale,scale,color:fill};
