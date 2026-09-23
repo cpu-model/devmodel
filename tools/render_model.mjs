@@ -204,6 +204,10 @@ function uiD2(ui, targets) {
     if (new Set(includes).size !== includes.length) throw new Error(`ui.view.${view.id}.includes must not contain duplicates`);
     for (const id of includes) if (!subviewIds.has(id)) throw new Error(`Unresolved SubView include from ${view.id}: ${id}`);
     lines.push(`${quote(view.id)}: ${quote(view.name)} {\nstyle.border-radius: 12\ngrid-columns: 2\ngrid-gap: 24`);
+    for (const id of includes) {
+      const subview = subviewById.get(id);
+      lines.push(`${quote(`included_subview_${id}`)}: ${quote(subview.name)} {\nstyle.border-radius: 8\nstyle.stroke-dash: 4\n}`);
+    }
     for (const [kind, symbol, targetKind] of [['actions', '▶', 'action'], ['information', '●', 'info']]) {
       const items = view[kind] || [];
       unique(items, `ui.view.${view.id}.${kind}`);
@@ -219,9 +223,6 @@ function uiD2(ui, targets) {
     lines.push('}');
   }
   for (const view of ui.views) {
-    for (const id of (view.includes || [])) {
-      lines.push(`${quote(`subview_${id}`)} -- ${quote(view.id)}: {target-arrowhead: diamond; style.stroke-width: 2}`);
-    }
     for (const [index, navigation] of (view.navigation || []).entries()) {
       fields(navigation, ['to'], ['to'], `ui.view.${view.id}.navigation[${index}]`);
       if (!viewIds.has(navigation.to) || navigation.to === view.id) throw new Error(`Invalid Navigation from ${view.id}`);
