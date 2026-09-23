@@ -223,17 +223,22 @@ This is a normative Visual Language rule, not a statement about the application'
 
 A View with no Actions naturally renders as an Information-only View.
 
-### 5.6 SubView and Navigation
+### 5.6 SubView, composition, and Navigation
 
-A SubView is a reusable user-visible fragment included in one or more Views. It is rendered as a smaller rounded container inside each including View. The SubView name is shown once in that contained instance.
+A SubView is a reusable user-visible fragment included in one or more Views. It is rendered once as a View-like rounded container on the same diagram level as Views. It is not rendered inside each including View.
 
-A Navigation SubView renders its destinations inside the SubView container in declared order. Each destination is shown as a lightweight navigation item. The notation communicates that the destination is available from the containing View; it does not prescribe tabs, buttons, menus, links, or any other implementation control.
+An `includes` relation is rendered as a UML-style composition relation from the including View to the SubView. The diamond is placed at the View end because the View is the whole and the SubView is the included part. The composition relation has no ordinary arrowhead.
 
-The same SubView definition is rendered consistently in every including View. Inclusion is represented by containment, not by a separate connector. This keeps shared navigation explicit without producing a dense graph of repeated View-to-View relations.
+A Navigation entry declared by a SubView is rendered as a directed navigation relation from that SubView to the referenced View. The destination is therefore represented by the relation itself rather than repeated as text inside the SubView.
 
-A destination equal to the containing View remains visible because it is part of the shared SubView definition. Visual indication of which destination is current is presentation state and is not part of the semantic CPU model.
+The combination deliberately distinguishes two semantics:
 
-View-local Navigation remains available for user-significant paths that are not represented by an included shared SubView. When rendered, View-local Navigation uses a lighter or dashed directed relation so it remains visually secondary to View contents.
+- `View ◇── SubView`: the View includes the reusable SubView.
+- `SubView ──→ View`: the SubView provides navigation to the View.
+
+A SubView is drawn only once even when several Views include it. This keeps reuse explicit and avoids duplicating the SubView's contents in every View.
+
+View-local Navigation remains available for user-significant paths that are not represented by a SubView. Navigation relations use a lighter or dashed directed relation so they remain visually secondary to View and SubView contents.
 
 ### 5.7 Rendering status
 
