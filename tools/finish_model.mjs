@@ -76,6 +76,7 @@ function decorate(root, {name, model, requirements}) {
       return Array.from({length: count + 1}, (_, index) =>
         connection.getPointAtLength(connection.getTotalLength() * index / count));
     });
+    const placedLabelBoxes = [];
     for (const group of connections) {
       const text = group.querySelector(':scope > text');
       const original = Number(text.getAttribute('y'));
@@ -83,10 +84,19 @@ function decorate(root, {name, model, requirements}) {
       for (const delta of [-24, 24, -36, 36, -48, 48, -60, 60]) {
         text.setAttribute('y', original + delta);
         const box = text.getBBox();
-        const intersects = samples.some(point =>
+        const intersectsPath = samples.some(point =>
           point.x >= box.x - 8 && point.x <= box.x + box.width + 8 &&
           point.y >= box.y - 8 && point.y <= box.y + box.height + 8);
-        if (!intersects) { placed = true; break; }
+        const intersectsLabel = placedLabelBoxes.some(other =>
+          box.x - 8 <= other.x + other.width + 8 &&
+          box.x + box.width + 8 >= other.x - 8 &&
+          box.y - 4 <= other.y + other.height + 4 &&
+          box.y + box.height + 4 >= other.y - 4);
+        if (!intersectsPath && !intersectsLabel) {
+          placedLabelBoxes.push({x:box.x,y:box.y,width:box.width,height:box.height});
+          placed = true;
+          break;
+        }
       }
       if (!placed) throw Error('Cannot establish Context label clearance');
     }
