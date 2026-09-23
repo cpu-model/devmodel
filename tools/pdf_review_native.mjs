@@ -67,13 +67,10 @@ for(const name of names){
   for(const m of svg.matchAll(/<rect\b[^>]*>/g)){
     const a=attrs(m[0]),s=style(a);if(a['aria-hidden']==='true')continue;
     const x=(+a.x-b.x)*scale,y=yPdf(b,+a.y+(+a.height)),w=(+a.width)*scale,h=(+a.height)*scale;
-    const rawFill=a.fill||s.fill,fill=hex(rawFill),stroke=hex(a.stroke||s.stroke);
-    // D2 uses palette classes for many visible boxes. Preserve the already
-    // verified native-PDF box fallback: non-transparent fills that are not
-    // directly decodable are rendered white, while transparent anchor/layout
-    // rectangles remain invisible.
-    const transparent=rawFill==='transparent'||rawFill==='none';
-    const o={x,y,width:w,height:h,color:fill||rgb(1,1,1),opacity:transparent?0:1};
+    const rawFill=a.fill||s.fill;
+    if(rawFill==='transparent'||rawFill==='none')continue;
+    const fill=hex(rawFill)||rgb(1,1,1),stroke=hex(a.stroke||s.stroke);
+    const o={x,y,width:w,height:h,color:fill,opacity:1};
     if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;o.borderOpacity=1;}
     page.drawRectangle(o);
   }
