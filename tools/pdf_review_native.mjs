@@ -80,7 +80,7 @@ for(const name of names){
     const fill=hex(rawFill)||rgb(1,1,1),stroke=hex(a.stroke||s.stroke);
     const o={x,y,width:w,height:h,color:fill,opacity:1};
     const borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;
-    const dash=(s['stroke-dasharray']||a['stroke-dasharray']||'').split(/[ ,]+/).map(Number).filter(Number.isFinite);
+    const dash=(s['stroke-dasharray']||a['stroke-dasharray']||'').split(/[ ,]+/).map(Number).filter(value=>Number.isFinite(value)&&value>0);
     if(stroke&&!dash.length){o.borderColor=stroke;o.borderWidth=borderWidth;o.borderOpacity=1;}
     page.drawRectangle(o);
     if(stroke){
@@ -169,7 +169,9 @@ for(const name of names){
   for(const o of page.__boxes||[]){
     if(!o.dash?.length){page.drawRectangle(o);continue;}
     page.drawRectangle({x:o.x,y:o.y,width:o.width,height:o.height,color:o.color,opacity:o.opacity});
-    const [dashLength,gapLength=dashLength]=o.dash.map(value=>value*scale);
+    const dashLength=o.dash[0]*scale;
+    const gapLength=(o.dash[1]??o.dash[0])*scale;
+    if(!(dashLength>0)||!(gapLength>0)){page.drawRectangle({...o,dash:undefined});continue;}
     const drawDashed=(x1,y1,x2,y2)=>{
       const horizontal=y1===y2,length=horizontal?Math.abs(x2-x1):Math.abs(y2-y1);
       const sign=horizontal?Math.sign(x2-x1):Math.sign(y2-y1);
