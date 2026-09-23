@@ -79,11 +79,15 @@ for(const name of names){
     if(rawFill==='transparent'||rawFill==='none')continue;
     const fill=hex(rawFill)||rgb(1,1,1),stroke=hex(a.stroke||s.stroke);
     const o={x,y,width:w,height:h,color:fill,opacity:1};
-    if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;o.borderOpacity=1;}
+    const borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;
+    const dash=(s['stroke-dasharray']||a['stroke-dasharray']||'').split(/[ ,]+/).map(Number).filter(Number.isFinite);
+    if(stroke&&!dash.length){o.borderColor=stroke;o.borderWidth=borderWidth;o.borderOpacity=1;}
     page.drawRectangle(o);
     if(stroke){
-      // Preserve visible boxes for the final paint-order pass.
-      (page.__boxes??=[]).push({x,y,width:w,height:h,color:fill,opacity:1,borderColor:stroke,borderWidth:+(s['stroke-width']||a['stroke-width']||1)*scale,borderOpacity:1});
+      // Preserve visible boxes for the final paint-order pass. Dashed SVG
+      // rectangle borders are redrawn explicitly because pdf-lib rectangles
+      // do not expose a dash pattern.
+      (page.__boxes??=[]).push({x,y,width:w,height:h,color:fill,opacity:1,borderColor:stroke,borderWidth,borderOpacity:1,dash});
     }
   }
   const maskBlackRects=[...svg.matchAll(/<mask\b[^>]*>([\s\S]*?)<\/mask>/g)].flatMap(mm=>[...mm[1].matchAll(/<rect\b[^>]*fill="black"[^>]*>/g)].map(r=>attrs(r[0])));
@@ -162,7 +166,23 @@ for(const name of names){
 
   // Final paint order: connections first, then boxes, circles and text.
   // This preserves the visually verified D2 layering in the native PDF.
-  for(const o of page.__boxes||[])page.drawRectangle(o);
+  for(const o of page.__boxes||[]){
+    if(!o.dash?.length){page.drawRectangle(o);continue;}
+    page.drawRectangle({x:o.x,y:o.y,width:o.width,height:o.height,color:o.color,opacity:o.opacity});
+    const [dashLength,gapLength=dashLength]=o.dash.map(value=>value*scale);
+    const drawDashed=(x1,y1,x2,y2)=>{
+      const horizontal=y1===y2,length=horizontal?Math.abs(x2-x1):Math.abs(y2-y1);
+      const sign=horizontal?Math.sign(x2-x1):Math.sign(y2-y1);
+      for(let p=0;p<length;p+=dashLength+gapLength){
+        const q=Math.min(p+dashLength,length);
+        page.drawLine({start:{x:x1+(horizontal?sign*p:0),y:y1+(horizontal?0:sign*p)},end:{x:x1+(horizontal?sign*q:0),y:y1+(horizontal?0:sign*q)},color:o.borderColor,thickness:o.borderWidth});
+      }
+    };
+    drawDashed(o.x,o.y,o.x+o.width,o.y);
+    drawDashed(o.x+o.width,o.y,o.x+o.width,o.y+o.height);
+    drawDashed(o.x+o.width,o.y+o.height,o.x,o.y+o.height);
+    drawDashed(o.x,o.y+o.height,o.x,o.y);
+  }
   // Redraw circles after restored box fills so requirement and Pulse circles
   // remain visible above boxes and continue to mask connector lines.
   for(const m of visibleSvg.matchAll(/<circle\b[^>]*>/g)){
