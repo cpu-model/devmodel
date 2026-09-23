@@ -1,10 +1,25 @@
 ui:
+  subviews:
+    - id: navigation
+      name: Navigation
+      navigation:
+        - to: main
+        - to: details
   views:
     - id: main
       name: Main
+      includes:
+        - navigation
       actions:
         - id: submit-input
           name: Submit input
       information:
         - id: current-status
           name: Current status
+    - id: details
+      name: Details
+      includes:
+        - navigation
+      information:
+        - id: details
+          name: Details
