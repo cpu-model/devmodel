@@ -23,7 +23,7 @@ const box=svg=>{const m=svg.match(/<svg\b[^>]*\bviewBox="([^"]+)"/);if(!m)throw 
 const yPdf=(b,y)=>(b.y+b.h-y)*scale;
 function addAnnot(page,doc,obj){let a=page.node.lookup(PDFName.of('Annots'));if(!a){a=doc.context.obj([]);page.node.set(PDFName.of('Annots'),a);}a.push(doc.context.register(doc.context.obj(obj)));}
 function pathGeometry(d){
-  const tokens=[...d.matchAll(/[MLSC]|[-+]?(?:\\d*\\.\\d+|\\d+)/g)].map(m=>m[0]);
+  const tokens=[...d.matchAll(/[MLSC]|[-+]?(?:\d*\.\d+|\d+)/g)].map(m=>m[0]);
   let i=0,cmd=null,current=null,lastStart=null,lastEnd=null;
   while(i<tokens.length){
     if(/^[MLSC]$/.test(tokens[i]))cmd=tokens[i++];
