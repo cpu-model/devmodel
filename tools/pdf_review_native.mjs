@@ -69,6 +69,7 @@ for(const name of names){
   for(const m of svg.matchAll(/<path\b[^>]*>/g)){
     const a=attrs(m[0]),s=style(a); if(a.stroke==='transparent'||a['aria-hidden']==='true')continue;
     const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
+    if((a.fill||s.fill)==='none'&&!stroke)continue;
     if(!fill&&!stroke)continue;
     const o={x:-b.x*scale,y:(b.y+b.h)*scale,scale}; if(fill)o.color=fill;if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;}
     page.drawSvgPath(a.d,o);
