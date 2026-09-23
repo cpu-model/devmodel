@@ -168,6 +168,20 @@ for(const name of names){
   }
 
 
+  // Diagnose why flat document-order regex traversal loses primitives.
+  // Count the primitives seen by the current type-specific passes versus a
+  // single source-order regex, without changing PDF rendering.
+  const typeCounts={
+    rect:[...svg.matchAll(/<rect\b[^>]*>/g)].length,
+    path:[...svg.matchAll(/<path\b[^>]*>/g)].length,
+    circle:[...svg.matchAll(/<circle\b[^>]*>/g)].length,
+    text:[...svg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)].length,
+  };
+  const ordered=[...svg.matchAll(/<rect\b[^>]*>|<path\b[^>]*>|<circle\b[^>]*>|<text\b[^>]*>[\s\S]*?<\/text>/g)];
+  const orderedCounts={rect:0,path:0,circle:0,text:0};
+  for(const m of ordered){const k=(m[0].match(/^<(rect|path|circle|text)\b/)||[])[1];if(k)orderedCounts[k]++;}
+  console.log('Native PDF source-order diagnostic:',{page:name,typeCounts,orderedCounts,total:ordered.length});
+
   const re=/<g\b([^>]*data-requirement-badge="true"[^>]*)>([\s\S]*?)<\/g>/g;
   const annotationRefs=[];
   for(const m of svg.matchAll(re)){
