@@ -59,9 +59,17 @@ for(const name of names){
   const page=doc.addPage([b.w*scale,b.h*scale]);
   page.drawRectangle({x:0,y:0,width:b.w*scale,height:b.h*scale,color:rgb(1,1,1)});
 
-  // Diagnostic pass: omit all SVG rectangles. The page's explicit white
-  // background remains, allowing us to determine whether rectangle drawing
-  // is responsible for the black page.
+  // Draw SVG rectangles explicitly. pdf-lib defaults rectangle fill to black
+  // when color is omitted, so never call drawRectangle without an explicit
+  // fill color. SVG fill="none" becomes transparent (opacity 0).
+  for(const m of svg.matchAll(/<rect\\b[^>]*>/g)){
+    const a=attrs(m[0]),s=style(a);if(a['aria-hidden']==='true')continue;
+    const x=(+a.x-b.x)*scale,y=yPdf(b,+a.y+(+a.height)),w=(+a.width)*scale,h=(+a.height)*scale;
+    const rawFill=a.fill||s.fill,fill=hex(rawFill),stroke=hex(a.stroke||s.stroke);
+    const o={x,y,width:w,height:h,color:fill||rgb(1,1,1),opacity:fill?1:0};
+    if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;o.borderOpacity=1;}
+    page.drawRectangle(o);
+  }
   for(const m of svg.matchAll(/<path\b[^>]*>/g)){
     const a=attrs(m[0]),s=style(a); if(a.stroke==='transparent'||a['aria-hidden']==='true')continue;
     const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
