@@ -61,23 +61,28 @@ for(const name of names){
   const page=doc.addPage([b.w*scale,b.h*scale]);
   page.drawRectangle({x:0,y:0,width:b.w*scale,height:b.h*scale,color:rgb(1,1,1)});
 
-  // Render primitives in the same document order as the finished SVG.
-  // This preserves SVG paint order instead of grouping all rectangles, paths,
-  // circles and text into separate passes.
-  const primitives=[...svg.matchAll(/<rect\b[^>]*>|<path\b[^>]*>|<circle\b[^>]*>|<text\b[^>]*>[\s\S]*?<\/text>/g)];
-  for(const m of primitives){
-    const tag=m[0];
-    const kind=(tag.match(/^<(rect|path|circle|text)\b/)||[])[1];
-    if(kind==='rect'){
-      const a=attrs(tag),s=style(a);if(a['aria-hidden']==='true')continue;
-      const x=(+a.x-b.x)*scale,y=yPdf(b,+a.y+(+a.height)),w=(+a.width)*scale,h=(+a.height)*scale;
-      const rawFill=a.fill||s.fill;if(rawFill==='transparent'||rawFill==='none')continue;
-      const fill=hex(rawFill)||rgb(1,1,1),stroke=hex(a.stroke||s.stroke);
-      const o={x,y,width:w,height:h,color:fill,opacity:1};
-      if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;o.borderOpacity=1;}
-      page.drawRectangle(o);continue;
+  // Draw SVG rectangles explicitly. pdf-lib defaults rectangle fill to black
+  // when color is omitted, so never call drawRectangle without an explicit
+  // fill color. SVG fill="none" becomes transparent (opacity 0).
+  const rectTags=[...svg.matchAll(/<rect\b[^>]*>/g)];
+  console.log('Native PDF rectangles found:',{page:name,count:rectTags.length,sample:rectTags[0]?.[0]});
+  for(const m of rectTags){
+    const a=attrs(m[0]),s=style(a);if(a['aria-hidden']==='true')continue;
+    const x=(+a.x-b.x)*scale,y=yPdf(b,+a.y+(+a.height)),w=(+a.width)*scale,h=(+a.height)*scale;
+    const rawFill=a.fill||s.fill;
+    if(rawFill==='transparent'||rawFill==='none')continue;
+    const fill=hex(rawFill)||rgb(1,1,1),stroke=hex(a.stroke||s.stroke);
+    const o={x,y,width:w,height:h,color:fill,opacity:1};
+    if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;o.borderOpacity=1;}
+    page.drawRectangle(o);
+    if(stroke){
+      console.log('Native PDF visible box:',{page:name,x:+a.x,y:+a.y,w:+a.width,h:+a.height,fill:rawFill,stroke:a.stroke||s.stroke,pdf:{x,y,w,h}});
+      // Diagnostic overlay: redraw the border after all other SVG primitives.
+      // If this is visible, a later primitive is covering the normal box pass.
+      (page.__boxes??=[]).push({x,y,width:w,height:h,color:fill,opacity:1,borderColor:stroke,borderWidth:+(s['stroke-width']||a['stroke-width']||1)*scale,borderOpacity:1});
     }
-    if(kind==='path'){ const m=[tag];
+  }
+  for(const m of svg.matchAll(/<path\b[^>]*>/g)){
     const a=attrs(m[0]),s=style(a);if(a.stroke==='transparent'||a['aria-hidden']==='true')continue;
     const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
     // Keep connection paths omitted during this diagnostic phase, but render
@@ -130,23 +135,38 @@ for(const name of names){
     const o={x:-b.x*scale,y:(b.y+b.h)*scale,scale,color:fill};
     if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;}
     page.drawSvgPath(a.d,o);
-      continue;
-    }
-
-    if(kind==='circle'){
-      const a=attrs(tag),s=style(a),fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
-      const o={x:(+a.cx-b.x)*scale,y:yPdf(b,+a.cy),size:(+a.r)*scale};if(fill)o.color=fill;if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;}
-      page.drawCircle(o);continue;
-    }
-    if(kind==='text'){
-      const tm=tag.match(/^<text\b([^>]*)>([\s\S]*?)<\/text>$/);if(!tm)continue;
-      const a=attrs('<text '+tm[1]+'>'),s=style(a),raw=tm[2],size=+(a['font-size']||s['font-size']?.replace('px','')||16)*scale;
-      const font=(a.class||'').includes('text-bold')?bold:(a.class||'').includes('text-italic')?italic:regular,anchor=a['text-anchor']||s['text-anchor'],color=hex(a.fill||s.fill)||rgb(0,0,0);
-      const spans=[...raw.matchAll(/<tspan\b([^>]*)>([\s\S]*?)<\/tspan>/g)];
-      const lines=spans.length?spans.map(t=>{const ta=attrs('<tspan '+t[1]+'>');return{x:+(ta.x??a.x),dy:+(ta.dy||0),text:pdfText(decode(t[2].replace(/<[^>]+>/g,'')).trim())};}):[{x:+a.x,dy:0,text:pdfText(decode(raw.replace(/<[^>]+>/g,'')).trim())}];
-      let yy=+a.y;for(const line of lines){yy+=line.dy;if(!line.text)continue;let x=(line.x-b.x)*scale,w=font.widthOfTextAtSize(line.text,size);if(anchor==='middle')x-=w/2;else if(anchor==='end')x-=w;page.drawText(line.text,{x,y:yPdf(b,yy)-size*.22,size,font,color});}
-    }
   }
+  for(const m of svg.matchAll(/<circle\b[^>]*>/g)){
+    const a=attrs(m[0]),s=style(a);const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
+    const o={x:(+a.cx-b.x)*scale,y:yPdf(b,+a.cy),size:(+a.r)*scale};if(fill)o.color=fill;if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;}
+    page.drawCircle(o);
+  }
+  for(const m of svg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)){
+    const a=attrs('<text '+m[1]+'>'),s=style(a),raw=m[2],size=+(a['font-size']||s['font-size']?.replace('px','')||16)*scale;
+    const font=(a.class||'').includes('text-bold')?bold:(a.class||'').includes('text-italic')?italic:regular,anchor=a['text-anchor']||s['text-anchor'],color=hex(a.fill||s.fill)||rgb(0,0,0);
+    const spans=[...raw.matchAll(/<tspan\b([^>]*)>([\s\S]*?)<\/tspan>/g)];
+    const lines=spans.length?spans.map(t=>{const ta=attrs('<tspan '+t[1]+'>');return{x:+(ta.x??a.x),dy:+(ta.dy||0),text:pdfText(decode(t[2].replace(/<[^>]+>/g,'')).trim())};}):[{x:+a.x,dy:0,text:pdfText(decode(raw.replace(/<[^>]+>/g,'')).trim())}];
+    let yy=+a.y;for(const line of lines){yy+=line.dy; if(!line.text)continue;let x=(line.x-b.x)*scale,w=font.widthOfTextAtSize(line.text,size);if(anchor==='middle')x-=w/2;else if(anchor==='end')x-=w;page.drawText(line.text,{x,y:yPdf(b,yy)-size*.22,size,font,color});}
+  }
+
+  // Temporary paint-order correction: paths currently render after the first
+  // rectangle pass, so redraw boxes here and then redraw text on top of them.
+  for(const o of page.__boxes||[])page.drawRectangle(o);
+  // Redraw circles after restored box fills so requirement and Pulse circles
+  // remain visible above boxes and continue to mask connector lines.
+  for(const m of svg.matchAll(/<circle\b[^>]*>/g)){
+    const a=attrs(m[0]),s=style(a);const fill=hex(a.fill||s.fill),stroke=hex(a.stroke||s.stroke);
+    const o={x:(+a.cx-b.x)*scale,y:yPdf(b,+a.cy),size:(+a.r)*scale};if(fill)o.color=fill;if(stroke){o.borderColor=stroke;o.borderWidth=+(s['stroke-width']||a['stroke-width']||1)*scale;}
+    page.drawCircle(o);
+  }
+  for(const m of svg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)){
+    const a=attrs('<text '+m[1]+'>'),s=style(a),raw=m[2],size=+(a['font-size']||s['font-size']?.replace('px','')||16)*scale;
+    const font=(a.class||'').includes('text-bold')?bold:(a.class||'').includes('text-italic')?italic:regular,anchor=a['text-anchor']||s['text-anchor'],color=hex(a.fill||s.fill)||rgb(0,0,0);
+    const spans=[...raw.matchAll(/<tspan\b([^>]*)>([\s\S]*?)<\/tspan>/g)];
+    const lines=spans.length?spans.map(t=>{const ta=attrs('<tspan '+t[1]+'>');return{x:+(ta.x??a.x),dy:+(ta.dy||0),text:pdfText(decode(t[2].replace(/<[^>]+>/g,'')).trim())};}):[{x:+a.x,dy:0,text:pdfText(decode(raw.replace(/<[^>]+>/g,'')).trim())}];
+    let yy=+a.y;for(const line of lines){yy+=line.dy;let x=(line.x-b.x)*scale,y=yPdf(b,yy),w=font.widthOfTextAtSize(line.text,size);if(anchor==='middle')x-=w/2;else if(anchor==='end')x-=w;page.drawText(line.text,{x,y:yPdf(b,yy)-size*.22,size,font,color});}
+  }
+
 
   const re=/<g\b([^>]*data-requirement-badge="true"[^>]*)>([\s\S]*?)<\/g>/g;
   const annotationRefs=[];
