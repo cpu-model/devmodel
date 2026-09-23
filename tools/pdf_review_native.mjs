@@ -44,7 +44,8 @@ function arrow(page,b,a){
   const base={x:tipPoint.x-len*Math.cos(angle),y:tipPoint.y-len*Math.sin(angle)};
   const p1={x:base.x+w*Math.sin(angle),y:base.y-w*Math.cos(angle)};
   const p2={x:base.x-w*Math.sin(angle),y:base.y+w*Math.cos(angle)};
-  page.drawSvgPath(`M ${(tipPoint.x-b.x)*scale} ${yPdf(b,tipPoint.y)} L ${(p1.x-b.x)*scale} ${yPdf(b,p1.y)} L ${(p2.x-b.x)*scale} ${yPdf(b,p2.y)} Z`,{color:hex(a.stroke)||rgb(13/255,50/255,178/255)});
+  const pts=[tipPoint,p1,p2];if(pts.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)))return;
+  page.drawSvgPath(`M ${tipPoint.x} ${tipPoint.y} L ${p1.x} ${p1.y} L ${p2.x} ${p2.y} Z`,{x:-b.x*scale,y:(b.y+b.h)*scale,scale,color:hex(a.stroke)||rgb(13/255,50/255,178/255)});
 }
 
 const doc=await PDFDocument.create();
@@ -56,6 +57,7 @@ for(const name of names){
   const svg=fs.readFileSync(path.join(out,name+'.svg'),'utf8');
   const b=box(svg);
   const page=doc.addPage([b.w*scale,b.h*scale]);
+  page.drawRectangle({x:0,y:0,width:b.w*scale,height:b.h*scale,color:rgb(1,1,1)});
 
   for(const m of svg.matchAll(/<rect\b[^>]*>/g)){
     const a=attrs(m[0]), s=style(a); if(a['aria-hidden']==='true')continue;
