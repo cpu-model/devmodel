@@ -41,16 +41,16 @@ function arrow(page,b,a){
   if(!a['marker-end'])return;
   const g=pathGeometry(a.d);if(!g)return;
   const {end,tangentFrom:prev}=g,angle=Math.atan2(end.y-prev.y,end.x-prev.x);
-  const refX=7,tip=10-refX,len=10,w=6;
-  const tipPoint={x:end.x+tip*Math.cos(angle),y:end.y+tip*Math.sin(angle)};
-  const base={x:tipPoint.x-len*Math.cos(angle),y:tipPoint.y-len*Math.sin(angle)};
+  const len=10,w=6;
+  const base={x:end.x-len*Math.cos(angle),y:end.y-len*Math.sin(angle)};
   const p1={x:base.x+w*Math.sin(angle),y:base.y-w*Math.cos(angle)};
   const p2={x:base.x-w*Math.sin(angle),y:base.y+w*Math.cos(angle)};
-  const pts=[tipPoint,p1,p2];if(pts.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)))return;
+  const pdf=p=>({x:(p.x-b.x)*scale,y:yPdf(b,p.y)});
+  const tip=pdf(end),a1=pdf(p1),a2=pdf(p2);
   const color=hex(a.stroke)||rgb(13/255,50/255,178/255);
-  const pdfPoint=p=>({x:(p.x-b.x)*scale,y:yPdf(b,p.y)});
-  const tipPdf=pdfPoint(tipPoint),p1Pdf=pdfPoint(p1),p2Pdf=pdfPoint(p2);
-  page.drawSvgPath(`M ${tipPdf.x} ${tipPdf.y} L ${p1Pdf.x} ${p1Pdf.y} L ${p2Pdf.x} ${p2Pdf.y} Z`,{color});
+  page.drawLine({start:tip,end:a1,color,thickness:2*scale});
+  page.drawLine({start:a1,end:a2,color,thickness:2*scale});
+  page.drawLine({start:a2,end:tip,color,thickness:2*scale});
 }
 
 const doc=await PDFDocument.create();
