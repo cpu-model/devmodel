@@ -323,7 +323,7 @@ navigation:
 
 For View-local Navigation, the semantics are that the user can navigate from the containing View to the referenced View; self-navigation is rejected.
 
-For Navigation declared by a SubView, the semantics are that every View including that SubView exposes the declared destination set. A SubView may therefore contain a destination equal to an including View: this represents the shared navigation set, not a distinct self-navigation relation.
+For Navigation declared by a SubView, the semantics are that the SubView provides navigation to the referenced View. A SubView may navigate to any declared View, including a View that includes that SubView. `includes` separately expresses composition: the View is the whole and the referenced SubView is an included reusable part.
 
 Navigation describes user-significant navigation capability, not a menu, tab, button, gesture, or other navigation implementation.
 
