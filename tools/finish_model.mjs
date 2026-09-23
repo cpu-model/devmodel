@@ -359,15 +359,7 @@ if (browser) {
       .replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&');
     const materialized = JSON.parse(decoded);
     for (const name of names) fs.writeFileSync(path.join(out, name + '.svg'), materialized[name]);
-    execFileSync(process.execPath, [path.join(path.dirname(fileURLToPath(import.meta.url)), 'pdf_review.mjs'), out], {
-      stdio: 'inherit',
-      env: process.env,
-    });
     execFileSync(process.execPath, [path.join(path.dirname(fileURLToPath(import.meta.url)), 'pdf_review_native.mjs'), out], {
-      stdio: 'inherit',
-      env: process.env,
-    });
-    execFileSync(process.execPath, [path.join(path.dirname(fileURLToPath(import.meta.url)), 'pdf_annotation_test.mjs'), out], {
       stdio: 'inherit',
       env: process.env,
     });
