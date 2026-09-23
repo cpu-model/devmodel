@@ -3,6 +3,7 @@ import fs from 'node:fs';
 
 const source=fs.readFileSync(new URL('../tools/pdf_review_native.mjs',import.meta.url),'utf8');
 assert.match(source,/data-requirement-badge="true"/);
+assert.match(source,/const visibleSvg=svg\.replace/);
 assert.match(source,/Subtype:PDFName\.of\('Text'\)/);
 assert.doesNotMatch(source,/Subtype:PDFName\.of\('Link'\)/);
 assert.match(source,/Contents:PDFHexString\.fromText\(reqs\.join\('\\n\\n'\)\)/);
