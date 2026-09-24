@@ -359,7 +359,7 @@ if (browser) {
     for (const name of names) payload[name] = document.querySelector('#' + name + ' .diagram > svg').outerHTML;
     document.body.replaceChildren(document.createTextNode(JSON.stringify(payload)));
   `;
-  const materializeHtml = html.replace('</script>\n</html>', materializeScript + '\n</script>\n</html>');
+  const materializeHtml = html.replace('</body>\n</html>', '<script>' + materializeScript + '</script>\n</body>\n</html>');
   const materializePath = path.join(out, '.materialize.html');
   fs.writeFileSync(materializePath, materializeHtml);
   try {
