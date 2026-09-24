@@ -161,7 +161,7 @@ function pulseD2(pulse, targets) {
       if (typeof flow.trigger !== 'string' || !flow.trigger.trim()) throw new Error(`Blank trigger in Pulse flow ${index}`);
       if (!triggers.has(flow.trigger)) {
         triggers.set(flow.trigger, `trigger_${triggers.size}`);
-        lines.push(node(triggers.get(flow.trigger), flow.trigger, 'rectangle', 'style.fill: transparent\nstyle.stroke: transparent'));
+        lines.push(node(triggers.get(flow.trigger), flow.trigger, 'diamond'));
       }
       source = triggers.get(flow.trigger);
     } else {
