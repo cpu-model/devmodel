@@ -32,6 +32,7 @@ function invalidModel(filename, change, expected) {
 invalidModel('context.yaml', document => { document.context.system.name = ' '; }, /context\.system\.name must be a non-empty string/);
 invalidModel('pulse.yaml', document => { document.pulse.behaviors[0].name = ''; }, /pulse\.behavior\.process-input\.name must be a non-empty string/);
 invalidModel('ui.yaml', document => { document.ui.views[0].actions[0].name = ''; }, /ui\.view\.main\.actions\.submit-input\.name must be a non-empty string/);
+invalidModel('ui.yaml', document => { document.ui.subviews[1].actions[0].name = ''; }, /ui\.subview\.shared-status\.actions\.refresh-status\.name must be a non-empty string/);
 invalidModel('requirements.yaml', document => { document.requirements['ui.view.main'] = []; }, /must have a non-empty list/);
 invalidModel('deployment.yaml', document => {
   document.deployment.programs[0]['health-check'].command = 'unexpected';
