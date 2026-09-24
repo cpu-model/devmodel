@@ -5,6 +5,12 @@ requirements:
     - The system shall process submitted input.
   ui.action.main.submit-input:
     - The user shall be able to submit input.
+  ui.subview.shared-status:
+    - Shared status shall be reusable across Views.
+  ui.subview-action.shared-status.refresh-status:
+    - The user shall be able to refresh shared status.
+  ui.subview-info.shared-status.current-status:
+    - Shared current status shall be visible.
   deployment.host.application-host:
     - The application shall run on a Linux host.
   deployment.program.example-application:
