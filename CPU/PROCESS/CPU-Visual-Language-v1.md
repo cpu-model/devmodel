@@ -234,11 +234,11 @@ A View with no Actions naturally renders as an Information-only View.
 
 A SubView is a reusable user-visible fragment included in one or more Views.
 
-The SubView definition is rendered once as a View-like rounded container on the same diagram level as Views. Navigation entries declared by the SubView are rendered as directed navigation relations from this standalone SubView container to the referenced Views. The destination is represented by the relation itself rather than repeated as text inside the SubView.
+The SubView definition is rendered once as a View-like rounded container on the same diagram level as Views. Actions and Information declared by the SubView use the same semantic symbols and two-column ordering as in a View. Navigation entries declared by the SubView are rendered as directed navigation relations from this standalone SubView container to the referenced Views. The destination is represented by the relation itself rather than repeated as text inside the SubView.
 
 An `includes` relation is rendered separately inside the including View. For each included SubView, the View contains a small SubView reference box showing only the SubView name. Its border is dashed or dotted so that it is visually distinguishable from ordinary View contents. No connector is drawn between this contained reference box and the standalone SubView definition.
 
-The contained SubView reference box expresses inclusion only. It does not duplicate the SubView's Navigation or other semantics. The standalone SubView definition remains the single graphical place where the SubView's own relations are shown.
+The contained SubView reference box expresses inclusion only. It does not duplicate the SubView's Actions, Information, Navigation, or other semantics. The standalone SubView definition remains the single graphical place where the SubView's own relations are shown.
 
 Thus the same semantic SubView has two complementary graphical occurrences: one standalone definition and one small inclusion reference inside each View that includes it. Both occurrences represent the same SubView identity.
 
