@@ -201,8 +201,18 @@ function uiD2(ui, targets) {
   for (const id of subviewIds) if (viewIds.has(id)) throw new Error(`UI View and SubView IDs must be distinct: ${id}`);
   const subviewById = new Map(subviews.map(subview => [subview.id, subview]));
   for (const subview of subviews) {
-    fields(subview, ['id', 'name', 'navigation'], ['id', 'name'], `ui.subview.${subview.id}`);
+    fields(subview, ['id', 'name', 'actions', 'information', 'navigation'], ['id', 'name'], `ui.subview.${subview.id}`);
     nonEmpty(subview.name, `ui.subview.${subview.id}.name`);
+    targets.add(`ui.subview.${subview.id}`);
+    for (const [kind, targetKind] of [['actions', 'subview-action'], ['information', 'subview-info']]) {
+      const items = subview[kind] || [];
+      unique(items, `ui.subview.${subview.id}.${kind}`);
+      for (const item of items) {
+        fields(item, ['id', 'name'], ['id', 'name'], `ui.subview.${subview.id}.${kind}.${item.id}`);
+        nonEmpty(item.name, `ui.subview.${subview.id}.${kind}.${item.id}.name`);
+        targets.add(`ui.${targetKind}.${subview.id}.${item.id}`);
+      }
+    }
     for (const [index, navigation] of (subview.navigation || []).entries()) {
       fields(navigation, ['to'], ['to'], `ui.subview.${subview.id}.navigation[${index}]`);
       if (!viewIds.has(navigation.to)) throw new Error(`Invalid Navigation from SubView ${subview.id}`);
@@ -210,7 +220,14 @@ function uiD2(ui, targets) {
   }
   const lines = ['direction: right'];
   for (const subview of subviews) {
-    lines.push(`${quote(`subview_${subview.id}`)}: ${quote(subview.name)} {\nstyle.border-radius: 12\nstyle.stroke-dash: 4\n}`);
+    lines.push(`${quote(`subview_${subview.id}`)}: ${quote(subview.name)} {\nstyle.border-radius: 12\nstyle.stroke-dash: 4\ngrid-columns: 2\ngrid-gap: 24`);
+    for (const [kind, symbol] of [['actions', '▶'], ['information', '●']]) {
+      const items = subview[kind] || [];
+      lines.push(`${kind}: "" {\nstyle.stroke: transparent\nstyle.fill: transparent\ngrid-columns: 1\ngrid-gap: 16`);
+      for (const item of items) lines.push(node(item.id, `${symbol} ${item.name}`, 'rectangle', 'style.stroke: transparent\nstyle.fill: transparent'));
+      lines.push('}');
+    }
+    lines.push('}');
   }
   for (const view of ui.views) {
     fields(view, ['id', 'name', 'includes', 'actions', 'information', 'navigation'], ['id', 'name'], `ui.view.${view.id}`);
