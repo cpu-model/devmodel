@@ -142,11 +142,17 @@ A Behavior may emit zero, one, or several Pulses. An outgoing Pulse means "can e
 
 Multiple incoming Pulses have independent or OR semantics. The same Pulse may fan out to several Behaviors. Cycles are allowed. No special gateway, end, or loop notation is required.
 
-### 4.3 Trigger role
+### 4.3 Trigger role and notation
 
 A trigger is a free domain description of a cause that introduces a Pulse into the event chain, for example Startup, Vehicle observation due, or Select target SoC.
 
-Identical trigger text should render as one visual trigger source with fan-out where applicable.
+A trigger is rendered as a diamond with the trigger text centered inside it. The diamond uses the same typography, stroke weight, and corresponding visual weight as a Behavior; shape is the primary visual distinction between Trigger and Behavior.
+
+The diamond is sized deterministically to its content. Long trigger text is wrapped deterministically inside the diamond, and the diamond is sized to the resulting wrapped text with sufficient internal clearance.
+
+A Trigger is only a source of Pulse Flows and therefore has only outgoing connectors. Identical trigger text is rendered as one diamond with fan-out where applicable.
+
+Trigger remains a role in a Flow rather than a separately declared semantic element. It has no direct requirement address and therefore no requirement indicator.
 
 ### 4.4 Pulse notation
 
@@ -172,6 +178,7 @@ The short number is display identity only. Cross-references use the semantic Pul
 ### 4.6 Rendering status
 
 - Behavior: Native D2.
+- Trigger: Native D2 diamond, with deterministic text wrapping and sizing.
 - Connector routing and arrowhead: Native D2/ELK.
 - Pulse symbol: Adapted by minimal deterministic SVG decoration.
 
@@ -317,6 +324,7 @@ Current v1 classification:
 | Information | Native |
 | Action | Native |
 | Behavior | Native |
+| Trigger | Native |
 | Deployment host / program / service / port | Native |
 | Deployment network connection | Native |
 | D2/ELK connector routing | Native |
@@ -344,7 +352,7 @@ Minimal SVG decoration is acceptable when it implements a stable Visual Language
 ## 11. Verified v1 decisions
 
 - **Context:** system and external-system composition; domain data-flow labels; independent arrowhead for data direction; initiative circle centered on connector path; visible separation between initiative circle and arrowhead; connector and label clearance; sufficient relation spacing.
-- **Pulse:** left-to-right causal flow using ELK; Behavior nodes; numbered Pulse circle integrated into connector; Pulse circle centered on actual connector path.
+- **Pulse:** left-to-right causal flow using ELK; Behavior nodes; Trigger diamonds with centered, deterministically wrapped text and fan-out for identical trigger text; numbered Pulse circle integrated into connector; Pulse circle centered on actual connector path.
 - **UI:** View containers; Action and Information symbols; Actions in the left column; Information in the right column; deterministic declared ordering within each column.
 - **Deployment:** nested host/program/service topology; visible ports and directed connections; implementation selections shown in labels.
 
