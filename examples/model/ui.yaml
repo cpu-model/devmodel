@@ -5,11 +5,20 @@ ui:
       navigation:
         - to: main
         - to: details
+    - id: shared-status
+      name: Shared status
+      actions:
+        - id: refresh-status
+          name: Refresh status
+      information:
+        - id: current-status
+          name: Current status
   views:
     - id: main
       name: Main
       includes:
         - navigation
+        - shared-status
       actions:
         - id: submit-input
           name: Submit input
