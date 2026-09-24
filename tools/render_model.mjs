@@ -82,6 +82,24 @@ function unique(items, label, key = 'id') {
 const quote = value => JSON.stringify(value);
 const reference = value => value.split('.').map(quote).join('.');
 
+function wrapTriggerLabel(value, maxLineLength = 28) {
+  const words = value.trim().split(/\\s+/);
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    if (!line) {
+      line = word;
+    } else if ((line + ' ' + word).length <= maxLineLength) {
+      line += ' ' + word;
+    } else {
+      lines.push(line);
+      line = word;
+    }
+  }
+  if (line) lines.push(line);
+  return lines.join('\\n');
+}
+
 function node(key, label, shape = 'rectangle', extra = '') {
   return `${quote(key)}: ${quote(label)} {\n shape: ${shape}\n ${extra}\n}`;
 }
@@ -161,7 +179,7 @@ function pulseD2(pulse, targets) {
       if (typeof flow.trigger !== 'string' || !flow.trigger.trim()) throw new Error(`Blank trigger in Pulse flow ${index}`);
       if (!triggers.has(flow.trigger)) {
         triggers.set(flow.trigger, `trigger_${triggers.size}`);
-        lines.push(node(triggers.get(flow.trigger), flow.trigger, 'diamond'));
+        lines.push(node(triggers.get(flow.trigger), wrapTriggerLabel(flow.trigger), 'diamond'));
       }
       source = triggers.get(flow.trigger);
     } else {
