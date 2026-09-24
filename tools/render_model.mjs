@@ -83,7 +83,7 @@ const quote = value => JSON.stringify(value);
 const reference = value => value.split('.').map(quote).join('.');
 
 function wrapTriggerLabel(value, maxLineLength = 28) {
-  const words = value.trim().split(/\\s+/);
+  const words = value.trim().split(/\s+/);
   const lines = [];
   let line = '';
   for (const word of words) {
@@ -97,7 +97,7 @@ function wrapTriggerLabel(value, maxLineLength = 28) {
     }
   }
   if (line) lines.push(line);
-  return lines.join('\\n');
+  return lines.join('\n');
 }
 
 function node(key, label, shape = 'rectangle', extra = '') {
