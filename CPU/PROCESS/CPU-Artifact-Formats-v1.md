@@ -300,9 +300,9 @@ Each View contains `id` and `name`. `includes`, `actions`, `information`, and Vi
 
 ### 5.2 SubViews
 
-Each SubView contains `id`, `name`, and optional `navigation`. SubView IDs are unique and distinct from View IDs.
+Each SubView contains `id` and `name`, with optional `actions`, `information`, and `navigation`. SubView IDs are unique and distinct from View IDs.
 
-A SubView is defined once and may be included by any number of Views. A SubView does not include another SubView in v1, and does not contain Actions or Information in v1.
+A SubView is defined once and may be included by any number of Views. Actions and Information in a SubView have the same semantics as Actions and Information in a View. A SubView does not include another SubView in v1.
 
 ### 5.3 Actions
 
@@ -331,14 +331,14 @@ Navigation describes user-significant navigation capability, not a menu, tab, bu
 
 - View IDs are unique.
 - SubView IDs are unique and do not collide with View IDs.
-- Action IDs are unique within their containing View.
-- Information IDs are unique within their containing View.
+- Action IDs are unique within their containing View or SubView.
+- Information IDs are unique within their containing View or SubView.
 - Every `includes` reference resolves to a declared SubView and is unique within its View.
 - Every `navigation.to` reference in a View or SubView resolves to a declared View.
 - View-local Navigation must not navigate to the containing View.
 - SubView Navigation may reference any declared View, including a View that includes that SubView.
 - Navigation entries contain only `to`.
-- SubViews contain only `id`, `name`, and `navigation`.
+- SubViews contain only `id`, `name`, `actions`, `information`, and `navigation`.
 - Declared ordering of includes, Actions, Information, and Navigation is semantically preserved for deterministic rendering.
 
 ### 5.7 UI field reference
@@ -367,6 +367,8 @@ SubView mapping:
 | --- | --- | --- | --- | --- |
 | `id` | non-empty string ID | yes | none | Unique SubView identity; no period. |
 | `name` | non-empty string | yes | none | Human-readable SubView name. |
+| `actions` | list of Action mappings | no | empty list | Reusable user intentions in declared order. |
+| `information` | list of Information mappings | no | empty list | Reusable user-relevant concepts in declared order. |
 | `navigation` | list of Navigation mappings | no | empty list | Shared destinations exposed wherever the SubView is included. |
 
 Action and Information mappings contain exactly `id` and `name`.
@@ -830,6 +832,9 @@ Words outside angle brackets are literal. IDs come from the corresponding semant
 - `ui.view.<view-id>` targets a View.
 - `ui.action.<view-id>.<action-id>` targets an Action in that View.
 - `ui.info.<view-id>.<information-id>` targets Information in that View.
+- `ui.subview.<subview-id>` targets a SubView.
+- `ui.subview-action.<subview-id>.<action-id>` targets an Action in that SubView.
+- `ui.subview-info.<subview-id>.<information-id>` targets Information in that SubView.
 - `deployment.host.<host-id>` targets a host.
 - `deployment.program.<program-id>` targets a program.
 - `deployment.program.<program-id>.port.<port-id>` targets a program port.
@@ -850,7 +855,7 @@ One requirement string may be explicitly repeated at several targets if intended
 ### 10.4 Requirements validation
 
 - Reject unknown root fields, non-mapping requirement collections, invalid target syntax, duplicate keys, empty lists, and non-string or blank requirement values.
-- Resolve every target against the corresponding Context, Pulse, UI, or Deployment artifact. Reject unknown IDs and wrong element kinds. Action and Information IDs resolve only within their addressed View; Service and Port IDs resolve only within their addressed Deployment parents.
+- Resolve every target against the corresponding Context, Pulse, UI, or Deployment artifact. Reject unknown IDs and wrong element kinds. Action and Information IDs resolve only within their addressed View or SubView; Service and Port IDs resolve only within their addressed Deployment parents.
 - Apply all existing model validation rules as well as the addressing restriction. Never repair invalid references by matching display names.
 - Reject orphaned targets after deleting or renaming an element. Update the model and its requirements together; do not silently discard requirements.
 - Missing entries for otherwise valid elements are allowed. An empty `requirements` mapping is allowed.
