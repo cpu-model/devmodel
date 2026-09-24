@@ -1,0 +1,59 @@
+name: Review devmodel reference model
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - AGENTS.md
+      - SPEC.md
+      - CPU/PROCESS/**
+      - examples/model/**
+      - tools/**
+      - tests/**
+      - package.json
+      - package-lock.json
+      - .github/workflows/render-devmodel-review.yml
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout devmodel
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install D2 0.9.0
+        run: |
+          curl -fsSL https://d2lang.com/install.sh | sh -s -- --version v0.9.0
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Test devmodel
+        run: npm test
+
+      - name: Validate reference model
+        run: npm run validate -- --source examples/model
+
+      - name: Render reference model review
+        env:
+          CPU_REVIEW_BROWSER: /usr/bin/google-chrome
+        run: npm run render -- --source examples/model --out review --review-title "devmodel reference model review"
+
+      - name: Upload review artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: devmodel-reference-review
+          path: review/
+          if-no-files-found: error
+          retention-days: 14
