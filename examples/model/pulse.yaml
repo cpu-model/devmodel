@@ -7,6 +7,6 @@ pulse:
       display: "01"
       name: Input submitted
   flows:
-    - trigger: User submits input
+    - trigger: User submits a sufficiently long input to demonstrate deterministic trigger text wrapping
       pulse: input-submitted
       to: process-input
