@@ -16,7 +16,7 @@ on:
       - .github/workflows/render-devmodel-review.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   review:
@@ -48,12 +48,16 @@ jobs:
       - name: Render reference model review
         env:
           CPU_REVIEW_BROWSER: /usr/bin/google-chrome
-        run: npm run render -- --source examples/model --out review --review-title "devmodel reference model review"
+        run: npm run render -- --source examples/model --out examples/model --review-title "devmodel reference model review"
 
-      - name: Upload review artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: devmodel-reference-review
-          path: review/
-          if-no-files-found: error
-          retention-days: 14
+      - name: Commit changed reference diagrams
+        run: |
+          git add examples/model/context.pdf examples/model/pulse.pdf examples/model/ui.pdf examples/model/deployment.pdf
+          if git diff --cached --quiet; then
+            echo "Reference diagrams are already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Render devmodel reference diagrams"
+          git push
