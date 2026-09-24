@@ -359,7 +359,10 @@ if (browser) {
     for (const name of names) payload[name] = document.querySelector('#' + name + ' .diagram > svg').outerHTML;
     document.body.replaceChildren(document.createTextNode(JSON.stringify(payload)));
   `;
-  const materializeHtml = html.replace('</body>\n</html>', '<script>' + materializeScript + '</script>\n</body>\n</html>');
+  const closingTag = '</html>';
+  const closingIndex = html.lastIndexOf(closingTag);
+  if (closingIndex < 0) throw Error('Generated review HTML has no closing html tag');
+  const materializeHtml = html.slice(0, closingIndex) + '<script>' + materializeScript + '</script>\n' + html.slice(closingIndex);
   const materializePath = path.join(out, '.materialize.html');
   fs.writeFileSync(materializePath, materializeHtml);
   try {
