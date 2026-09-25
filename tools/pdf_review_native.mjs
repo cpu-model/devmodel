@@ -216,7 +216,7 @@ for(const name of names){
     const reqs=data.requirements[key];
     if(!Array.isArray(reqs)||!reqs.length)throw Error('Requirement badge has no requirements: '+key);
     const rect=(name==='ui' && /^(ui\.(?:action|info|subview-action|subview-info)\.)/.test(key))
-      ? [x+4,y+8,x+2*r+4,y+2*r+8]
+      ? [x-r,y-r,x+r,y+r]
       : [x-10,y+r,x+10,y+r+20];
     if(name==='ui')console.log('UI geometry chain',JSON.stringify({key,source:sourceGeometry,svgBadge:{cx:+ca.cx,cy:+ca.cy,r:+ca.r},pdfBadge:{x,y,r},rect}));
     const annot=doc.context.obj({
