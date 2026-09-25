@@ -213,6 +213,10 @@ for(const name of names){
     const x=(+ca.cx-b.x)*scale,y=yPdf(b,+ca.cy),r=(+ca.r)*scale,key=decode(ga['data-key']||''),label=decode(ga['data-label']||key);
     const reqs=data.requirements[key];
     if(!Array.isArray(reqs)||!reqs.length)throw Error('Requirement badge has no requirements: '+key);
+    const rect=(name==='ui' && /^(ui\.(?:action|info|subview-action|subview-info)\.)/.test(key))
+      ? [x+4,y+8,x+2*r+4,y+2*r+8]
+      : [x-10,y+r,x+10,y+r+20];
+    if(name==='ui')console.log('UI PDF annotation geometry',JSON.stringify({key,svgBadge:{cx:+ca.cx,cy:+ca.cy,r:+ca.r},pdfBadge:{x,y,r},rect}));
     const annot=doc.context.obj({
       Type:PDFName.of('Annot'),
       Subtype:PDFName.of('Text'),
@@ -220,9 +224,7 @@ for(const name of names){
       // footprint around the PDF annotation rectangle. For UI item labels,
       // offset that rectangle to the right of the SVG requirement anchor so
       // the rendered note icon clears the visible label instead of covering it.
-      Rect:(name==='ui' && /^(ui\.(?:action|info|subview-action|subview-info)\.)/.test(key))
-        ? [x+4,y+8,x+2*r+4,y+2*r+8]
-        : [x-10,y+r,x+10,y+r+20],
+      Rect:rect,
       Contents:PDFHexString.fromText(reqs.join('\n\n')),
       T:PDFHexString.fromText(label),
       Name:PDFName.of('Comment'),
