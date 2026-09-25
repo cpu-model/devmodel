@@ -4,6 +4,7 @@ import path from 'node:path';
 import {PDFDocument, PDFName, PDFHexString, PDFString, StandardFonts, rgb, degrees} from 'pdf-lib';
 
 const out=path.resolve(process.argv[2]||'output/model');
+const readerOwnedMarkers=process.argv.includes('--reader-owned-markers');
 const data=JSON.parse(fs.readFileSync(path.join(out,'model.json'),'utf8'));
 const names=['context','pulse','ui','deployment'];
 const scale=.75;
