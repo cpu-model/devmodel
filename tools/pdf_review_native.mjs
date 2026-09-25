@@ -251,7 +251,7 @@ for(const name of names){
       T:PDFHexString.fromText('Requirements'),
       Name:PDFName.of('Comment'),
       Open:false,
-      F:4,
+      F:2,
     });
   }
   const pdfPath=path.join(out,`${name}.pdf`);
