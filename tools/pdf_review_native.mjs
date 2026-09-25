@@ -60,11 +60,9 @@ for(const name of names){
   const italic=await doc.embedFont(StandardFonts.HelveticaOblique);
   const svg=fs.readFileSync(path.join(out,name+'.svg'),'utf8');
   const b=box(svg);
-  // Requirement badges remain in the finished SVG as stable annotation anchors,
-  // but the PDF shows only the reader's Text-annotation icon, not the SVG r badge.
-  const visibleSvg=svg
-    .replace(/<g\b[^>]*data-requirement-badge="true"[^>]*>[\s\S]*?<\/g>/g,'')
-    .replace(/<g\b[^>]*data-requirement-legend="true"[^>]*>[\s\S]*?<\/g>/g,'');
+  // Requirement badges are part of the normative diagram and remain visible.
+  // PDF annotations add popup interaction without owning marker placement.
+  const visibleSvg=svg;
   const page=doc.addPage([b.w*scale,b.h*scale]);
   page.drawRectangle({x:0,y:0,width:b.w*scale,height:b.h*scale,color:rgb(1,1,1)});
 
@@ -231,7 +229,7 @@ for(const name of names){
       T:PDFHexString.fromText(label),
       Name:PDFName.of('Comment'),
       Open:false,
-      F:4,
+      F:34,
     });
     annotationRefs.push(doc.context.register(annot));
   }
