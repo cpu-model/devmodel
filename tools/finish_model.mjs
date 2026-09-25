@@ -467,10 +467,18 @@ if (browser) {
       .replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&');
     const materialized = JSON.parse(decoded);
     for (const name of names) fs.writeFileSync(path.join(out, name + '.svg'), materialized[name]);
-    execFileSync(process.execPath, [path.join(path.dirname(fileURLToPath(import.meta.url)), 'pdf_review_native.mjs'), out], {
+    const pdfRenderer=path.join(path.dirname(fileURLToPath(import.meta.url)), 'pdf_review_native.mjs');
+    execFileSync(process.execPath, [pdfRenderer, out], {
       stdio: 'inherit',
       env: process.env,
     });
+    const comparisonDir=process.env.CPU_REVIEW_READER_MARKERS_DIR;
+    if(comparisonDir){
+      fs.mkdirSync(comparisonDir,{recursive:true});
+      for(const name of names)fs.copyFileSync(path.join(out,name+'.svg'),path.join(comparisonDir,name+'.svg'));
+      fs.copyFileSync(path.join(out,'model.json'),path.join(comparisonDir,'model.json'));
+      execFileSync(process.execPath,[pdfRenderer,comparisonDir,'--reader-owned-markers'],{stdio:'inherit',env:process.env});
+    }
     const publishDir = process.env.CPU_REVIEW_PUBLISH_DIR || path.resolve(out, '..');
     fs.mkdirSync(publishDir, {recursive: true});
     for (const name of names) fs.copyFileSync(path.join(out, name + '.pdf'), path.join(publishDir, name + '.pdf'));
