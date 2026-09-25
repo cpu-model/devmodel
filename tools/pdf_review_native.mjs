@@ -204,6 +204,15 @@ for(const name of names){
   }
 
 
+  // Paint PDF-owned requirement markers over the SVG r badges. The SVG badge
+  // remains the stable geometry/click anchor; the visible PDF symbol is a
+  // deterministic yellow note-like marker at exactly the same center.
+  for(const m of svg.matchAll(/<g\b([^>]*data-requirement-badge="true"[^>]*)>([\s\S]*?)<\/g>/g)){
+    const circle=m[2].match(/<circle\b[^>]*>/); if(!circle)continue;
+    const ca=attrs(circle[0]),x=(+ca.cx-b.x)*scale,y=yPdf(b,+ca.cy),r=(+ca.r)*scale;
+    page.drawRectangle({x:x-r,y:y-r,width:2*r,height:2*r,color:rgb(1,193/255,7/255),borderColor:rgb(71/255,85/255,105/255),borderWidth:.75});
+  }
+
   const re=/<g\b([^>]*data-requirement-badge="true"[^>]*)>([\s\S]*?)<\/g>/g;
   const annotationRefs=[];
   for(const m of svg.matchAll(re)){
