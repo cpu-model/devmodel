@@ -164,11 +164,15 @@ function decorate(root, {name, model, requirements}) {
         rectangle.setAttribute('style', 'stroke-width:2;stroke-dasharray:5,4;');
       }
       for (const [kind, targetKind] of [['actions', 'action'], ['information', 'info']]) {
-        (view[kind] || []).forEach(item => clickable(
-          find(`${view.id}.${kind}.${item.id}`),
-          `ui.${targetKind}.${view.id}.${item.id}`,
-          item.name,
-        ));
+        (view[kind] || []).forEach(item => {
+          const group = find(`${view.id}.${kind}.${item.id}`);
+          clickable(group, `ui.${targetKind}.${view.id}.${item.id}`, item.name);
+          const rectangle = group.querySelector(':scope > g.shape > rect');
+          const textNode = group.querySelector(':scope > text');
+          if (!rectangle || !textNode) throw Error(`Incomplete UI item SVG element: ${view.id} / ${kind} / ${item.id}`);
+          textNode.setAttribute('text-anchor', 'start');
+          textNode.setAttribute('x', Number(rectangle.getAttribute('x')) + 8);
+        });
       }
     });
   }
@@ -198,6 +202,47 @@ function decorate(root, {name, model, requirements}) {
       `deployment.connection.${connection.id}`,
       connection.name,
     ));
+    const paths = connections.map(group => group.querySelector(':scope > path.connection'));
+    const pathSamples = paths.map(connection => {
+      const length = connection.getTotalLength();
+      const count = Math.ceil(length / 3);
+      return Array.from({length: count + 1}, (_, index) =>
+        connection.getPointAtLength(length * index / count));
+    });
+    const placedLabelBoxes = [];
+    for (const [index, group] of connections.entries()) {
+      const text = group.querySelector(':scope > text');
+      if (!text) continue;
+      const original = Number(text.getAttribute('y'));
+      const ownSamples = pathSamples[index];
+      const originalBox = text.getBBox();
+      const centerX = originalBox.x + originalBox.width / 2;
+      const nearest = ownSamples.reduce((best, point) =>
+        Math.abs(point.x - centerX) < Math.abs(best.x - centerX) ? point : best);
+      const preferredY = nearest.y - 10;
+      const candidates = Array.from({length: 25}, (_, step) =>
+        step === 0 ? preferredY - original : (preferredY - original) + (step % 2 ? -1 : 1) * Math.ceil(step / 2) * 4);
+      let placed = false;
+      for (const delta of candidates) {
+        text.setAttribute('y', original + delta);
+        const box = text.getBBox();
+        const intersectsOtherPath = pathSamples.some((samples, pathIndex) =>
+          pathIndex !== index && samples.some(point =>
+            point.x >= box.x - 6 && point.x <= box.x + box.width + 6 &&
+            point.y >= box.y - 5 && point.y <= box.y + box.height + 5));
+        const intersectsLabel = placedLabelBoxes.some(other =>
+          box.x - 6 <= other.x + other.width + 6 &&
+          box.x + box.width + 6 >= other.x - 6 &&
+          box.y - 3 <= other.y + other.height + 3 &&
+          box.y + box.height + 3 >= other.y - 3);
+        if (!intersectsOtherPath && !intersectsLabel) {
+          placedLabelBoxes.push({x: box.x, y: box.y, width: box.width, height: box.height});
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) throw Error('Cannot establish Deployment label clearance');
+    }
   }
 
   for (const group of [...svg.querySelectorAll('g[data-key]')]) {
@@ -247,17 +292,44 @@ function decorate(root, {name, model, requirements}) {
 
   const drawing = svg.querySelector('svg.d2-svg');
   const box = drawing.getAttribute('viewBox').split(/\s+/).map(Number);
+  const margin = 20;
+  const contentBottom = box[1] + box[3];
+  let footerY = contentBottom + 18;
+  if (name === 'pulse') {
+    drawing.append(element('text', {
+      x: box[0] + 12,
+      y: footerY,
+      'font-family': 'Arial',
+      'font-size': 12,
+      'font-weight': 'bold',
+      fill: '#334155',
+    }, 'PULSES'));
+    footerY += 16;
+    for (const pulse of model.pulses) {
+      drawing.append(element('text', {
+        x: box[0] + 12,
+        y: footerY,
+        'font-family': 'Arial',
+        'font-size': 12,
+        fill: '#475569',
+      }, `${pulse.display}  ${pulse.name}`));
+      footerY += 16;
+    }
+    footerY += 4;
+  }
   drawing.append(element('text', {
     x: box[0] + 12,
-    y: box[1] + box[3] + 15,
+    y: footerY,
     'font-family': 'Arial',
     'font-size': 12,
     fill: '#475569',
   }, 'r in a circle = directly attached requirements'));
-  drawing.setAttribute('viewBox', [box[0], box[1], box[2], box[3] + 28].join(' '));
-  drawing.setAttribute('height', Number(drawing.getAttribute('height')) + 28);
+  const bottomExtra = footerY + 12 - contentBottom;
+  drawing.setAttribute('viewBox', [box[0] - margin, box[1] - margin, box[2] + 2 * margin, box[3] + margin + bottomExtra].join(' '));
+  drawing.setAttribute('width', Number(drawing.getAttribute('width')) + 2 * margin);
+  drawing.setAttribute('height', Number(drawing.getAttribute('height')) + margin + bottomExtra);
   const outer = svg.getAttribute('viewBox').split(/\s+/).map(Number);
-  svg.setAttribute('viewBox', [outer[0], outer[1], outer[2], outer[3] + 28].join(' '));
+  svg.setAttribute('viewBox', [outer[0] - margin, outer[1] - margin, outer[2] + 2 * margin, outer[3] + margin + bottomExtra].join(' '));
 }
 
 const names = ['context', 'pulse', 'ui', 'deployment'];
@@ -274,7 +346,7 @@ const sections = names.map(name => `
   <section id="${name}" class="model-card">
     <h2>${name === 'ui' ? 'UI' : name[0].toUpperCase() + name.slice(1)}</h2>
     <div class="diagram">${svgs[name]}</div>
-    ${name === 'pulse' ? `<div class="legend">${data.models.pulse.pulses.map(pulse => `${pulse.display} - ${pulse.name}`).join(' &nbsp; · &nbsp; ')}</div>` : ''}
+
   </section>`).join('');
 const sourceSections = Object.entries(data.sources || {}).map(([name, source], index) => `
   <details class="source-card"${index === 0 ? ' open' : ''}>
