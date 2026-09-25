@@ -216,8 +216,12 @@ for(const name of names){
     const annot=doc.context.obj({
       Type:PDFName.of('Annot'),
       Subtype:PDFName.of('Text'),
+      // Chrome renders the Text-annotation note icon with its own visual
+      // footprint around the PDF annotation rectangle. For UI item labels,
+      // offset that rectangle to the right of the SVG requirement anchor so
+      // the rendered note icon clears the visible label instead of covering it.
       Rect:(name==='ui' && /^(ui\.(?:action|info|subview-action|subview-info)\.)/.test(key))
-        ? [x-r,y-r,x+r,y+r]
+        ? [x+r+4,y-r,x+3*r+4,y+r]
         : [x-10,y+r,x+10,y+r+20],
       Contents:PDFHexString.fromText(reqs.join('\n\n')),
       T:PDFHexString.fromText(label),
