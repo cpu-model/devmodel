@@ -61,9 +61,14 @@ for(const name of names){
   const italic=await doc.embedFont(StandardFonts.HelveticaOblique);
   const svg=fs.readFileSync(path.join(out,name+'.svg'),'utf8');
   const b=box(svg);
-  // Requirement badges are part of the normative diagram and remain visible.
-  // PDF annotations add popup interaction without owning marker placement.
-  const visibleSvg=svg;
+  // In the reader-owned comparison mode, suppress CPU-rendered requirement
+  // badges and legend markers while retaining their geometry in the original
+  // SVG for annotation anchoring.
+  const visibleSvg=readerOwnedMarkers
+    ? svg
+      .replace(/<g\b[^>]*data-requirement-badge="true"[^>]*>[\s\S]*?<\/g>/g,'')
+      .replace(/<g\b[^>]*data-requirement-legend="true"[^>]*>[\s\S]*?<\/g>/g,'')
+    : svg;
   const page=doc.addPage([b.w*scale,b.h*scale]);
   page.drawRectangle({x:0,y:0,width:b.w*scale,height:b.h*scale,color:rgb(1,1,1)});
 
