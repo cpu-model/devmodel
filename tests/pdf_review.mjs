@@ -7,7 +7,7 @@ assert.match(source,/const visibleSvg=svg\.replace/);
 assert.match(source,/Subtype:PDFName\.of\('Text'\)/);
 assert.doesNotMatch(source,/Subtype:PDFName\.of\('Link'\)/);
 assert.match(source,/Contents:PDFHexString\.fromText\(reqs\.join\('\\n\\n'\)\)/);
-assert.match(source,/x\+\.5\*r,y\+\.866\*r/);
+assert.match(source,/Rect:\[x-10,y\+r,x\+10,y\+r\+20\]/);
 assert.doesNotMatch(source,/Tillbaka till diagrammet/);
 assert.match(source,/const names=\['context','pulse','ui','deployment'\]/);
 assert.match(source,/path\.join\(out,`\$\{name\}\.pdf`\)/);
