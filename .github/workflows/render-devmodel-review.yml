@@ -51,11 +51,12 @@ jobs:
       - name: Render reference model review
         env:
           CPU_REVIEW_BROWSER: /usr/bin/google-chrome
+          CPU_REVIEW_READER_MARKERS_DIR: examples/model/reader-owned-markers
         run: npm run render -- --source examples/model --out examples/model --review-title "devmodel reference model review"
 
       - name: Commit changed reference diagrams
         run: |
-          git add examples/model/context.pdf examples/model/pulse.pdf examples/model/ui.pdf examples/model/deployment.pdf
+          git add examples/model/context.pdf examples/model/pulse.pdf examples/model/ui.pdf examples/model/deployment.pdf examples/model/reader-owned-markers/*.pdf
           if git diff --cached --quiet; then
             echo "Reference diagrams are already current."
             exit 0
