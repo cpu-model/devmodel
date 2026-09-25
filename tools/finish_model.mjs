@@ -259,7 +259,19 @@ function decorate(root, {name, model, requirements}) {
       x = visible.x + visible.width + 4;
     }
     let y = box.y + box.height / 2;
-    if (name === 'ui') console.log('UI requirement anchor', JSON.stringify({key: group.dataset.key, label: text.textContent.trim(), box: {x: box.x, y: box.y, width: box.width, height: box.height}, anchor: {x, y}}));
+    if (name === 'ui') {
+      const spans = [...text.querySelectorAll(':scope > tspan')];
+      console.log('UI requirement geometry', JSON.stringify({
+        key: group.dataset.key,
+        label: text.textContent.trim(),
+        textBox: {x: box.x, y: box.y, width: box.width, height: box.height},
+        spans: spans.map(span => {
+          const b = span.getBBox();
+          return {text: span.textContent.trim(), x: b.x, y: b.y, width: b.width, height: b.height};
+        }),
+        anchor: {x, y},
+      }));
+    }
     if (name === 'pulse') {
       const rectangle = group.querySelector(':scope > g.shape > rect');
       if (rectangle) {
