@@ -216,7 +216,9 @@ for(const name of names){
     const annot=doc.context.obj({
       Type:PDFName.of('Annot'),
       Subtype:PDFName.of('Text'),
-      Rect:[x-10,y+r,x+10,y+r+20],
+      Rect:(name==='ui' && /^(ui\.(?:action|info|subview-action|subview-info)\.)/.test(key))
+        ? [x-r,y-r,x+r,y+r]
+        : [x-10,y+r,x+10,y+r+20],
       Contents:PDFHexString.fromText(reqs.join('\n\n')),
       T:PDFHexString.fromText(label),
       Name:PDFName.of('Comment'),
