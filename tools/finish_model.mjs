@@ -260,19 +260,6 @@ function decorate(root, {name, model, requirements}) {
 
     }
     let y = box.y + box.height / 2;
-    if (name === 'ui') {
-      const spans = [...text.querySelectorAll(':scope > tspan')];
-      group.dataset.requirementGeometry = JSON.stringify({
-        key: group.dataset.key,
-        label: text.textContent.trim(),
-        textBox: {x: box.x, y: box.y, width: box.width, height: box.height},
-        spans: spans.map(span => {
-          const b = span.getBBox();
-          return {text: span.textContent.trim(), x: b.x, y: b.y, width: b.width, height: b.height};
-        }),
-        anchor: {x, y},
-      });
-    }
     if (name === 'pulse') {
       const rectangle = group.querySelector(':scope > g.shape > rect');
       if (rectangle) {
@@ -292,7 +279,6 @@ function decorate(root, {name, model, requirements}) {
     }
     const badge = element('g', {
       'data-key': group.dataset.key,
-      ...(group.dataset.requirementGeometry ? {'data-requirement-geometry': group.dataset.requirementGeometry} : {}),
       'data-label': group.dataset.label,
       'data-requirement-badge': 'true',
       role: 'button',
