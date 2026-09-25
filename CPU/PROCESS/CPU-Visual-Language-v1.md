@@ -412,7 +412,7 @@ The permanent review surface is a PDF generated from the finished decorated SVG.
 
 Every visible `r` indicator has one PDF Text annotation whose contents are the complete requirement strings directly attached to the target, in declared order and without paraphrasing or omission.
 
-The Text annotation's note icon is placed deterministically from the requirement-indicator anchor. For Action and Information items it is centered at the indicator anchor immediately to the right of the visible label end. For other targets it is placed outside the `r` circle at approximately the 14 o'clock position. It must not obscure visible model text or semantic symbols.
+The Text annotation's note icon is placed deterministically from the requirement-indicator anchor. For Action and Information items, the indicator anchor uses a fixed horizontal position reserved by the item's column layout; indicators in the same column align vertically and their horizontal position does not depend on rendered label width. For other targets it is placed outside the `r` circle at approximately the 14 o'clock position. It must not obscure visible model text or semantic symbols.
 
 The permanent PDF deliberately contains no internal requirement pages or link annotations. This keeps the artifact smaller and structurally simpler and makes the popup annotation the single requirement-review interaction.
 
