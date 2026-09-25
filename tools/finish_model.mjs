@@ -254,6 +254,7 @@ function decorate(root, {name, model, requirements}) {
     const box = text.getBBox();
     let x = box.x + box.width + 16;
     let y = box.y + box.height / 2;
+    if (name === 'ui') console.log('UI requirement anchor', JSON.stringify({key: group.dataset.key, label: text.textContent.trim(), box: {x: box.x, y: box.y, width: box.width, height: box.height}, anchor: {x, y}}));
     if (name === 'pulse') {
       const rectangle = group.querySelector(':scope > g.shape > rect');
       if (rectangle) {
