@@ -404,7 +404,7 @@ If space is unavailable, adjust deterministic generation or layout spacing. Do n
 
 ### 12.4 Requirement legend
 
-Every diagram includes a small requirement legend at the lower left. In the permanent PDF review artifact, CPU renders a visible requirement marker itself, followed with clear whitespace by `directly attached requirements`. The marker is part of the artifact and must not depend on PDF-reader annotation UI.
+Every diagram includes a small requirement legend at the lower left. In the permanent PDF review artifact, the legend uses the same reader-rendered annotation icon as requirement popups, followed with clear whitespace by `directly attached requirements`. It must not show an `r` circle as a substitute for the annotation icon.
 
 ### 12.4 PDF review behavior
 
@@ -412,7 +412,7 @@ The permanent review surface is a PDF generated from the finished decorated SVG.
 
 Every visible `r` indicator has one PDF Text annotation whose contents are the complete requirement strings directly attached to the target, in declared order and without paraphrasing or omission.
 
-The permanent PDF renders its visible requirement marker deterministically from the requirement-indicator anchor. For Action and Information items it is centered at the indicator anchor immediately to the right of the visible label end. For other targets it is placed at the corresponding requirement-indicator position. The marker must not obscure visible model text or semantic symbols. A PDF Text annotation is attached to the marker for popup access, but its reader-rendered icon is not the normative visual marker.
+The Text annotation's note icon is placed deterministically from the requirement-indicator anchor. For Action and Information items it is centered at the indicator anchor immediately to the right of the visible label end. For other targets it is placed outside the `r` circle at approximately the 14 o'clock position. It must not obscure visible model text or semantic symbols.
 
 The permanent PDF deliberately contains no internal requirement pages or link annotations. This keeps the artifact smaller and structurally simpler and makes the popup annotation the single requirement-review interaction.
 
@@ -420,7 +420,7 @@ Chrome is the reference reader for the complete popup review interaction. Reader
 
 ### 12.5 Accessibility and supplementary interactive surfaces
 
-The permanent PDF review uses CPU-rendered visible requirement markers and Text annotations for requirement access. The visible marker remains deterministic across readers; a PDF reader that does not expose Text annotations cannot provide the popup interaction.
+The permanent PDF review uses its visible `r` indicators and Text annotations for requirement access. A PDF reader that does not expose Text annotations cannot provide the complete requirement-review interaction.
 
 An HTML review surface may additionally be generated for browser-based exploration, keyboard interaction, or source inspection. It is supplementary and is not the permanent reviewed artifact. If supplied, its requirement selection must preserve the same target binding and exact ordered requirement text.
 
@@ -439,7 +439,7 @@ The repository-backed review output retains the finished SVG and the permanent P
 - Every rendered occurrence with directly attached requirements has one readable indicator; occurrences without attachments have none.
 - Indicators preserve all existing semantics and notation, including Pulse-circle and initiative geometry.
 - No indicators, labels, note icons, or semantic symbols collide or become clipped at normal review size.
-- The PDF diagram rendering preserves the finished SVG geometry. CPU renders the visible PDF requirement markers itself; PDF viewer annotation UI is non-normative.
+- The PDF diagram rendering is graphically identical to the finished SVG apart from PDF viewer annotation UI.
 - Every indicator's Text annotation contains exactly its target's complete ordered requirements.
 - The note icon attaches at approximately 14 o'clock without obscuring the `r` indicator.
 - Given identical semantic sources, requirements, Visual Language version, D2 version, and PDF generator version, output is deterministic.
