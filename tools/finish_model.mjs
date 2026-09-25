@@ -213,6 +213,7 @@ function decorate(root, {name, model, requirements}) {
     for (const [index, group] of connections.entries()) {
       const text = group.querySelector(':scope > text');
       if (!text) continue;
+      paths[index].removeAttribute('mask');
       const original = Number(text.getAttribute('y'));
       const ownSamples = pathSamples[index];
       const originalBox = text.getBBox();
@@ -251,6 +252,13 @@ function decorate(root, {name, model, requirements}) {
     const box = text.getBBox();
     let x = box.x + box.width + 16;
     let y = box.y + box.height / 2;
+    if (name === 'ui' && (group.dataset.key.startsWith('ui.action.') || group.dataset.key.startsWith('ui.info.') ||
+        group.dataset.key.startsWith('ui.subview-action.') || group.dataset.key.startsWith('ui.subview-info.'))) {
+      const rectangle = group.querySelector(':scope > g.shape > rect');
+      if (!rectangle) throw Error(`Missing UI item rectangle: ${group.dataset.key}`);
+      x = Number(rectangle.getAttribute('x')) + Number(rectangle.getAttribute('width')) + 16;
+      y = Number(rectangle.getAttribute('y')) + Number(rectangle.getAttribute('height')) / 2;
+    }
     if (name === 'pulse') {
       const rectangle = group.querySelector(':scope > g.shape > rect');
       if (rectangle) {
@@ -317,13 +325,17 @@ function decorate(root, {name, model, requirements}) {
     }
     footerY += 4;
   }
+  const legendX = box[0] + 12;
+  const legend = element('g', {'data-requirement-legend': 'true'});
+  legend.append(element('circle', {cx: legendX + 8, cy: footerY - 4, r: 8, fill: 'white'}));
+  drawing.append(legend);
   drawing.append(element('text', {
-    x: box[0] + 12,
+    x: legendX + 30,
     y: footerY,
     'font-family': 'Arial',
     'font-size': 12,
     fill: '#475569',
-  }, 'r in a circle = directly attached requirements'));
+  }, '= directly attached requirements'));
   const bottomExtra = footerY + 12 - contentBottom;
   drawing.setAttribute('viewBox', [box[0] - margin, box[1] - margin, box[2] + 2 * margin, box[3] + margin + bottomExtra].join(' '));
   drawing.setAttribute('width', Number(drawing.getAttribute('width')) + 2 * margin);
