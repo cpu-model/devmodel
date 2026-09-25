@@ -238,7 +238,9 @@ for(const name of names){
       T:PDFHexString.fromText(label),
       Name:PDFName.of('Comment'),
       Open:false,
-      F:34,
+      // Hidden keeps the reader-owned Text-annotation icon out of the visual
+      // language. The CPU-rendered marker remains the sole visible indicator.
+      F:2,
     });
     annotationRefs.push(doc.context.register(annot));
   }
