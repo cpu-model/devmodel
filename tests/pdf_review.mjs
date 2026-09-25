@@ -3,12 +3,13 @@ import fs from 'node:fs';
 
 const source=fs.readFileSync(new URL('../tools/pdf_review_native.mjs',import.meta.url),'utf8');
 assert.match(source,/data-requirement-badge="true"/);
-assert.match(source,/const visibleSvg=svg/);
+assert.match(source,/const visibleSvg=readerOwnedMarkers/);
+assert.match(source,/replace\(\/<g\\b\[\^>\]\*data-requirement-badge/);
 assert.match(source,/data-requirement-legend="true"/);
 assert.match(source,/Directly attached requirements/);
 assert.match(source,/Subtype:PDFName\.of\('Text'\)/);
 assert.match(source,/F:readerOwnedMarkers\?4:2/);
-assert.match(source,/Requirement badges are part of the normative diagram and remain visible/);
+assert.match(source,/suppress CPU-rendered requirement/);
 assert.match(source,/F:readerOwnedMarkers\?4:2/);
 assert.doesNotMatch(source,/Subtype:PDFName\.of\('Link'\)/);
 assert.match(source,/Contents:PDFHexString\.fromText\(reqs\.join\('\\n\\n'\)\)/);
