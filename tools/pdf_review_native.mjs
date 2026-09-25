@@ -221,7 +221,7 @@ for(const name of names){
       // offset that rectangle to the right of the SVG requirement anchor so
       // the rendered note icon clears the visible label instead of covering it.
       Rect:(name==='ui' && /^(ui\.(?:action|info|subview-action|subview-info)\.)/.test(key))
-        ? [x+9*r+28,y-r+5,x+11*r+28,y+r+5]
+        ? [x+11*r+36,y+8,x+13*r+36,y+2*r+8]
         : [x-10,y+r,x+10,y+r+20],
       Contents:PDFHexString.fromText(reqs.join('\n\n')),
       T:PDFHexString.fromText(label),
