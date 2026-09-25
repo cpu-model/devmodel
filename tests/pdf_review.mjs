@@ -9,6 +9,8 @@ assert.match(source,/Directly attached requirements/);
 assert.match(source,/Subtype:PDFName\.of\('Text'\)/);
 assert.doesNotMatch(source,/Subtype:PDFName\.of\('Link'\)/);
 assert.match(source,/Contents:PDFHexString\.fromText\(reqs\.join\('\\n\\n'\)\)/);
+assert.match(source,/ui/);
+assert.match(source,/x-r,y-r,x\+r,y\+r/);
 assert.match(source,/Rect:\[x-10,y\+r,x\+10,y\+r\+20\]/);
 assert.doesNotMatch(source,/Tillbaka till diagrammet/);
 assert.match(source,/const names=\['context','pulse','ui','deployment'\]/);
