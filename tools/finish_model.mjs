@@ -256,7 +256,7 @@ function decorate(root, {name, model, requirements}) {
     if (name === 'ui' && /^(ui\.(?:action|info|subview-action|subview-info)\.)/.test(group.dataset.key)) {
       const spans = [...text.querySelectorAll(':scope > tspan')];
       const visible = spans.length ? spans[spans.length - 1].getBBox() : box;
-      x = visible.x + visible.width + 16;
+      x = visible.x + visible.width + 4;
     }
     let y = box.y + box.height / 2;
     if (name === 'ui') console.log('UI requirement anchor', JSON.stringify({key: group.dataset.key, label: text.textContent.trim(), box: {x: box.x, y: box.y, width: box.width, height: box.height}, anchor: {x, y}}));
