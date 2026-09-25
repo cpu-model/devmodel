@@ -49,6 +49,10 @@ Stable semantic IDs belong to source artifacts. Display text may change without 
 
 Generated D2 and SVG are derived artifacts; semantic YAML is the source.
 
+### 2.1 Diagram edge clearance
+
+Every rendered diagram has a consistent outer margin between its visible content and the exported viewport. Symbols, labels, legends, requirement annotations, and connector geometry must not sit directly against or be clipped by a diagram edge.
+
 ## 3. Context
 
 ### 3.1 Purpose
@@ -164,7 +168,7 @@ The same semantic Pulse uses the same display number wherever it appears. A diff
 
 ### 4.5 Pulse legend
 
-A diagram may include a Pulse legend:
+Every Pulse diagram includes a Pulse legend listing every declared Pulse in declaration order:
 
 ```text
 PULSES
@@ -173,7 +177,7 @@ PULSES
 03  Price retrieval
 ```
 
-The short number is display identity only. Cross-references use the semantic Pulse ID.
+The legend is part of the diagram itself and therefore appears in the permanent PDF review artifact, not only in supplementary HTML. The short number is display identity only. Cross-references use the semantic Pulse ID.
 
 ### 4.6 Rendering status
 
@@ -222,6 +226,7 @@ Within a View:
 
 - Actions are placed in the left column.
 - Information is placed in the right column.
+- Action and Information item labels are left-aligned within their respective columns.
 - Items within each column follow the order declared in the semantic artifact.
 - No separate ACTIONS or INFORMATION headings are used.
 - The distinct Action and Information symbols carry the distinction.
@@ -269,11 +274,15 @@ Deployment shows one concrete intended execution topology: hosts, programs, Comp
 
 Containment means deployment containment only. A host contains programs; a Docker Compose program contains services; a program or service contains its ports. Connections do not imply Pulse causality or Context data semantics.
 
-### 6.3 Requirement indicators
+### 6.3 Connection labels
+
+A Deployment connection label is an annotation, not part of the connector. It is placed with clear visual separation above the relevant connector segment, following the same clearance principle as Context relation labels. A connection line must not pass through or immediately adjacent to visible label text.
+
+### 6.4 Requirement indicators
 
 Hosts, programs, services, ports, and connections are visible, addressable elements. Each displays an `r` circle if and only if it has directly attached requirements. Activating the circle uses the same exact-requirement review behavior as the CPU diagrams.
 
-### 6.4 Rendering status
+### 6.5 Rendering status
 
 Host, program, service, port, containment, and network connectors are Native D2/ELK constructions. Requirement indicators are Adapted deterministic SVG decoration.
 
@@ -352,9 +361,10 @@ Minimal SVG decoration is acceptable when it implements a stable Visual Language
 ## 11. Verified v1 decisions
 
 - **Context:** system and external-system composition; domain data-flow labels; independent arrowhead for data direction; initiative circle centered on connector path; visible separation between initiative circle and arrowhead; connector and label clearance; sufficient relation spacing.
-- **Pulse:** left-to-right causal flow using ELK; Behavior nodes; Trigger diamonds with centered, deterministically wrapped text and fan-out for identical trigger text; numbered Pulse circle integrated into connector; Pulse circle centered on actual connector path.
-- **UI:** View containers; Action and Information symbols; Actions in the left column; Information in the right column; deterministic declared ordering within each column.
-- **Deployment:** nested host/program/service topology; visible ports and directed connections; implementation selections shown in labels.
+- **Pulse:** left-to-right causal flow using ELK; Behavior nodes; Trigger diamonds with centered, deterministically wrapped text and fan-out for identical trigger text; numbered Pulse circle integrated into connector; Pulse circle centered on actual connector path; Pulse legend included in the diagram.
+- **UI:** View containers; Action and Information symbols; Actions in the left column; Information in the right column; left-aligned item labels; deterministic declared ordering within each column.
+- **Deployment:** nested host/program/service topology; visible ports and directed connections; connection labels clearly separated above connector geometry; implementation selections shown in labels.
+- **All diagrams:** consistent outer clearance between visible diagram content and the exported viewport.
 
 These verified rendering decisions constitute Visual Language v1.
 
