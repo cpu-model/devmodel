@@ -252,13 +252,6 @@ function decorate(root, {name, model, requirements}) {
     const box = text.getBBox();
     let x = box.x + box.width + 16;
     let y = box.y + box.height / 2;
-    if (name === 'ui' && (group.dataset.key.startsWith('ui.action.') || group.dataset.key.startsWith('ui.info.') ||
-        group.dataset.key.startsWith('ui.subview-action.') || group.dataset.key.startsWith('ui.subview-info.'))) {
-      const rectangle = group.querySelector(':scope > g.shape > rect');
-      if (!rectangle) throw Error(`Missing UI item rectangle: ${group.dataset.key}`);
-      x = Number(rectangle.getAttribute('x')) + Number(rectangle.getAttribute('width')) + 16;
-      y = Number(rectangle.getAttribute('y')) + Number(rectangle.getAttribute('height')) / 2;
-    }
     if (name === 'pulse') {
       const rectangle = group.querySelector(':scope > g.shape > rect');
       if (rectangle) {
@@ -335,7 +328,7 @@ function decorate(root, {name, model, requirements}) {
     'font-family': 'Arial',
     'font-size': 12,
     fill: '#475569',
-  }, '= directly attached requirements'));
+  }, 'directly attached requirements'));
   const bottomExtra = footerY + 12 - contentBottom;
   drawing.setAttribute('viewBox', [box[0] - margin, box[1] - margin, box[2] + 2 * margin, box[3] + margin + bottomExtra].join(' '));
   drawing.setAttribute('width', Number(drawing.getAttribute('width')) + 2 * margin);
