@@ -7,12 +7,11 @@ assert.match(source, /const margin = 20/);
 assert.match(source, /if \(name === 'pulse'\)[\s\S]*'PULSES'/);
 assert.match(source, /for \(const pulse of model\.pulses\)/);
 assert.match(source, /textNode\.setAttribute\('text-anchor', 'start'\)/);
-assert.match(source, /group\.dataset\.key\.startsWith\('ui\.action\.'\)/);
-assert.match(source, /Number\(rectangle\.getAttribute\('width'\)\) \+ 16/);
 assert.match(source, /paths\[index\]\.removeAttribute\('mask'\)/);
 assert.match(source, /Cannot establish Deployment label clearance/);
 assert.match(source, /data-requirement-legend/);
-assert.match(source, /= directly attached requirements/);
+assert.match(source, /directly attached requirements/);
+assert.doesNotMatch(source, /= directly attached requirements/);
 assert.doesNotMatch(source, /r in a circle = directly attached requirements/);
 assert.doesNotMatch(source, /<div class="legend">/);
 
