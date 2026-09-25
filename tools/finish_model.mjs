@@ -254,19 +254,10 @@ function decorate(root, {name, model, requirements}) {
     const box = text.getBBox();
     let x = box.x + box.width + 16;
     if (name === 'ui' && /^(ui\.(?:action|info|subview-action|subview-info)\.)/.test(group.dataset.key)) {
-      const kind = /^(?:ui\.)?(?:subview-)?action\./.test(group.dataset.key) ? 'action' : 'info';
-      const peers = [...svg.querySelectorAll('g[data-key]')].filter(item => {
-        const key = item.dataset.key || '';
-        return kind === 'action'
-          ? /^(ui\.(?:action|subview-action)\.)/.test(key)
-          : /^(ui\.(?:info|subview-info)\.)/.test(key);
-      });
-      const right = Math.max(...peers.map(item => {
-        const peerText = item.querySelector(':scope > text');
-        const peerBox = peerText.getBBox();
-        return peerBox.x + peerBox.width;
-      }));
-      x = right + 16;
+      const shape = group.querySelector(':scope > g.shape > rect');
+      if (!shape) throw Error('UI item has no layout rectangle: ' + group.dataset.key);
+      x = Number(shape.getAttribute('x')) + Number(shape.getAttribute('width')) - 18;
+
     }
     let y = box.y + box.height / 2;
     if (name === 'ui') {
