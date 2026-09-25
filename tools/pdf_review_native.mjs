@@ -167,7 +167,11 @@ for(const name of names){
 
   // Final paint order: connections first, then boxes, circles and text.
   // This preserves the visually verified D2 layering in the native PDF.
-  for(const o of page.__boxes||[]){
+  // Deployment connections run inside enclosing Host/Program boxes. Repainting
+  // those filled containers after the paths hides the connections completely.
+  // The initial rectangle pass already established the Deployment box geometry,
+  // so preserve its subsequently drawn connection paths instead of covering them.
+  for(const o of name==='deployment'?[]:(page.__boxes||[])){
     if(!o.dash?.length){page.drawRectangle(o);continue;}
     page.drawRectangle({x:o.x,y:o.y,width:o.width,height:o.height,color:o.color,opacity:o.opacity});
     const dashLength=o.dash[0]*scale;
