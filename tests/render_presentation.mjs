@@ -10,6 +10,7 @@ assert.match(source, /textNode\.setAttribute\('text-anchor', 'start'\)/);
 assert.match(source, /paths\[index\]\.removeAttribute\('mask'\)/);
 assert.match(source, /Cannot establish Deployment label clearance/);
 assert.match(source, /data-requirement-legend/);
+assert.match(source, /x: legendX \\+ 38/);
 assert.match(source, /directly attached requirements/);
 assert.doesNotMatch(source, /= directly attached requirements/);
 assert.doesNotMatch(source, /r in a circle = directly attached requirements/);
