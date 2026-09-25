@@ -170,8 +170,10 @@ function decorate(root, {name, model, requirements}) {
           const rectangle = group.querySelector(':scope > g.shape > rect');
           const textNode = group.querySelector(':scope > text');
           if (!rectangle || !textNode) throw Error(`Incomplete UI item SVG element: ${view.id} / ${kind} / ${item.id}`);
+          const labelX = Number(rectangle.getAttribute('x')) + 8;
           textNode.setAttribute('text-anchor', 'start');
-          textNode.setAttribute('x', Number(rectangle.getAttribute('x')) + 8);
+          textNode.setAttribute('x', labelX);
+          textNode.querySelectorAll(':scope > tspan').forEach(span => span.setAttribute('x', labelX));
         });
       }
     });
