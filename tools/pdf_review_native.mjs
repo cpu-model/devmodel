@@ -219,8 +219,6 @@ for(const name of names){
       ? [x-r,y-r,x+r,y+r]
       : [x-10,y+r,x+10,y+r+20];
     if(name==='ui')console.log('UI geometry chain',JSON.stringify({key,source:sourceGeometry,svgBadge:{cx:+ca.cx,cy:+ca.cy,r:+ca.r},pdfBadge:{x,y,r},rect}));
-    page.drawCircle({x,y,size:r,color:rgb(1,193/255,7/255),borderColor:rgb(0,0,0),borderWidth:.75});
-    page.drawText('r',{x:x-r*.34,y:y-r*.48,size:r*1.15,font:bold,color:rgb(0,0,0)});
     const annot=doc.context.obj({
       Type:PDFName.of('Annot'),
       Subtype:PDFName.of('Text'),
@@ -233,7 +231,7 @@ for(const name of names){
       T:PDFHexString.fromText(label),
       Name:PDFName.of('Comment'),
       Open:false,
-      F:34,
+      F:4,
     });
     annotationRefs.push(doc.context.register(annot));
   }
