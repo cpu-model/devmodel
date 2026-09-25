@@ -404,7 +404,7 @@ If space is unavailable, adjust deterministic generation or layout spacing. Do n
 
 ### 12.4 Requirement legend
 
-Every diagram includes a small requirement legend at the lower left. In the permanent PDF review artifact, the legend uses the same reader-rendered annotation icon as requirement popups, followed directly by `directly attached requirements`. It must not show an `r` circle as a substitute for the annotation icon.
+Every diagram includes a small requirement legend at the lower left. In the permanent PDF review artifact, the legend uses the same reader-rendered annotation icon as requirement popups, followed with clear whitespace by `directly attached requirements`. It must not show an `r` circle as a substitute for the annotation icon.
 
 ### 12.4 PDF review behavior
 
@@ -412,7 +412,7 @@ The permanent review surface is a PDF generated from the finished decorated SVG.
 
 Every visible `r` indicator has one PDF Text annotation whose contents are the complete requirement strings directly attached to the target, in declared order and without paraphrasing or omission.
 
-The Text annotation's note icon is placed deterministically outside the `r` circle, attached at approximately the 14 o'clock position. It must not obscure the circle or its letter.
+The Text annotation's note icon is placed deterministically from the requirement-indicator anchor. For Action and Information items it is centered at the indicator anchor immediately to the right of the visible label end. For other targets it is placed outside the `r` circle at approximately the 14 o'clock position. It must not obscure visible model text or semantic symbols.
 
 The permanent PDF deliberately contains no internal requirement pages or link annotations. This keeps the artifact smaller and structurally simpler and makes the popup annotation the single requirement-review interaction.
 
