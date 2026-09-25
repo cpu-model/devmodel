@@ -323,7 +323,7 @@ function decorate(root, {name, model, requirements}) {
   legend.append(element('circle', {cx: legendX + 8, cy: footerY - 4, r: 8, fill: 'white'}));
   drawing.append(legend);
   drawing.append(element('text', {
-    x: legendX + 30,
+    x: legendX + 38,
     y: footerY,
     'font-family': 'Arial',
     'font-size': 12,
