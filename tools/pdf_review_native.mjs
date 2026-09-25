@@ -218,21 +218,14 @@ for(const name of names){
   for(const m of svg.matchAll(re)){
     const ga=attrs('<g '+m[1]+'>'),circle=m[2].match(/<circle\b[^>]*>/);if(!circle)continue;const ca=attrs(circle[0]);
     const x=(+ca.cx-b.x)*scale,y=yPdf(b,+ca.cy),r=(+ca.r)*scale,key=decode(ga['data-key']||''),label=decode(ga['data-label']||key);
-    const geometryMatch=m[0].match(/data-requirement-geometry="([^"]+)"/);
-    const sourceGeometry=geometryMatch?JSON.parse(decode(geometryMatch[1])):null;
     const reqs=data.requirements[key];
     if(!Array.isArray(reqs)||!reqs.length)throw Error('Requirement badge has no requirements: '+key);
     const rect=(name==='ui' && /^(ui\.(?:action|info|subview-action|subview-info)\.)/.test(key))
       ? [x-r,y-r,x+r,y+r]
       : [x-10,y+r,x+10,y+r+20];
-    if(name==='ui')console.log('UI geometry chain',JSON.stringify({key,source:sourceGeometry,svgBadge:{cx:+ca.cx,cy:+ca.cy,r:+ca.r},pdfBadge:{x,y,r},rect}));
     const annot=doc.context.obj({
       Type:PDFName.of('Annot'),
       Subtype:PDFName.of('Text'),
-      // Chrome renders the Text-annotation note icon with its own visual
-      // footprint around the PDF annotation rectangle. For UI item labels,
-      // offset that rectangle to the right of the SVG requirement anchor so
-      // the rendered note icon clears the visible label instead of covering it.
       Rect:rect,
       Contents:PDFHexString.fromText(reqs.join('\n\n')),
       T:PDFHexString.fromText(label),
