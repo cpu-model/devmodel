@@ -216,7 +216,7 @@ for(const name of names){
     const rect=(name==='ui' && /^(ui\.(?:action|info|subview-action|subview-info)\.)/.test(key))
       ? [x+4,y+8,x+2*r+4,y+2*r+8]
       : [x-10,y+r,x+10,y+r+20];
-    if(name==='ui')console.log('UI PDF annotation geometry',JSON.stringify({key,svgBadge:{cx:+ca.cx,cy:+ca.cy,r:+ca.r},pdfBadge:{x,y,r},rect}));
+    if(name==='ui')console.log('UI geometry chain',JSON.stringify({key,source:ga['data-requirement-geometry']?JSON.parse(decode(ga['data-requirement-geometry'])):null,svgBadge:{cx:+ca.cx,cy:+ca.cy,r:+ca.r},pdfBadge:{x,y,r},rect}));
     const annot=doc.context.obj({
       Type:PDFName.of('Annot'),
       Subtype:PDFName.of('Text'),
