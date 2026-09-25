@@ -394,7 +394,7 @@ Placement is deterministic and derived from actual rendered geometry. The indica
 - System, party, or Behavior: near the label or in a clear corner of the shape.
 - Pulse: beside the numbered Pulse symbol, outside that symbol and away from the connector path. Never place `r` inside the numbered circle.
 - View: beside the View title, representing requirements attached directly to that View.
-- Action or Information: immediately to the right of the item's label, preserving existing semantic symbols.
+- Action or Information: immediately to the right of the visible end of the item's label, independent of the width of its containing column or item area, preserving existing semantic symbols.
 - Deployment host, program, service, or port: beside its label or in a clear corner of its containing shape.
 - Deployment connection: beside its relation label and clear of the connector and arrowhead.
 
@@ -404,7 +404,7 @@ If space is unavailable, adjust deterministic generation or layout spacing. Do n
 
 ### 12.4 Requirement legend
 
-Every diagram includes a small requirement legend at the lower left. In the permanent PDF review artifact, the legend uses the same reader-rendered annotation icon as requirement popups, followed by `= directly attached requirements`. It must not show an `r` circle as a substitute for the annotation icon.
+Every diagram includes a small requirement legend at the lower left. In the permanent PDF review artifact, the legend uses the same reader-rendered annotation icon as requirement popups, followed directly by `directly attached requirements`. It must not show an `r` circle as a substitute for the annotation icon.
 
 ### 12.4 PDF review behavior
 
