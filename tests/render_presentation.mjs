@@ -7,6 +7,7 @@ assert.match(source, /const margin = 20/);
 assert.match(source, /if \(name === 'pulse'\)[\s\S]*'PULSES'/);
 assert.match(source, /for \(const pulse of model\.pulses\)/);
 assert.match(source, /textNode\.setAttribute\('text-anchor', 'start'\)/);
+assert.match(source, /textNode\.querySelectorAll\(':scope > tspan'\)\.forEach\(span => span\.setAttribute\('x', labelX\)\)/);
 assert.match(source, /paths\[index\]\.removeAttribute\('mask'\)/);
 assert.match(source, /Cannot establish Deployment label clearance/);
 assert.match(source, /data-requirement-legend/);
