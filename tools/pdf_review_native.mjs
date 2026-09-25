@@ -202,23 +202,6 @@ for(const name of names){
   }
 
 
-  const legendMatch=svg.match(/<g\b[^>]*data-requirement-legend="true"[^>]*>([\s\S]*?)<\/g>/);
-  if(legendMatch){
-    const circle=legendMatch[1].match(/<circle\b[^>]*>/);
-    if(!circle)throw Error('Requirement legend has no annotation anchor');
-    const ca=attrs(circle[0]),x=(+ca.cx-b.x)*scale,y=yPdf(b,+ca.cy),r=(+ca.r)*scale;
-    addAnnot(page,doc,{
-      Type:PDFName.of('Annot'),
-      Subtype:PDFName.of('Text'),
-      Rect:[x-r,y-r,x+r,y+r],
-      Contents:PDFHexString.fromText('Directly attached requirements'),
-      T:PDFHexString.fromText('Requirements'),
-      Name:PDFName.of('Comment'),
-      Open:false,
-      F:4,
-    });
-  }
-
   const re=/<g\b([^>]*data-requirement-badge="true"[^>]*)>([\s\S]*?)<\/g>/g;
   const annotationRefs=[];
   for(const m of svg.matchAll(re)){
@@ -239,6 +222,22 @@ for(const name of names){
     annotationRefs.push(doc.context.register(annot));
   }
   if(annotationRefs.length)page.node.set(PDFName.of('Annots'),doc.context.obj(annotationRefs));
+  const legendMatch=svg.match(/<g\b[^>]*data-requirement-legend="true"[^>]*>([\s\S]*?)<\/g>/);
+  if(legendMatch){
+    const circle=legendMatch[1].match(/<circle\b[^>]*>/);
+    if(!circle)throw Error('Requirement legend has no annotation anchor');
+    const ca=attrs(circle[0]),x=(+ca.cx-b.x)*scale,y=yPdf(b,+ca.cy),r=(+ca.r)*scale;
+    addAnnot(page,doc,{
+      Type:PDFName.of('Annot'),
+      Subtype:PDFName.of('Text'),
+      Rect:[x-r,y-r,x+r,y+r],
+      Contents:PDFHexString.fromText('Directly attached requirements'),
+      T:PDFHexString.fromText('Requirements'),
+      Name:PDFName.of('Comment'),
+      Open:false,
+      F:4,
+    });
+  }
   const pdfPath=path.join(out,`${name}.pdf`);
   fs.writeFileSync(pdfPath,await doc.save({useObjectStreams:false}));
   console.log('Native PDF diagram ready:',pdfPath);
