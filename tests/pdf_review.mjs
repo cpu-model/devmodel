@@ -17,5 +17,6 @@ assert.doesNotMatch(source,/review\.pdf/);
 assert.match(source,/page\.drawLine/);
 assert.match(source,/page\.drawCircle/);
 assert.match(source,/page\.drawRectangle/);
+assert.match(source,/name==='deployment'\?\[\]:\(page\.__boxes\|\|\[\]\)/);
 assert.doesNotMatch(source,/review-native\.pdf/);
 console.log('Native PDF review contract checks passed');
