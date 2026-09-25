@@ -51,14 +51,9 @@ jobs:
       - name: Render reference model review
         env:
           CPU_REVIEW_BROWSER: /usr/bin/google-chrome
-          CPU_REVIEW_READER_MARKERS_DIR: ${{ runner.temp }}/reader-owned-markers
-        run: npm run render -- --source examples/model --out examples/model --review-title "devmodel reference model review"
-
-      - name: Upload reader-owned marker comparison
-        uses: actions/upload-artifact@v4
-        with:
-          name: reader-owned-marker-comparison
-          path: ${{ runner.temp }}/reader-owned-markers/*.pdf
+        run: |
+          npm run render -- --source examples/model --out examples/model --review-title "devmodel reference model review"
+          node tools/pdf_review_native.mjs examples/model --reader-owned-markers
 
       - name: Commit changed reference diagrams
         run: |
