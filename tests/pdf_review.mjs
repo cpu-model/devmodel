@@ -7,6 +7,8 @@ assert.match(source,/const visibleSvg=svg/);
 assert.match(source,/data-requirement-legend="true"/);
 assert.match(source,/Directly attached requirements/);
 assert.match(source,/Subtype:PDFName\.of\('Text'\)/);
+assert.match(source,/F:2/);
+assert.match(source,/visible requirement marker/i);
 assert.doesNotMatch(source,/Subtype:PDFName\.of\('Link'\)/);
 assert.match(source,/Contents:PDFHexString\.fromText\(reqs\.join\('\\n\\n'\)\)/);
 assert.match(source,/ui/);
