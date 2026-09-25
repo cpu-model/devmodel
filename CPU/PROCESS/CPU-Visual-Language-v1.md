@@ -394,13 +394,17 @@ Placement is deterministic and derived from actual rendered geometry. The indica
 - System, party, or Behavior: near the label or in a clear corner of the shape.
 - Pulse: beside the numbered Pulse symbol, outside that symbol and away from the connector path. Never place `r` inside the numbered circle.
 - View: beside the View title, representing requirements attached directly to that View.
-- Action or Information: beside the item's label, preserving existing semantic symbols.
+- Action or Information: immediately to the right of the item's label, preserving existing semantic symbols.
 - Deployment host, program, service, or port: beside its label or in a clear corner of its containing shape.
 - Deployment connection: beside its relation label and clear of the connector and arrowhead.
 
 An indicator must not overlap another indicator, label, arrowhead, initiative symbol, numbered Pulse symbol, unrelated element, or connector. Use consistent size and minimum clearance across diagrams; do not introduce manual per-diagram pixel fixes.
 
 If space is unavailable, adjust deterministic generation or layout spacing. Do not weaken notation or introduce an unstable second layout engine. Keep indicators inside the exported viewport without clipping.
+
+### 12.4 Requirement legend
+
+Every diagram includes a small requirement legend at the lower left. In the permanent PDF review artifact, the legend uses the same reader-rendered annotation icon as requirement popups, followed by `= directly attached requirements`. It must not show an `r` circle as a substitute for the annotation icon.
 
 ### 12.4 PDF review behavior
 
