@@ -62,7 +62,9 @@ for(const name of names){
   const b=box(svg);
   // Requirement badges remain in the finished SVG as stable annotation anchors,
   // but the PDF shows only the reader's Text-annotation icon, not the SVG r badge.
-  const visibleSvg=svg.replace(/<g\b[^>]*data-requirement-badge="true"[^>]*>[\s\S]*?<\/g>/g,'');
+  const visibleSvg=svg
+    .replace(/<g\b[^>]*data-requirement-badge="true"[^>]*>[\s\S]*?<\/g>/g,'')
+    .replace(/<g\b[^>]*data-requirement-legend="true"[^>]*>[\s\S]*?<\/g>/g,'');
   const page=doc.addPage([b.w*scale,b.h*scale]);
   page.drawRectangle({x:0,y:0,width:b.w*scale,height:b.h*scale,color:rgb(1,1,1)});
 
@@ -199,6 +201,23 @@ for(const name of names){
     let yy=+a.y;for(const line of lines){yy+=line.dy;let x=(line.x-b.x)*scale,y=yPdf(b,yy),w=font.widthOfTextAtSize(line.text,size);if(anchor==='middle')x-=w/2;else if(anchor==='end')x-=w;page.drawText(line.text,{x,y:yPdf(b,yy)-size*.22,size,font,color});}
   }
 
+
+  const legendMatch=svg.match(/<g\b[^>]*data-requirement-legend="true"[^>]*>([\s\S]*?)<\/g>/);
+  if(legendMatch){
+    const circle=legendMatch[1].match(/<circle\b[^>]*>/);
+    if(!circle)throw Error('Requirement legend has no annotation anchor');
+    const ca=attrs(circle[0]),x=(+ca.cx-b.x)*scale,y=yPdf(b,+ca.cy),r=(+ca.r)*scale;
+    addAnnot(page,doc,{
+      Type:PDFName.of('Annot'),
+      Subtype:PDFName.of('Text'),
+      Rect:[x-r,y-r,x+r,y+r],
+      Contents:PDFHexString.fromText('Directly attached requirements'),
+      T:PDFHexString.fromText('Requirements'),
+      Name:PDFName.of('Comment'),
+      Open:false,
+      F:4,
+    });
+  }
 
   const re=/<g\b([^>]*data-requirement-badge="true"[^>]*)>([\s\S]*?)<\/g>/g;
   const annotationRefs=[];
