@@ -261,7 +261,7 @@ function decorate(root, {name, model, requirements}) {
     let y = box.y + box.height / 2;
     if (name === 'ui') {
       const spans = [...text.querySelectorAll(':scope > tspan')];
-      console.log('UI requirement geometry', JSON.stringify({
+      group.dataset.requirementGeometry = JSON.stringify({
         key: group.dataset.key,
         label: text.textContent.trim(),
         textBox: {x: box.x, y: box.y, width: box.width, height: box.height},
@@ -270,7 +270,7 @@ function decorate(root, {name, model, requirements}) {
           return {text: span.textContent.trim(), x: b.x, y: b.y, width: b.width, height: b.height};
         }),
         anchor: {x, y},
-      }));
+      });
     }
     if (name === 'pulse') {
       const rectangle = group.querySelector(':scope > g.shape > rect');
