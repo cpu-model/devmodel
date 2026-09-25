@@ -291,6 +291,7 @@ function decorate(root, {name, model, requirements}) {
     }
     const badge = element('g', {
       'data-key': group.dataset.key,
+      ...(group.dataset.requirementGeometry ? {'data-requirement-geometry': group.dataset.requirementGeometry} : {}),
       'data-label': group.dataset.label,
       'data-requirement-badge': 'true',
       role: 'button',
