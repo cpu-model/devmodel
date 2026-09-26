@@ -17,7 +17,7 @@ The formats are intentionally small and artifact-specific. v1 does not introduce
 - IDs are machine-readable, stable within their natural artifact scope, and unique where the artifact requires identity.
 - Names are human-readable display text and may change without changing identity.
 - Presentation and renderer concerns do not belong in semantic YAML.
-- Generated D2, SVG, PNG, and HTML files are derived artifacts and are not semantic sources.
+- Generated PDF diagrams and any optional preview files are derived artifacts and are not semantic sources.
 - References must resolve within the artifact, except for the defined requirement target addresses.
 
 ## 3. Context format
@@ -784,13 +784,13 @@ system/
   deployment.yaml
   requirements.yaml
 
-context.yaml -> context.d2 -> context.svg
-pulse.yaml   -> pulse.d2   -> pulse.svg
-ui.yaml      -> ui.d2      -> ui.svg
-deployment.yaml -> deployment.d2 -> deployment.svg
+context.yaml + requirements.yaml -> context.pdf
+pulse.yaml + requirements.yaml -> pulse.pdf
+ui.yaml + requirements.yaml -> ui.pdf
+deployment.yaml + requirements.yaml -> deployment.pdf
 ```
 
-The YAML files are the semantic sources. D2, SVG, PNG, and HTML are generated. Rendering follows Visual Language v1 and must not add, remove, or reinterpret semantics.
+The YAML files are the semantic sources. The four PDF diagrams are generated directly as native vector PDF. Rendering follows Visual Language v1 and must not add, remove, or reinterpret semantics.
 
 ## 9. v1 design principle
 
@@ -800,7 +800,7 @@ Keep each artifact small, explicit, artifact-specific, strict, and human-readabl
 
 Requirements are attached to identified model elements. `requirements.yaml` belongs to the same system model as the three core semantic artifacts and complementary Deployment artifact; all five files are reviewed together.
 
-Requirements must not be embedded in model names, generated D2, or SVG. Requirement indicators, click behavior, and layout are derived presentation defined by Visual Language v1.
+Requirements must not be embedded in model names or page graphics. PDF annotation markers, popup behavior, and placement are derived presentation defined by Visual Language v1.
 
 ### 10.1 Document shape
 
@@ -864,7 +864,7 @@ One requirement string may be explicitly repeated at several targets if intended
 
 The reviewed model comprises the three core semantic artifacts, complementary Deployment artifact, and requirement attachment file. Diagram review provides access to the exact requirement strings attached to the selected element. Approval of diagrams alone must not be assumed to approve requirements omitted from review.
 
-Generation reads all five sources. Requirement indicators are derived solely from resolved, non-empty attachments. Generated files must not add, omit, summarize, or reinterpret the authoritative requirement strings shown during review.
+Generation reads all five sources. PDF annotations are derived solely from resolved, non-empty attachments. Generated files must not add, omit, summarize, or reinterpret the authoritative requirement strings shown during review.
 
 ### 10.6 Requirements field reference
 

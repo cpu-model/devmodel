@@ -34,14 +34,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install D2 0.9.0
-        run: |
-          curl -fsSL -o /tmp/d2.tar.gz https://github.com/terrastruct/d2/releases/download/v0.9.0/d2-v0.9.0-linux-amd64.tar.gz
-          tar -xzf /tmp/d2.tar.gz -C /tmp
-          mkdir -p "$HOME/.local/bin"
-          install -m 0755 /tmp/d2-v0.9.0/bin/d2 "$HOME/.local/bin/d2"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
       - name: Test devmodel
         run: npm test
 
@@ -49,11 +41,7 @@ jobs:
         run: npm run validate -- --source examples/model
 
       - name: Render reference model review
-        env:
-          CPU_REVIEW_BROWSER: /usr/bin/google-chrome
-        run: |
-          npm run render -- --source examples/model --out examples/model --review-title "devmodel reference model review"
-          node tools/pdf_review_native.mjs examples/model --reader-owned-markers
+        run: npm run render -- --source examples/model --out examples/model
 
       - name: Commit changed reference diagrams
         run: |

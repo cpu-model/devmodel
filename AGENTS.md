@@ -14,7 +14,7 @@ Resolve the methodology root as the directory containing this file. Read its `SP
 - Treat the current `cpu-model/devmodel` default branch as the normative source of truth for the general CPU methodology, including its specifications, workflow, validation, rendering, and review tools.
 - Treat Markdown specifications in `cpu-model/devmodel` as authoritative methodology.
 - Treat `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml` as authoritative for a concrete system.
-- Treat D2, SVG, PNG, and HTML as generated output. Never infer missing semantics from generated layout.
+- Treat PDF diagram geometry and any optional preview formats as generated output. Never infer missing semantics from generated layout.
 - Do not edit generated artifacts to change meaning; change the semantic YAML or normative Markdown and regenerate.
 - In a consuming project, `CPU/` contains the project's concrete five-file semantic model. It does not contain a copied CPU methodology. General methodology is read from the current `cpu-model/devmodel` repository. In the normal local workspace, the project exposes that sibling clone through an ignored `devmodel -> ../devmodel` symbolic link so local agents can read `./devmodel/AGENTS.md`. ChatGPT may read the same repository directly from GitHub.
 
@@ -78,16 +78,16 @@ Therefore a normal task prompt does not need to restate synchronization, source 
 3. For model changes, update semantic YAML first.
 4. From the methodology root containing `package.json`, run `npm test`.
 5. Run strict validation of the complete five-file model, using `npm run validate -- --source <model-directory>` or the equivalent validation performed by rendering.
-6. From that root, run the renderer against the complete model. Rendering uses a temporary working directory and publishes only `context.pdf`, `pulse.pdf`, `ui.pdf`, and `deployment.pdf` into the concrete project's `CPU/` directory. These four PDFs are the durable generated review artifacts and are committed with the accepted model change. D2, raw SVG, finished SVG, HTML, JSON, and other intermediate renderer files are temporary and must not be committed to the project repository.
+6. From that root, run the renderer against the complete model. Rendering publishes only `context.pdf`, `pulse.pdf`, `ui.pdf`, and `deployment.pdf` into the concrete project's `CPU/` directory. These four PDFs are the durable generated review artifacts and are committed with the accepted model change. The normative renderer draws native PDF vector content directly and creates no D2 or SVG intermediates.
 7. Present the four repository-backed PDFs for review.
 8. Verify that Context, Pulse, UI, and Deployment PDFs were generated and that their requirement popup annotations contain the exact complete ordered requirement text for every annotated model element.
 9. Present the generated PDFs to the user and ask for review.
 10. Apply requested changes, rerun the tests, validation, and rendering, reload the same review surface, and continue until the user approves the model.
 11. Report remaining uses of potentially ambiguous terminology and why each is intentional.
 
-When the current ChatGPT execution environment cannot run the normative renderer locally, use the devmodel-provided GitHub Actions project-review workflow rather than recreating or approximating the renderer. The project repository may carry the workflow file supplied by devmodel; it checks out the current devmodel, installs its declared Node dependencies and D2 0.9.0, tests and strictly validates the model, renders the four diagram PDFs into `CPU/`, and commits those changed review artifacts. The generated artifacts must still be presented to the user for review; successful automation is not user acceptance.
+When the current ChatGPT execution environment cannot run the normative renderer locally, use the devmodel-provided GitHub Actions project-review workflow rather than recreating or approximating the renderer. The project repository may carry the workflow file supplied by devmodel; it checks out the current devmodel, installs its declared Node dependencies, tests and strictly validates the model, renders the four diagram PDFs into `CPU/`, and commits those changed review artifacts. The generated artifacts must still be presented to the user for review; successful automation is not user acceptance.
 
-These steps apply after semantic model changes regardless of which approved actor or repository client wrote the YAML files. For concrete project models, the generated review artifacts are durable project artifacts and must remain versioned in the project repository so the exact reviewed diagrams can be recovered from repository history. Intermediate D2, SVG, PNG, HTML, JSON, and similar renderer files are temporary derived artifacts and are not retained in the project repository.
+These steps apply after semantic model changes regardless of which approved actor or repository client wrote the YAML files. For concrete project models, the generated review artifacts are durable project artifacts and must remain versioned in the project repository so the exact reviewed diagrams can be recovered from repository history. Optional previews and diagnostic exports are temporary derived artifacts and are not retained in the project repository.
 
 ## Environment responsibilities
 
@@ -103,7 +103,7 @@ After completing and verifying the requested work, Codex normally stops. It does
 
 When Codex operates inside ChatGPT Chat or Work, both responsibility sections apply: the ChatGPT environment provides the conversation and available review surface, while work may be divided according to the available tools and explicit delegation.
 
-The normal workflow is collaborative and uses the capabilities available in the current ChatGPT environment. Discussion and model editing may take place in ordinary ChatGPT Chat. When local execution and an integrated browser are available, validation, rendering, and interactive review should remain in the same environment. Offline opening of `index.html` and standalone Codex repository work are fallback workflows, not the default handoff.
+The normal workflow is collaborative and uses the capabilities available in the current ChatGPT environment. Discussion and model editing may take place in ordinary ChatGPT Chat. When local execution and an integrated PDF viewer are available, validation, rendering, and interactive review should remain in the same environment. Opening the generated PDFs in a separate local reader and standalone Codex repository work are fallback workflows, not the default handoff.
 
 ## Increment and conversation continuity
 

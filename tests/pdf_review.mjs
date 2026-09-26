@@ -1,29 +1,15 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const source=fs.readFileSync(new URL('../tools/pdf_review_native.mjs',import.meta.url),'utf8');
-assert.match(source,/data-requirement-badge="true"/);
-assert.match(source,/const visibleSvg=readerOwnedMarkers/);
-assert.match(source,/replace\(\/<g\\b\[\^>\]\*data-requirement-badge/);
-assert.match(source,/data-requirement-legend="true"/);
-assert.match(source,/Directly attached requirements/);
-assert.match(source,/Subtype:PDFName\.of\('Text'\)/);
-assert.match(source,/F:readerOwnedMarkers\?4:2/);
-assert.match(source,/suppress CPU-rendered requirement/);
-assert.match(source,/F:readerOwnedMarkers\?4:2/);
-assert.doesNotMatch(source,/Subtype:PDFName\.of\('Link'\)/);
-assert.match(source,/Contents:PDFHexString\.fromText\(reqs\.join\('\\n\\n'\)\)/);
-assert.match(source,/ui/);
-assert.match(source,/x-r,y-r,x\+r,y\+r/);
-assert.match(source,/\? \[x-r,y-r,x\+r,y\+r\]/);
-assert.match(source,/: \[x-10,y\+r,x\+10,y\+r\+20\]/);
-assert.doesNotMatch(source,/Tillbaka till diagrammet/);
-assert.match(source,/const names=\['context','pulse','ui','deployment'\]/);
-assert.match(source,/path\.join\(out,`\$\{name\}\.pdf`\)/);
-assert.doesNotMatch(source,/review\.pdf/);
-assert.match(source,/page\.drawLine/);
-assert.match(source,/page\.drawCircle/);
-assert.match(source,/page\.drawRectangle/);
-assert.match(source,/name==='deployment'\?\[\]:\(page\.__boxes\|\|\[\]\)/);
-assert.doesNotMatch(source,/review-native\.pdf/);
-console.log('Native PDF review contract checks passed');
+for (const name of ['context', 'pulse', 'ui', 'deployment']) {
+  const source = fs.readFileSync(new URL(`../tools/native/${name}_pdf.mjs`, import.meta.url), 'utf8');
+  assert.match(source, /Subtype: PDFName\.of\('Text'\)/);
+  assert.match(source, /Name: PDFName\.of\('Comment'\)/);
+  assert.match(source, /AP: \{N: appearanceRef\}/);
+  assert.match(source, /Subtype: PDFName\.of\('Popup'\)/);
+  assert.match(source, /Open: PDFBool\.False/);
+  assert.match(source, /Contents: PDFHexString\.fromText\(contents\.join\('\\n\\n'\)\)/);
+  assert.doesNotMatch(source, /Subtype: PDFName\.of\('Link'\)/);
+  assert.doesNotMatch(source, /<svg|\.svg\b|D2|ELK/);
+}
+console.log('Native PDF annotation contract checks passed');

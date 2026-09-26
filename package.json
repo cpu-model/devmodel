@@ -8,9 +8,12 @@
   },
   "scripts": {
     "test": "node tests/all.mjs",
-    "validate": "node tools/render_model.mjs --validate-only",
-    "render": "node tools/render_model.mjs",
-    "review": "node tools/serve_model.mjs"
+    "validate": "node tools/validate_native_model.mjs",
+    "render": "node tools/render_native_model.mjs",
+    "render:context-native": "node tools/render_context_native.mjs",
+    "render:pulse-native": "node tools/render_pulse_native.mjs",
+    "render:ui-native": "node tools/render_ui_native.mjs",
+    "render:deployment-native": "node tools/render_deployment_native.mjs"
   },
   "dependencies": {
     "yaml": "2.9.1",

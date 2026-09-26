@@ -2,8 +2,6 @@
 
 This repository contains the reusable methodology and tooling for the Context-Pulse-UI (CPU) development model.
 
-**[Open the interactive CPU model site](https://cpu-model.github.io/devmodel/)** to review the diagrams, activate requirement circles, and inspect the authoritative YAML sources on desktop or mobile.
-
 ## Start here
 
 - [`SPEC.md`](SPEC.md) explains the model, source hierarchy, and project adoption rules.
@@ -13,7 +11,7 @@ This repository contains the reusable methodology and tooling for the Context-Pu
 - [`examples/model`](examples/model) is a minimal valid model.
 - [`CPU - lathund för ett nytt projekt`](CPU-nytt-projekt-lathund.md) is a concise Swedish guide from an empty repository to incremental CPU development.
 
-Markdown is the only documentation source. The repository contains no PDF documents or PDF build chain.
+Markdown is the only documentation source. The repository includes a native PDF renderer for model review artifacts.
 
 ## Model sources
 
@@ -34,16 +32,13 @@ A concrete system model consists of:
 Requirements:
 
 - Node.js 20 or later
-- D2 0.9.0 with ELK support
-- A modern browser to open the generated interactive review page
+- A PDF reader with support for Text annotations
 
 ```sh
 npm install
 ```
 
-The toolchain has no Python dependencies.
-
-If D2 is not on `PATH`, set `D2_BIN` or pass `--d2`.
+The toolchain has no Python, D2, browser, or SVG dependency.
 
 ### Use CPU from a project repository
 
@@ -72,19 +67,10 @@ Validation is strict: duplicate YAML keys, unknown fields, invalid identities, u
 ```sh
 npm run render -- \
   --source /path/to/model \
-  --out /path/to/output \
-  --review-title "Increment 3"
+  --out /path/to/model
 ```
 
-The output contains deterministic D2, SVG, `model.json`, and a self-contained `index.html`. Open `index.html` to display all four decorated diagrams and inspect the exact requirements attached to each marked element.
-
-For the normal collaborative ChatGPT task or Work workflow, the agent then runs:
-
-```sh
-npm run review -- --dir /path/to/output
-```
-
-The agent opens the printed localhost URL in the current task's integrated browser, verifies the interactive `r` circles, and leaves that review surface available while you discuss changes. You should not need to open a terminal, external browser, or separate modeling tool. Opening `index.html` manually is only the offline fallback.
+The renderer strictly validates all five YAML sources, computes artifact-specific layout, and writes only `context.pdf`, `pulse.pdf`, `ui.pdf`, and `deployment.pdf`. The diagrams are native PDF vector graphics. Elements with attached requirements carry blue speech-bubble Text annotations containing the exact complete ordered requirement text.
 
 ## Repository checks
 
@@ -92,4 +78,4 @@ The agent opens the printed localhost URL in the current task's integrated brows
 npm test
 ```
 
-This validates the normative terminology and the included example model without requiring D2 or Chrome.
+This validates the normative terminology, strict model rules, native PDF structure, annotations, and the included example model.

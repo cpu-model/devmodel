@@ -12,10 +12,15 @@ function run(script, args = []) {
 }
 
 run('tests/validate_naming.mjs');
-run('tools/render_model.mjs', ['--source', path.join(root, 'examples', 'model'), '--validate-only']);
+run('tools/validate_native_model.mjs', ['--source', path.join(root, 'examples', 'model')]);
 run('tests/deployment_validation.mjs');
 run('tests/artifact_validation.mjs');
 run('tests/pdf_review.mjs');
 run('tests/render_presentation.mjs');
+run('tests/native_context_pdf.mjs');
+run('tests/native_pulse_pdf.mjs');
+run('tests/native_ui_pdf.mjs');
+run('tests/native_deployment_pdf.mjs');
+run('tests/native_model_render.mjs');
 
 if (fs.existsSync(path.join(root, 'install.sh'))) run('tests/install.mjs');

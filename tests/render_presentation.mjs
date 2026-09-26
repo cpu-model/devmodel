@@ -1,20 +1,20 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const source = fs.readFileSync(new URL('../tools/finish_model.mjs', import.meta.url), 'utf8');
+const context = fs.readFileSync(new URL('../tools/native/context_pdf.mjs', import.meta.url), 'utf8');
+const pulse = fs.readFileSync(new URL('../tools/native/pulse_pdf.mjs', import.meta.url), 'utf8');
+const ui = fs.readFileSync(new URL('../tools/native/ui_pdf.mjs', import.meta.url), 'utf8');
+const deployment = fs.readFileSync(new URL('../tools/native/deployment_pdf.mjs', import.meta.url), 'utf8');
 
-assert.match(source, /const margin = 20/);
-assert.match(source, /if \(name === 'pulse'\)[\s\S]*'PULSES'/);
-assert.match(source, /for \(const pulse of model\.pulses\)/);
-assert.match(source, /textNode\.setAttribute\('text-anchor', 'start'\)/);
-assert.match(source, /textNode\.querySelectorAll\(':scope > tspan'\)\.forEach\(span => span\.setAttribute\('x', labelX\)\)/);
-assert.match(source, /paths\[index\]\.removeAttribute\('mask'\)/);
-assert.match(source, /Cannot establish Deployment label clearance/);
-assert.match(source, /data-requirement-legend/);
-assert.match(source, /x: legendX \+ 38/);
-assert.match(source, /directly attached requirements/);
-assert.doesNotMatch(source, /= directly attached requirements/);
-assert.doesNotMatch(source, /r in a circle = directly attached requirements/);
-assert.doesNotMatch(source, /<div class="legend">/);
+assert.match(context, /flow\.initiative/);
+assert.match(context, /labelBox\.x - 18/);
+assert.match(pulse, /page\.drawCircle\(\{x: flow\.symbol\.x/);
+assert.match(pulse, /page\.drawText\('PULSES'/);
+assert.match(ui, /kind: 'action'/);
+assert.match(ui, /kind: 'information'/);
+assert.match(ui, /dashedRectangle/);
+assert.match(deployment, /connection\.label\.y/);
+assert.match(deployment, /connection\.label\.x - width \/ 2 - 32/);
+assert.match(deployment, /implementationDetail/);
 
-console.log('Diagram presentation contract checks passed');
+console.log('Native diagram presentation contract checks passed');

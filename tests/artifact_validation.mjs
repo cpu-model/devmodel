@@ -20,7 +20,7 @@ function invalidModel(filename, change, expected) {
     change(document);
     fs.writeFileSync(target, stringify(document));
     const result = spawnSync(process.execPath, [
-      path.join(root, 'tools', 'render_model.mjs'), '--source', directory, '--validate-only',
+      path.join(root, 'tools', 'validate_native_model.mjs'), '--source', directory,
     ], {encoding: 'utf8'});
     assert.notEqual(result.status, 0, `Expected ${filename} validation to fail`);
     assert.match(result.stderr, expected);
@@ -30,10 +30,10 @@ function invalidModel(filename, change, expected) {
 }
 
 invalidModel('context.yaml', document => { document.context.system.name = ' '; }, /context\.system\.name must be a non-empty string/);
-invalidModel('pulse.yaml', document => { document.pulse.behaviors[0].name = ''; }, /pulse\.behavior\.process-input\.name must be a non-empty string/);
-invalidModel('ui.yaml', document => { document.ui.views[0].actions[0].name = ''; }, /ui\.view\.main\.actions\.submit-input\.name must be a non-empty string/);
-invalidModel('ui.yaml', document => { document.ui.subviews[1].actions[0].name = ''; }, /ui\.subview\.shared-status\.actions\.refresh-status\.name must be a non-empty string/);
-invalidModel('requirements.yaml', document => { document.requirements['ui.view.main'] = []; }, /must have a non-empty list/);
+invalidModel('pulse.yaml', document => { document.pulse.behaviors[0].name = ''; }, /pulse\.behaviors\[0\]\.name must be a non-empty string/);
+invalidModel('ui.yaml', document => { document.ui.views[0].actions[0].name = ''; }, /ui\.view\.main\.actions\[0\]\.name must be a non-empty string/);
+invalidModel('ui.yaml', document => { document.ui.subviews[1].actions[0].name = ''; }, /ui\.subview\.shared-status\.actions\[0\]\.name must be a non-empty string/);
+invalidModel('requirements.yaml', document => { document.requirements['ui.view.main'] = []; }, /must not be empty/);
 invalidModel('deployment.yaml', document => {
   document.deployment.programs[0]['health-check'].command = 'unexpected';
 }, /command is not allowed for HTTP/);

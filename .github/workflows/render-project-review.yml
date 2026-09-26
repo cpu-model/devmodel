@@ -10,6 +10,8 @@ on:
       - CPU/ui.yaml
       - CPU/deployment.yaml
       - CPU/requirements.yaml
+      - .github/workflows/render-cpu-review.yml
+      - .github/review-trigger
 
 permissions:
   contents: write
@@ -41,11 +43,6 @@ jobs:
         working-directory: devmodel
         run: npm ci
 
-      - name: Install D2 0.9.0
-        run: |
-          curl -fsSL https://d2lang.com/install.sh | sh -s -- --version v0.9.0
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
       - name: Test devmodel
         working-directory: devmodel
         run: npm test
@@ -56,19 +53,17 @@ jobs:
 
       - name: Render project review
         working-directory: devmodel
-        env:
-          CPU_REVIEW_BROWSER: /usr/bin/google-chrome
-        run: npm run render -- --source ../project/CPU --out ../project/CPU/review --review-title "${{ github.event.repository.name }} model review"
+        run: npm run render -- --source ../project/CPU --out ../project/CPU
 
       - name: Commit changed review artifacts
         working-directory: project
         run: |
-          if git diff --quiet -- CPU/review && [ -z "$(git status --porcelain --untracked-files=all CPU/review)" ]; then
-            echo "CPU/review is already current."
+          if git diff --quiet -- CPU/context.pdf CPU/pulse.pdf CPU/ui.pdf CPU/deployment.pdf && [ -z "$(git status --porcelain --untracked-files=all CPU/*.pdf)" ]; then
+            echo "CPU diagrams are already current."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add CPU/review
+          git add CPU/context.pdf CPU/pulse.pdf CPU/ui.pdf CPU/deployment.pdf
           git commit -m "Render CPU model review"
           git push

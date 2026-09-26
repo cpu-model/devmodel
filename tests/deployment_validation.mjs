@@ -5,6 +5,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
+import {layoutDeployment} from '../tools/native/deployment_layout.mjs';
 
 const {parse, stringify} = createRequire(import.meta.url)('yaml');
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -21,9 +22,8 @@ function invalidDeployment(change, expected) {
     change(document.deployment);
     fs.writeFileSync(filename, stringify(document));
     const result = spawnSync(process.execPath, [
-      path.join(root, 'tools', 'render_model.mjs'),
+      path.join(root, 'tools', 'validate_native_model.mjs'),
       '--source', directory,
-      '--validate-only',
     ], {encoding: 'utf8'});
     assert.notEqual(result.status, 0, 'Expected deployment validation to fail');
     assert.match(result.stderr, expected);
@@ -46,7 +46,7 @@ invalidDeployment(deployment => {
 
 invalidDeployment(deployment => {
   deployment.connections[0].to = 'missing.port';
-}, /Invalid deployment connection/);
+}, /Invalid Connection/);
 
 invalidDeployment(deployment => {
   deployment.programs[1].services = [];
@@ -60,23 +60,7 @@ invalidDeployment(deployment => {
   deployment.programs[0].ports[0]['host-port'] = {variable: 'HTTP_HOST_PORT', default: 70000};
 }, /host-port.default is invalid/);
 
-function renderedDeploymentContains(expected) {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'cpu-deployment-render-'));
-  try {
-    const result = spawnSync(process.execPath, [
-      path.join(root, 'tools', 'render_model.mjs'),
-      '--source', example,
-      '--out', directory,
-      '--no-finish',
-    ], {encoding: 'utf8'});
-    assert.equal(result.status, 0, `Expected deployment rendering to succeed: ${result.stderr}`);
-    const rendered = fs.readFileSync(path.join(directory, 'deployment.d2'), 'utf8');
-    assert.match(rendered, expected);
-  } finally {
-    fs.rmSync(directory, {recursive: true, force: true});
-  }
-}
-
-renderedDeploymentContains(/env HTTP_HOST_PORT \(default 8080\)/);
+const rendered = layoutDeployment(parse(fs.readFileSync(path.join(example, 'deployment.yaml'), 'utf8')).deployment);
+assert.match(rendered.hosts[0].programs[0].ports[0].detail, /env HTTP_HOST_PORT \(8080\)/);
 
 console.log('Validated strict Deployment rejection cases.');

@@ -1,17 +1,15 @@
 # CPU Visual Language v1
 
 - Status: Normative v1
-- Renderer baseline: D2 0.9.0
-- Layout engine: ELK
-- Primary diagram output: SVG
-- Primary permanent review output: PDF derived from the finished SVG
-- Raster output: PNG derived from SVG
+- Renderer baseline: Node.js native PDF renderer
+- PDF library: pdf-lib 1.17.1
+- Primary and permanent review output: native vector PDF
 
 ## 1. Purpose
 
 Visual Language v1 defines the notation used to render Context, Pulse, UI, and the complementary Deployment artifact.
 
-The semantic artifacts are authoritative. The visual language defines notation. D2 is only the renderer.
+The semantic artifacts are authoritative. The visual language defines notation. The renderer computes artifact-specific layout and draws vector primitives directly into PDF pages.
 
 Rendering must be deterministic and reproducible. Semantics must never be weakened or changed to accommodate renderer limitations.
 
@@ -22,22 +20,16 @@ semantic YAML
 generator
     |
     v
-D2
+strict artifact-specific validation
     |
     v
-D2 0.9.0 + ELK
+deterministic artifact-specific layout
     |
     v
-SVG
-    |
-    v
-minimal deterministic SVG decoration
-    |
-    v
-final SVG / PNG / interactive review HTML
+native PDF vector drawing + PDF Text annotations
 ```
 
-The same semantic input, Visual Language version, D2 version, and layout engine should produce the same diagram.
+The same semantic input, Visual Language version, renderer version, and PDF-library version must produce the same diagram geometry and annotation binding.
 
 ## 2. General principles
 
@@ -47,7 +39,7 @@ Color is secondary. The notation must remain understandable in black and white.
 
 Stable semantic IDs belong to source artifacts. Display text may change without changing identity.
 
-Generated D2 and SVG are derived artifacts; semantic YAML is the source.
+Generated PDF diagrams are derived artifacts; semantic YAML is the source.
 
 ### 2.1 Diagram edge clearance
 
@@ -117,10 +109,8 @@ Layout spacing should be solved during layout or generation where possible. Post
 
 ### 3.8 Rendering status
 
-- Context nodes: Native D2.
-- Context connector routing: Native D2/ELK.
-- Initiative symbol: Adapted by minimal deterministic SVG decoration.
-- Label clearance: Adapted where necessary using rendered geometry.
+- Context nodes, person symbol, connectors, initiative symbols, labels, and arrowheads are native PDF vector constructions.
+- Layout and label clearance are computed deterministically before drawing.
 
 The verified Context rendering establishes that initiative, data direction, and data-flow text are three visually distinct aspects.
 
@@ -156,7 +146,7 @@ The diamond is sized deterministically to its content. Long trigger text is wrap
 
 A Trigger is only a source of Pulse Flows and therefore has only outgoing connectors. Identical trigger text is rendered as one diamond with fan-out where applicable.
 
-Trigger remains a role in a Flow rather than a separately declared semantic element. It has no direct requirement address and therefore no requirement indicator.
+Trigger remains a role in a Flow rather than a separately declared semantic element. It has no direct requirement address and therefore no requirement annotation.
 
 ### 4.4 Pulse notation
 
@@ -181,12 +171,9 @@ The legend is part of the diagram itself and therefore appears in the permanent 
 
 ### 4.6 Rendering status
 
-- Behavior: Native D2.
-- Trigger: Native D2 diamond, with deterministic text wrapping and sizing.
-- Connector routing and arrowhead: Native D2/ELK.
-- Pulse symbol: Adapted by minimal deterministic SVG decoration.
-
-Decoration derives the Pulse symbol position from the actual SVG connector path.
+- Behavior, Trigger, connector, arrowhead, and Pulse symbol are native PDF vector constructions.
+- Trigger text wrapping and sizing are deterministic.
+- Pulse-symbol placement derives from the computed connector geometry and lies exactly on its path.
 
 ## 5. UI
 
@@ -251,12 +238,8 @@ View-local Navigation remains available for user-significant paths that are not 
 
 ### 5.7 Rendering status
 
-- View container: Native D2.
-- Information and Action symbols and text: Native D2.
-- Two-column layout: Native or generated D2 structure with deterministic ordering.
-- Navigation: Native D2 when present.
-
-No SVG postprocessing is required for the verified UI notation.
+- View and SubView containers, Information and Action symbols, inclusion references, and Navigation are native PDF vector constructions.
+- The two-column layout and declared item ordering are computed deterministically.
 
 ## 6. Deployment
 
@@ -278,13 +261,13 @@ Containment means deployment containment only. A host contains programs; a Docke
 
 A Deployment connection label is an annotation, not part of the connector. It is placed with clear visual separation above the relevant connector segment, following the same clearance principle as Context relation labels. A connection line must not pass through or immediately adjacent to visible label text.
 
-### 6.4 Requirement indicators
+### 6.4 Requirement annotations
 
-Hosts, programs, services, ports, and connections are visible, addressable elements. Each displays an `r` circle if and only if it has directly attached requirements. Activating the circle uses the same exact-requirement review behavior as the CPU diagrams.
+Hosts, programs, services, ports, and connections are visible, addressable elements. Each rendered occurrence receives a native PDF popup annotation if and only if it has directly attached requirements.
 
 ### 6.5 Rendering status
 
-Host, program, service, port, containment, and network connectors are Native D2/ELK constructions. Requirement indicators are Adapted deterministic SVG decoration.
+Host, program, service, port, containment, and network connectors are native PDF vector constructions. Requirement popup markers are PDF annotation appearance streams.
 
 ## 7. Artifact-specific semantic sources
 
@@ -299,13 +282,13 @@ system/
   requirements.yaml
 ```
 
-Generated artifacts:
+Generated review artifacts:
 
 ```text
-context.yaml -> context.d2 -> context.svg
-pulse.yaml   -> pulse.d2   -> pulse.svg
-ui.yaml      -> ui.d2      -> ui.svg
-deployment.yaml -> deployment.d2 -> deployment.svg
+context.yaml + requirements.yaml -> context.pdf
+pulse.yaml + requirements.yaml -> pulse.pdf
+ui.yaml + requirements.yaml -> ui.pdf
+deployment.yaml + requirements.yaml -> deployment.pdf
 ```
 
 Artifact-specific vocabulary is intentionally asymmetric and should remain understandable to a human reader.
@@ -320,9 +303,9 @@ General cross-artifact references are not normative in v1. Semantic duplication 
 
 ## 9. Renderer acceptance classes
 
-- **Native:** notation rendered directly and deterministically by D2.
-- **Adapted:** a small deterministic generated construction or SVG decoration is required.
-- **Unsupported:** notation would require manual positioning or substantial unstable SVG manipulation.
+- **Native:** notation rendered directly and deterministically as PDF vector primitives or PDF annotations.
+- **Computed:** deterministic geometry is calculated from validated semantic input before drawing.
+- **Unsupported:** notation would require manual per-diagram positioning or semantic inference from generated layout.
 
 Current v1 classification:
 
@@ -336,110 +319,97 @@ Current v1 classification:
 | Trigger | Native |
 | Deployment host / program / service / port | Native |
 | Deployment network connection | Native |
-| D2/ELK connector routing | Native |
-| Pulse symbol on connector | Adapted |
-| Context initiative circle | Adapted |
-| Context label clearance | Adapted where required |
+| Orthogonal connector routing | Computed |
+| Pulse symbol on connector | Computed |
+| Context initiative circle | Computed |
+| Context label clearance | Computed |
+| Requirement popup annotation | Native |
 
-No current Visual Language v1 requirement justifies a custom full renderer.
+The artifact-specific native PDF renderer is the normative renderer.
 
 ## 10. Determinism and implementation constraints
 
 The renderer implementation:
 
-- pins the D2 version;
-- pins the layout engine;
-- generates D2 deterministically from semantic YAML;
-- performs only deterministic SVG decoration;
-- derives semantic-symbol placement from actual rendered connector geometry where required;
+- pins the PDF library version;
+- validates all five semantic sources before drawing;
+- computes layout deterministically from semantic YAML;
+- derives semantic-symbol and annotation placement from the same computed geometry used for drawing;
 - avoids manual per-diagram pixel fixes;
 - avoids image-AI redrawing;
 - preserves semantic meaning independently of renderer limitations.
 
-Minimal SVG decoration is acceptable when it implements a stable Visual Language rule. It must not become an uncontrolled second layout engine.
-
 ## 11. Verified v1 decisions
 
 - **Context:** system and external-system composition; domain data-flow labels; independent arrowhead for data direction; initiative circle centered on connector path; visible separation between initiative circle and arrowhead; connector and label clearance; sufficient relation spacing.
-- **Pulse:** left-to-right causal flow using ELK; Behavior nodes; Trigger diamonds with centered, deterministically wrapped text and fan-out for identical trigger text; numbered Pulse circle integrated into connector; Pulse circle centered on actual connector path; Pulse legend included in the diagram.
+- **Pulse:** left-to-right causal flow; Behavior nodes; Trigger diamonds with centered, deterministically wrapped text and fan-out for identical trigger text; numbered Pulse circle integrated into connector; Pulse circle centered on the computed connector path; Pulse legend included in the diagram.
 - **UI:** View containers; Action and Information symbols; Actions in the left column; Information in the right column; left-aligned item labels; deterministic declared ordering within each column.
 - **Deployment:** nested host/program/service topology; visible ports and directed connections; connection labels clearly separated above connector geometry; implementation selections shown in labels.
 - **All diagrams:** consistent outer clearance between visible diagram content and the exported viewport.
 
 These verified rendering decisions constitute Visual Language v1.
 
-## 12. Requirement indicators
+## 12. Requirement popup annotations
 
-Requirement indicators provide interactive access to requirements without changing Context, Pulse, or UI semantics. The renderer baseline remains D2 0.9.0 with ELK. Requirement targets and source format are defined by Artifact Formats v1.
+Requirement popup annotations provide interactive access to requirements without changing Context, Pulse, UI, or Deployment semantics. Requirement targets and source format are defined by Artifact Formats v1.
 
 ### 12.1 Purpose and meaning
 
-A requirement indicator shows that requirements are directly attached to a model element. It is a review annotation and access control, not a new semantic model element, data flow, Pulse, or Action.
+An annotation marker shows that requirements are directly attached to a model element. It is review presentation, not a semantic model element, data flow, Pulse, Action, or deployment relation.
 
-The indicator is a small outlined circle containing lowercase `r`. It has a clear opaque background; the letter is centered and readable. Meaning remains clear in black and white; color is optional and secondary.
+The marker is a 14 by 14 point blue square with a white speech-bubble glyph. It is the normal appearance stream of a native PDF Text annotation. The former CPU-rendered `r` circle and its legend are not used.
 
-Show an indicator if and only if the element has a resolved, non-empty requirement attachment. A container's indicator represents that container's own requirements, not the union of its contents' requirements.
+Show a marker if and only if the element has a resolved, non-empty requirement attachment. A container's marker represents that container's own requirements, not the union of its contents' requirements.
 
 ### 12.2 Binding and repeated occurrences
 
-Each indicator binds to exactly one target address from `requirements.yaml`. Activating it opens the requirements for that target. Never bind by label text or Pulse display number.
+Each annotation binds to exactly one target address from `requirements.yaml`. Its `Contents` contains the complete requirement strings for that target in declared order, separated by one blank line. Never bind by label text or Pulse display number.
 
-One indicator is shown per rendered occurrence. Where the same Pulse is drawn on several branches, every occurrence receives the indicator and opens the same attachment.
+One annotation is created per rendered occurrence. Where the same Pulse or SubView is drawn more than once, every occurrence receives an annotation opening the same attachment.
 
 ### 12.3 Placement
 
-Placement is deterministic and derived from actual rendered geometry. The indicator appears close enough to its element that the attachment is unambiguous.
+Placement is deterministic and derives from the same computed geometry used to draw the diagram. The marker appears close enough to its element that the attachment is unambiguous.
 
-- Context flow: beside the data-flow label, separated from both label and connector.
-- System, party, or Behavior: near the label or in a clear corner of the shape.
-- Pulse: beside the numbered Pulse symbol, outside that symbol and away from the connector path. Never place `r` inside the numbered circle.
-- View: beside the View title, representing requirements attached directly to that View.
-- Action or Information: immediately to the right of the visible end of the item's label, independent of the width of its containing column or item area, preserving existing semantic symbols.
-- Deployment host, program, service, or port: beside its label or in a clear corner of its containing shape.
-- Deployment connection: beside its relation label and clear of the connector and arrowhead.
+- Context flow: immediately to the left of the data-flow label, on the same visual baseline and clear of the connector.
+- System, party, Behavior, View, SubView, Deployment host, program, service, or port: in a clear upper corner inside the shape.
+- Pulse: beside the numbered Pulse symbol and away from the connector path.
+- Action or Information: immediately to the right of the visible label.
+- Included SubView reference: at the right side of the reference box.
+- Deployment connection: to the left of its relation label, with at least 16 points of horizontal safety clearance for readers that enlarge annotation icons, and clear of the connector and arrowhead.
 
-An indicator must not overlap another indicator, label, arrowhead, initiative symbol, numbered Pulse symbol, unrelated element, or connector. Use consistent size and minimum clearance across diagrams; do not introduce manual per-diagram pixel fixes.
+A marker must not overlap another marker, label, arrowhead, initiative symbol, numbered Pulse symbol, unrelated element, or connector. If space is unavailable, adjust deterministic generation or layout spacing rather than moving markers manually.
 
-If space is unavailable, adjust deterministic generation or layout spacing. Do not weaken notation or introduce an unstable second layout engine. Keep indicators inside the exported viewport without clipping.
+### 12.4 PDF structure and behavior
 
-### 12.4 Requirement legend
+Each marker is a native PDF `/Text` annotation with:
 
-Every diagram includes a small requirement legend at the lower left. In the permanent PDF review artifact, the visible requirement marker is rendered by CPU as part of the diagram, followed with clear whitespace by `directly attached requirements`. Its placement must not depend on PDF-reader annotation UI.
+- subtype `Text` and name `Comment`;
+- a custom normal appearance stream for the blue speech-bubble marker;
+- an explicitly linked `/Popup` annotation;
+- `Open false` so the document does not force popups open;
+- a light annotation color to maintain contrast in readers that use it for popup presentation.
 
-### 12.4 PDF review behavior
+The PDF contains no CPU-rendered requirement text, internal requirement pages, or link annotations. Activating the Text annotation is the single requirement-review interaction. Reader-specific popup window chrome, fonts, and minimum icon scaling are outside the Visual Language.
 
-The permanent review surface is a PDF generated from the finished decorated SVG. PDF generation must not redraw, relayout, or reinterpret the diagram. The diagram page uses the exact finished SVG rendering as its graphical source.
+### 12.5 Accessibility and viewer compatibility
 
-Every visible `r` indicator has one PDF Text annotation whose contents are the complete requirement strings directly attached to the target, in declared order and without paraphrasing or omission.
+Readers that expose PDF Text annotations provide popup interaction and may also list the annotations in a comments panel. Readers that do not expose annotations cannot provide the requirement interaction. The exact requirement strings remain embedded in the PDF annotation data.
 
-The visible PDF requirement marker is placed deterministically at the requirement-indicator anchor. For Action and Information items, the indicator anchor uses a fixed horizontal position reserved by the item's row layout and does not depend on rendered label width. The PDF annotation provides requirement popup interaction at that marker but PDF-reader-rendered annotation icons are not part of the normative visual language. The marker must not obscure visible model text or semantic symbols.
-
-The permanent PDF deliberately contains no internal requirement pages or link annotations. This keeps the artifact smaller and structurally simpler and makes the popup annotation the single requirement-review interaction.
-
-Chrome is the reference reader for the complete popup review interaction. Reader-specific popup appearance is not part of the Visual Language.
-
-### 12.5 Accessibility and supplementary interactive surfaces
-
-The permanent PDF review uses CPU-rendered visible requirement indicators together with PDF annotations for requirement access. The visible indicator is part of the diagram; a PDF reader that does not expose annotations cannot provide the popup interaction.
-
-An HTML review surface may additionally be generated for browser-based exploration, keyboard interaction, or source inspection. It is supplementary and is not the permanent reviewed artifact. If supplied, its requirement selection must preserve the same target binding and exact ordered requirement text.
-
-Standalone SVG and PNG retain visible requirement indicators and the legend explaining that `r` denotes directly attached requirements. They are diagram artifacts, not substitutes for the permanent PDF review.
+The custom appearance stream provides a consistent marker where the reader honors annotation appearances. A reader may impose a minimum on-screen annotation-icon size; the annotation rectangle remains the normative 14 by 14 points.
 
 ### 12.6 Export and rendering
 
-Generate indicators as minimal deterministic SVG decoration after D2/ELK rendering. Do not add badge fields to semantic YAML or model indicators as layout nodes. Bindings derive from validated attachments; positions derive from rendered element geometry.
+The renderer draws diagram geometry and creates annotations in one native PDF generation pass. It does not create SVG, raster images, browser DOM layout, or a second finishing stage. Annotation placement uses the renderer's computed layout geometry directly.
 
-After SVG decoration is complete, generate the PDF from that finished SVG. PDF annotation and link geometry derives from the actual rendered `r` positions. PDF finishing must not alter diagram geometry.
-
-The repository-backed review output retains the finished SVG and the permanent PDF. PNG and supplementary HTML may also be emitted. Generated review artifacts never replace the semantic YAML sources.
+The repository-backed review output consists only of `context.pdf`, `pulse.pdf`, `ui.pdf`, and `deployment.pdf`. Diagnostic PNG rendering may be used temporarily for visual QA but is not a durable project artifact.
 
 ### 12.7 Acceptance
 
-- Every rendered occurrence with directly attached requirements has one readable indicator; occurrences without attachments have none.
-- Indicators preserve all existing semantics and notation, including Pulse-circle and initiative geometry.
-- No indicators, labels, note icons, or semantic symbols collide or become clipped at normal review size.
-- The PDF diagram rendering preserves the finished SVG requirement indicators as visible diagram content. PDF viewer annotation UI is non-normative and must not determine indicator placement.
-- Every indicator's Text annotation contains exactly its target's complete ordered requirements.
-- The note icon attaches at approximately 14 o'clock without obscuring the `r` indicator.
-- Given identical semantic sources, requirements, Visual Language version, D2 version, and PDF generator version, output is deterministic.
+- Every rendered occurrence with directly attached requirements has one visible Text-annotation marker; occurrences without attachments have none.
+- Markers preserve all existing semantics and notation, including Pulse-circle and initiative geometry.
+- No marker, label, semantic symbol, connector, or arrowhead collides or becomes clipped at normal review size.
+- Every Text annotation contains exactly its target's complete ordered requirements.
+- Every Text annotation has a non-empty normal appearance and an explicitly linked Popup annotation.
+- No annotation is forced open when the document loads.
+- Given identical semantic sources, requirements, Visual Language version, renderer version, and PDF-library version, output geometry and annotation binding are deterministic.
