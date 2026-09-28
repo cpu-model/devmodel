@@ -1,13 +1,10 @@
 #!/usr/bin/env node
-import fs from 'node:fs';
 import path from 'node:path';
-import {createRequire} from 'node:module';
 import {loadContextModel} from './native/context_model.mjs';
 import {loadPulseModel} from './native/pulse_model.mjs';
 import {loadUiModel} from './native/ui_model.mjs';
 import {loadDeploymentModel} from './native/deployment_model.mjs';
-
-const {parseDocument} = createRequire(import.meta.url)('yaml');
+import {loadRequirements} from './native/requirements_model.mjs';
 
 function sourceOption(argv) {
   const index = argv.indexOf('--source');
@@ -22,10 +19,7 @@ try {
   loadPulseModel(source);
   loadUiModel(source);
   loadDeploymentModel(source);
-  const filename = path.join(source, 'requirements.yaml');
-  const document = parseDocument(fs.readFileSync(filename, 'utf8'), {strict: true, uniqueKeys: true});
-  if (document.errors.length) throw new Error(document.errors.map(error => error.message).join('; '));
-  const requirements = document.toJS({mapAsMap: false}).requirements;
+  const requirements = loadRequirements(source);
   const allowed = ['context.', 'pulse.', 'ui.', 'deployment.'];
   for (const target of Object.keys(requirements)) {
     if (!allowed.some(prefix => target.startsWith(prefix))) throw new Error(`Unresolved requirement target: ${target}`);

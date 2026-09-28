@@ -1,12 +1,38 @@
 pulse:
+  capabilities:
+    - id: input-handling
+      name: Input handling
+    - id: result-presentation
+      name: Result presentation
+  domain-information:
+    - id: submitted-input
+      name: Submitted input
+    - id: processed-result
+      name: Processed result
   behaviors:
     - id: process-input
       name: Process input
+      capability: input-handling
+      information-in:
+        - submitted-input
+      information-out:
+        - processed-result
+    - id: present-result
+      name: Present result
+      capability: result-presentation
+      information-in:
+        - processed-result
   pulses:
     - id: input-submitted
       display: "01"
       name: Input submitted
+    - id: result-ready
+      display: "02"
+      name: Result ready
   flows:
     - trigger: User submits a sufficiently long input to demonstrate deterministic trigger text wrapping
       pulse: input-submitted
       to: process-input
+    - from: process-input
+      pulse: result-ready
+      to: present-result

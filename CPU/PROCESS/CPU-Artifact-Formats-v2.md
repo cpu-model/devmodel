@@ -1,14 +1,14 @@
-# CPU Artifact Formats v1
+# CPU Artifact Formats v2
 
-- Status: Normative v1
-- Companion specification: CPU Visual Language v1
+- Status: Normative v2
+- Companion specification: CPU Visual Language v2
 - Source format: YAML
 
 ## 1. Purpose
 
-Artifact Formats v1 defines the semantic source formats for Context, Pulse, UI, complementary Deployment, and their attached requirements. The YAML artifacts are authoritative. Rendering is derived from them using Visual Language v1.
+Artifact Formats v2 defines the semantic source formats for Context, Pulse, UI, complementary Deployment, and their attached requirements. The YAML artifacts are authoritative. Rendering is derived from them using Visual Language v2.
 
-The formats are intentionally small and artifact-specific. v1 does not introduce a generic metamodel, global registry, UUID scheme, presentation fields, or general cross-artifact relation mechanism. Requirement target addresses are the explicit, limited exception described in section 10.
+The formats are intentionally small and artifact-specific. v2 does not introduce a generic metamodel, global registry, UUID scheme, presentation fields, or general cross-artifact relation mechanism. Requirement target addresses are the explicit, limited exception described in section 10.
 
 ## 2. Common rules
 
@@ -65,7 +65,7 @@ context:
 
 ### 3.2 Parties
 
-`parties` contains directly communicating external parties. Each party has `id`, `type`, and `name`. Allowed v1 types are `person` and `external-system`.
+`parties` contains directly communicating external parties. Each party has `id`, `type`, and `name`. Allowed v2 types are `person` and `external-system`.
 
 ### 3.3 Flows
 
@@ -147,15 +147,26 @@ context:
 
 ## 4. Pulse format
 
-Pulse describes possible causal event propagation using Behaviors, Pulses, and Flows. Trigger is a role in a Flow, not a separately declared semantic element.
+Pulse describes functional Behavior through two independent dimensions: causal event propagation through Pulses and Flows, and Domain Information participation through `information-in` and `information-out`. Trigger is a role in a Flow, not a separately declared semantic element. Information participation never implies Pulse causality, and Pulse causality never implies information participation.
 
 ```yaml
 pulse:
+  capabilities:
+    - id: charging-planning
+      name: Charging planning
+  domain-information:
+    - id: latest-valid-soc
+      name: Latest valid SoC
+    - id: operational-plan
+      name: Operational plan
   behaviors:
     - id: observe-vehicle-soc
       name: Observe vehicle SoC
     - id: plan-charging
       name: Plan charging
+      capability: charging-planning
+      information-in: [latest-valid-soc]
+      information-out: [operational-plan]
   pulses:
     - id: vehicle-observation
       display: "01"
@@ -172,23 +183,34 @@ pulse:
       to: plan-charging
 ```
 
-### 4.1 Behaviors
+### 4.1 Capabilities
 
-Each Behavior contains `id` and `name`. A Behavior is something the system does in reaction to a Pulse.
+`capabilities` is optional. A Capability contains exactly `id` and `name` and is a flat functional review partition. When the field is present, every Behavior has exactly one valid `capability` reference. When absent, no Behavior may contain `capability`. Capability membership adds no ownership, causality, information flow, implementation boundary, or requirement inheritance. Capabilities are not hierarchical and are not requirement-addressable.
 
-### 4.2 Pulses
+### 4.2 Domain Information
+
+`domain-information` is optional. Each element contains exactly `id` and `name` and identifies domain-significant information with identity independent of technical representation. Every declaration is referenced by at least one Behavior. Domain Information introduces no schemas, fields, cardinality, persistence, ownership, source/destination, or information-to-information relation.
+
+### 4.3 Behaviors
+
+Each Behavior contains `id` and `name`, the conditional `capability` field described above, and optional ordered `information-in` and `information-out` lists. Each list contains unique references to declared Domain Information. The same reference may occur once in each list.
+
+### 4.4 Pulses
 
 Each Pulse contains `id`, `display`, and `name`. The ID is semantic identity. `display` is the short diagram identity, such as `01`, and is not used for references.
 
-### 4.3 Flows
+### 4.5 Flows
 
 A Flow contains exactly one source form: either free-text `trigger` or Behavior reference `from`. It also contains Pulse reference `pulse` and Behavior reference `to`.
 
 The invariant is `trigger` XOR `from`. A Flow with both is invalid; a Flow with neither is invalid.
 
-### 4.4 Pulse validation
+### 4.6 Pulse validation
 
 - Behavior IDs are unique.
+- Capability IDs are unique. If Capabilities are present every Behavior has exactly one resolving `capability`; otherwise `capability` is forbidden.
+- Domain Information IDs are unique and every declaration participates in at least one Behavior.
+- Every `information-in` and `information-out` value resolves to declared Domain Information and is unique within its list.
 - Pulse IDs are unique.
 - Pulse display values are unique within the artifact.
 - Every `pulse` reference resolves to a declared Pulse.
@@ -199,12 +221,14 @@ The invariant is `trigger` XOR `from`. A Flow with both is invalid; a Flow with 
 - Cycles and fan-out are valid and require no special syntax.
 - No validation rule infers Pulse relations from data dependencies.
 
-### 4.5 Pulse field reference
+### 4.7 Pulse field reference
 
 The top-level document contains exactly `pulse`. Its value contains exactly:
 
 | Field | Type | Required | Default | Meaning |
 | --- | --- | --- | --- | --- |
+| `capabilities` | list of Capability mappings | no | absent | Optional functional review partition. |
+| `domain-information` | list of Domain Information mappings | no | empty | Domain-significant information participating in Behaviors. |
 | `behaviors` | list of Behavior mappings | yes | none | System reactions; may be empty. |
 | `pulses` | list of Pulse mappings | yes | none | Named causal signals; may be empty. |
 | `flows` | list of Flow mappings | yes | none | Causal propagation; may be empty. |
@@ -215,6 +239,11 @@ Behavior mapping:
 | --- | --- | --- | --- |
 | `id` | non-empty string ID | yes | Unique among Behaviors; no period. |
 | `name` | non-empty string | yes | Human-readable verb phrase. |
+| `capability` | Capability ID | conditional | Required exactly when `capabilities` is present. |
+| `information-in` | list of Domain Information IDs | no | empty; no duplicates. |
+| `information-out` | list of Domain Information IDs | no | empty; no duplicates. |
+
+Capability and Domain Information mappings each contain exactly `id` and `name`; their IDs are unique within their respective collections and contain no period.
 
 Pulse mapping:
 
@@ -235,7 +264,7 @@ Flow mapping:
 
 `trigger` XOR `from` is mandatory. A Pulse Flow has no ID, name, or direct requirement address. No other fields are allowed.
 
-### 4.6 Invalid Pulse examples
+### 4.8 Invalid Pulse examples
 
 ```yaml
 # Invalid: both source forms are present.
@@ -257,7 +286,7 @@ pulses:
 
 UI describes user-visible Views, reusable SubViews, their Information and Actions, and meaningful Navigation to Views.
 
-A SubView is a reusable user-visible surface fragment that can be included by multiple Views. In v1, a SubView contains Navigation only. This supports shared navigation without duplicating the same destinations in every View.
+A SubView is a reusable user-visible surface fragment that can be included by multiple Views. In v2, a SubView contains Navigation only. This supports shared navigation without duplicating the same destinations in every View.
 
 ```yaml
 ui:
@@ -302,7 +331,7 @@ Each View contains `id` and `name`. `includes`, `actions`, `information`, and Vi
 
 Each SubView contains `id` and `name`, with optional `actions`, `information`, and `navigation`. SubView IDs are unique and distinct from View IDs.
 
-A SubView is defined once and may be included by any number of Views. Actions and Information in a SubView have the same semantics as Actions and Information in a View. A SubView does not include another SubView in v1.
+A SubView is defined once and may be included by any number of Views. Actions and Information in a SubView have the same semantics as Actions and Information in a View. A SubView does not include another SubView in v2.
 
 ### 5.3 Actions
 
@@ -620,7 +649,7 @@ Health-check mapping:
 | `tcp` | `type`, `port` | `interval` | `path`, `command` |
 | `command` | `type`, `command` | `interval` | `path`, `port` |
 
-`path`, `command`, and `interval` are non-empty strings. `port` is an integer from `1` through `65535`. `interval` has no duration-unit interpretation in v1 beyond being a normative non-empty runtime value.
+`path`, `command`, and `interval` are non-empty strings. `port` is an integer from `1` through `65535`. `interval` has no duration-unit interpretation in v2 beyond being a normative non-empty runtime value.
 
 Resources mapping:
 
@@ -760,9 +789,9 @@ variables:
   to: data-stack.missing.postgres
 ```
 
-## 7. Deliberately absent from v1
+## 7. Deliberately absent from v2
 
-The following are intentionally not part of Artifact Formats v1:
+The following are intentionally not part of Artifact Formats v2:
 
 - generic element or relation metamodels;
 - areas, hierarchy, groups, tags, and metadata bags;
@@ -790,9 +819,9 @@ ui.yaml + requirements.yaml -> ui.pdf
 deployment.yaml + requirements.yaml -> deployment.pdf
 ```
 
-The YAML files are the semantic sources. The four PDF diagrams are generated directly as native vector PDF. Rendering follows Visual Language v1 and must not add, remove, or reinterpret semantics.
+The YAML files are the semantic sources. The four PDF diagrams are generated directly as native vector PDF. Rendering follows Visual Language v2 and must not add, remove, or reinterpret semantics.
 
-## 9. v1 design principle
+## 9. v2 design principle
 
 Keep each artifact small, explicit, artifact-specific, strict, and human-readable. Add structure only when an observed semantic need requires it.
 
@@ -800,25 +829,29 @@ Keep each artifact small, explicit, artifact-specific, strict, and human-readabl
 
 Requirements are attached to identified model elements. `requirements.yaml` belongs to the same system model as the three core semantic artifacts and complementary Deployment artifact; all five files are reviewed together.
 
-Requirements must not be embedded in model names or page graphics. PDF annotation markers, popup behavior, and placement are derived presentation defined by Visual Language v1.
+Requirements must not be embedded in model names or page graphics. PDF annotation markers, popup behavior, and placement are derived presentation defined by Visual Language v2.
 
 ### 10.1 Document shape
 
-The document has exactly one top-level field, `requirements`. Its value is a mapping from target address to an ordered, non-empty list of non-empty requirement strings. An empty mapping is valid when no requirements are defined.
+The document has exactly one top-level field, `requirements`. Its value is a mapping from target address to an ordered, non-empty list of requirement objects. Every object contains exactly `id` and `text`, both non-empty strings. An empty mapping is valid when no requirements are defined.
 
 ```yaml
 requirements:
   context.flow.operating-data:
-    - The system shall initiate retrieval of operating data.
+    - id: initiate-operating-data-retrieval
+      text: The system shall initiate retrieval of operating data.
   pulse.behavior.fetch-data:
-    - One run shall comprise the complete retrieval.
+    - id: complete-retrieval-run
+      text: One run shall comprise the complete retrieval.
   ui.action.diagnostics.acknowledge-error:
-    - Acknowledgement shall be persistent.
+    - id: persist-acknowledgement
+      text: Acknowledgement shall be persistent.
   deployment.program.backend:
-    - The backend shall run as an operating-system process.
+    - id: run-backend-as-os-process
+      text: The backend shall run as an operating-system process.
 ```
 
-Requirement list order is preserved. v1 adds no individual requirement IDs, metadata, status fields, presentation fields, or verification fields. A string's wording does not serve as an ID. List positions are not stable identities.
+Requirement list order is preserved. Requirement IDs are human-readable semantic keys, globally unique within `requirements.yaml`, and contain no period. They are not UUIDs, sequence numbers, or target encodings. Identity remains stable across editorial rewording or relocation when normative meaning is unchanged; a normative meaning change creates a new ID. No other metadata fields exist.
 
 ### 10.2 Target addresses
 
@@ -829,6 +862,7 @@ Words outside angle brackets are literal. IDs come from the corresponding semant
 - `context.flow.<flow-id>` targets a Context data flow.
 - `pulse.behavior.<behavior-id>` targets a Behavior.
 - `pulse.pulse.<pulse-id>` targets a Pulse.
+- `pulse.domain-information.<domain-information-id>` targets Domain Information.
 - `ui.view.<view-id>` targets a View.
 - `ui.action.<view-id>.<action-id>` targets an Action in that View.
 - `ui.info.<view-id>.<information-id>` targets Information in that View.
@@ -844,17 +878,17 @@ Words outside angle brackets are literal. IDs come from the corresponding semant
 
 Addresses are case-sensitive. An addressable ID must not contain a period, which is the address separator. Validation reports an unaddressable ID rather than silently renaming it.
 
-Pulse Flows, free-text triggers, and View Navigation have no declared semantic IDs in v1 and are not directly addressable. Relevant requirements target an identified element, such as the triggering Pulse or affected View. This does not introduce identities for those constructs.
+Capabilities, Pulse Flows, free-text triggers, graphical `FROM`/`TO` Capability references, and View Navigation are not directly addressable.
 
 ### 10.3 Attachment semantics
 
 Each mapping entry attaches its requirements directly to exactly the addressed element. There is no implicit inheritance from a View to its contents, from a Behavior to its emitted Pulses, or between artifacts. A renderer must not infer or redistribute attachments.
 
-One requirement string may be explicitly repeated at several targets if intended. Such repetition does not imply shared requirement identity. An element without an entry has no directly attached requirements; this says nothing about whether other requirements affect its behavior.
+Requirement identity is global even though attachment is direct. An element without an entry has no directly attached requirements; this says nothing about whether other requirements affect its behavior. A requirement expresses one independently assessable normative rule.
 
 ### 10.4 Requirements validation
 
-- Reject unknown root fields, non-mapping requirement collections, invalid target syntax, duplicate keys, empty lists, and non-string or blank requirement values.
+- Reject unknown root fields, non-mapping requirement collections, invalid target syntax, duplicate keys, empty lists, string-only entries, objects with fields other than exactly `id` and `text`, blank IDs or text, IDs containing periods, and duplicate requirement IDs anywhere in the file.
 - Resolve every target against the corresponding Context, Pulse, UI, or Deployment artifact. Reject unknown IDs and wrong element kinds. Action and Information IDs resolve only within their addressed View or SubView; Service and Port IDs resolve only within their addressed Deployment parents.
 - Apply all existing model validation rules as well as the addressing restriction. Never repair invalid references by matching display names.
 - Reject orphaned targets after deleting or renaming an element. Update the model and its requirements together; do not silently discard requirements.
@@ -872,9 +906,9 @@ The top-level document contains exactly one field:
 
 | Field | Type | Required | Default/constraint |
 | --- | --- | --- | --- |
-| `requirements` | mapping | yes | May be empty. Every key is one valid target address and every value is an ordered non-empty list. |
+| `requirements` | mapping | yes | May be empty. Every key is one valid target address and every value is an ordered non-empty list of requirement objects. |
 
-Each requirement value is a non-empty string. There are no requirement-object fields, IDs, severities, statuses, verification metadata, or implicit requirements. Duplicate YAML target keys are invalid before target resolution.
+Each requirement object contains exactly `id` and `text`. There are no severities, statuses, verification metadata, presentation fields, or implicit requirements. Duplicate YAML target keys are invalid before target resolution.
 
 Target-address resolution is strict and case-sensitive. The number and order of address segments must exactly match one grammar listed in section 10.2. A syntactically plausible address of the wrong kind is invalid—for example, addressing an Information ID as an Action.
 
@@ -887,10 +921,11 @@ requirements:
 ```
 
 ```yaml
-# Invalid: requirement values are strings, not metadata objects.
+# Invalid: a requirement object has an unknown field.
 requirements:
   deployment.program.backend:
-    - text: The backend shall run as an OS process.
+    - id: run-backend
+      text: The backend shall run as an OS process.
       priority: high
 ```
 
@@ -898,5 +933,6 @@ requirements:
 # Invalid: unknown target and wrong address shape.
 requirements:
   deployment.port.web:
-    - The Web UI shall be publicly reachable.
+    - id: expose-web-ui
+      text: The Web UI shall be publicly reachable.
 ```

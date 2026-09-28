@@ -17,6 +17,8 @@ function behaviorDepths(pulse) {
   for (const flow of pulse.flows) {
     if ('trigger' in flow) depth.set(flow.to, Math.max(1, depth.get(flow.to) || 0));
   }
+  const behaviorSources = new Set(pulse.flows.filter(flow => 'from' in flow).map(flow => flow.to));
+  for (const behavior of pulse.behaviors) if (!behaviorSources.has(behavior.id)) depth.set(behavior.id, 1);
   for (let pass = 0; pass < pulse.behaviors.length; pass += 1) {
     let changed = false;
     for (const flow of pulse.flows) {
@@ -64,7 +66,7 @@ function segmentIntersectsBox(start, end, box, padding = 10) {
   return high >= 0 && low <= 1;
 }
 
-export function layoutPulse(pulse, options = {}) {
+function layoutCausal(pulse, options = {}) {
   const eventById = new Map(pulse.pulses.map(item => [item.id, item]));
   const semanticFlowKey = flow => `${'trigger' in flow ? `trigger:${flow.trigger}` : `from:${flow.from}`}\u0000${flow.pulse}\u0000${flow.to}`;
   const triggers = [...new Set(pulse.flows.filter(flow => 'trigger' in flow).map(flow => flow.trigger))];
@@ -926,7 +928,7 @@ export function layoutPulse(pulse, options = {}) {
     let orders = levels.map(items => items.map(item => item.id));
     let best = result;
     let bestScore = geometryScore(result);
-    const renderOrder = (candidateOrders, outgoingOrders = {}) => layoutPulse(pulse, {
+    const renderOrder = (candidateOrders, outgoingOrders = {}) => layoutCausal(pulse, {
       triggerOrder: candidateOrders[0],
       levelOrders: Object.fromEntries(candidateOrders.slice(1).map((ids, index) => [index + 1, ids])),
       outgoingOrders,
@@ -1015,7 +1017,7 @@ export function layoutPulse(pulse, options = {}) {
       bestScore = passBestScore;
       outgoingOrders = passBestOutgoing;
     }
-    const renderFinal = candidateOrders => layoutPulse(pulse, {
+    const renderFinal = candidateOrders => layoutCausal(pulse, {
       triggerOrder: candidateOrders[0],
       levelOrders: Object.fromEntries(candidateOrders.slice(1).map((ids, index) => [index + 1, ids])),
       outgoingOrders,
@@ -1066,4 +1068,112 @@ export function layoutPulse(pulse, options = {}) {
     return finalLayout;
   }
   return result;
+}
+
+function usedLegend(allPulses, flows) {
+  const used = new Set(flows.map(flow => flow.pulse));
+  return allPulses.filter(pulse => used.has(pulse.id));
+}
+
+function causalPage(pulse, projection, title, kind) {
+  const pagePulse = {behaviors: projection.behaviors, pulses: pulse.pulses, flows: projection.flows};
+  const layout = layoutCausal(pagePulse);
+  layout.title = title;
+  layout.kind = kind;
+  layout.legend = usedLegend(pulse.pulses, projection.flows);
+  const boundaryIds = new Set(projection.boundaryIds || []);
+  const capabilityIds = new Set(projection.capabilityIds || []);
+  for (const node of layout.nodes) {
+    if (boundaryIds.has(node.id)) node.kind = 'boundary';
+    if (capabilityIds.has(node.id)) node.kind = 'capability';
+  }
+  const informationById = new Map((pulse['domain-information'] || []).map(item => [item.id, item]));
+  const actualBehaviorIds = new Set(pulse.behaviors.map(item => item.id));
+  const actualNodes = kind === 'overview' ? [] : layout.nodes.filter(node => actualBehaviorIds.has(node.id));
+  const maxInputs = Math.max(0, ...projection.behaviors.map(item => (item['information-in'] || []).length));
+  const maxOutputs = Math.max(0, ...projection.behaviors.map(item => (item['information-out'] || []).length));
+  const topExtra = maxInputs ? 86 : 0;
+  const bottomExtra = maxOutputs ? 86 : 0;
+  if (topExtra || bottomExtra) {
+    for (const node of layout.nodes) node.y += bottomExtra;
+    for (const flow of layout.flows) {
+      flow.points.forEach(point => { point.y += bottomExtra; });
+      flow.symbol.y += bottomExtra;
+      flow.annotation.y += bottomExtra;
+    }
+    layout.page.height += topExtra + bottomExtra;
+  }
+  layout.domainNodes = [];
+  layout.informationFlows = [];
+  for (const node of actualNodes) {
+    const behavior = pulse.behaviors.find(item => item.id === node.id);
+    for (const [direction, field, side] of [['in', 'information-in', 'top'], ['out', 'information-out', 'bottom']]) {
+      const refs = behavior[field] || [];
+      refs.forEach((reference, index) => {
+        const centerX = node.x + node.width / 2 + (index - (refs.length - 1) / 2) * 126;
+        const info = informationById.get(reference);
+        const occurrence = {
+          ...info, kind: 'domain-information', occurrence: `${node.id}:${direction}:${index}`,
+          x: centerX - 56, y: direction === 'in' ? node.y + node.height + 42 : node.y - 78,
+          width: 112, height: 36,
+        };
+        layout.domainNodes.push(occurrence);
+        const behaviorPoint = {x: node.x + node.width * (index + 1) / (refs.length + 1), y: side === 'top' ? node.y + node.height : node.y};
+        const informationPoint = {x: centerX, y: direction === 'in' ? occurrence.y : occurrence.y + occurrence.height};
+        const middleY = (behaviorPoint.y + informationPoint.y) / 2;
+        const points = direction === 'in'
+          ? [informationPoint, {x: informationPoint.x, y: middleY}, {x: behaviorPoint.x, y: middleY}, behaviorPoint]
+          : [behaviorPoint, {x: behaviorPoint.x, y: middleY}, {x: informationPoint.x, y: middleY}, informationPoint];
+        layout.informationFlows.push({direction, information: info, behavior: node.id, points});
+      });
+    }
+  }
+  return layout;
+}
+
+function capabilityProjections(pulse) {
+  const behaviorById = new Map(pulse.behaviors.map(item => [item.id, item]));
+  const overviewFlows = pulse.flows.filter(flow => 'trigger' in flow
+    || behaviorById.get(flow.from).capability !== behaviorById.get(flow.to).capability);
+  const overview = {
+    behaviors: pulse.capabilities.map(item => ({...item})),
+    flows: overviewFlows.map(flow => 'trigger' in flow
+      ? {trigger: 'EXTERNAL TRIGGER', pulse: flow.pulse, to: behaviorById.get(flow.to).capability}
+      : {...flow, from: behaviorById.get(flow.from).capability, to: behaviorById.get(flow.to).capability}),
+    capabilityIds: pulse.capabilities.map(item => item.id), boundaryIds: [],
+  };
+  const details = pulse.capabilities.map(capability => {
+    const behaviors = pulse.behaviors.filter(behavior => behavior.capability === capability.id);
+    const boundary = new Map();
+    const flows = [];
+    for (const flow of pulse.flows) {
+      const destinationCapability = behaviorById.get(flow.to).capability;
+      if ('trigger' in flow) { if (destinationCapability === capability.id) flows.push({...flow}); continue; }
+      const sourceCapability = behaviorById.get(flow.from).capability;
+      if (sourceCapability === capability.id && destinationCapability === capability.id) flows.push({...flow});
+      else if (sourceCapability === capability.id) {
+        const id = `boundary-to-${destinationCapability}`;
+        boundary.set(id, {id, name: `TO ${pulse.capabilities.find(item => item.id === destinationCapability).name}`});
+        flows.push({...flow, to: id});
+      } else if (destinationCapability === capability.id) {
+        const name = `FROM ${pulse.capabilities.find(item => item.id === sourceCapability).name}`;
+        const id = `trigger:${name}`;
+        flows.push({trigger: name, pulse: flow.pulse, to: flow.to});
+        boundary.set(id, null);
+      }
+    }
+    return {capability, behaviors: [...behaviors, ...boundary.values()].filter(Boolean), flows, boundaryIds: [...boundary.keys()]};
+  });
+  return {overview, details};
+}
+
+export function layoutPulse(pulse) {
+  if (!('capabilities' in pulse)) {
+    const page = causalPage(pulse, {behaviors: pulse.behaviors, flows: pulse.flows}, 'SYSTEM PULSE', 'system');
+    return {...page, pages: [page]};
+  }
+  const {overview, details} = capabilityProjections(pulse);
+  const pages = [causalPage(pulse, overview, 'PULSE CAPABILITY OVERVIEW', 'overview')];
+  for (const detail of details) pages.push(causalPage(pulse, detail, `CAPABILITY: ${detail.capability.name}`, 'capability-detail'));
+  return {pages};
 }

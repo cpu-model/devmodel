@@ -8,8 +8,8 @@ const files = [
   'README.md',
   'SPEC.md',
   'AGENTS.md',
-  `${processDirectory}/CPU-Artifact-Formats-v1.md`,
-  `${processDirectory}/CPU-Visual-Language-v1.md`,
+  `${processDirectory}/CPU-Artifact-Formats-v2.md`,
+  `${processDirectory}/CPU-Visual-Language-v2.md`,
 ];
 const documents = new Map(files.map(file => [file, fs.readFileSync(path.join(root, file), 'utf8')]));
 const combined = [...documents.values()].join('\n');
@@ -30,6 +30,7 @@ const forbidden = new Map([
   ['legacy generated filename', /\bview\.(?:d2|svg|png)\b/],
   ['legacy requirement namespace', /\bview\.(?:view|action|info)\./],
   ['legacy YAML root', /^view:\s*$/m],
+  ['legacy methodology generation', /CPU-(?:Artifact-Formats|Visual-Language)-v1/],
 ]);
 
 const errors = [];

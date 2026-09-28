@@ -34,6 +34,21 @@ invalidModel('pulse.yaml', document => { document.pulse.behaviors[0].name = ''; 
 invalidModel('ui.yaml', document => { document.ui.views[0].actions[0].name = ''; }, /ui\.view\.main\.actions\[0\]\.name must be a non-empty string/);
 invalidModel('ui.yaml', document => { document.ui.subviews[1].actions[0].name = ''; }, /ui\.subview\.shared-status\.actions\[0\]\.name must be a non-empty string/);
 invalidModel('requirements.yaml', document => { document.requirements['ui.view.main'] = []; }, /must not be empty/);
+invalidModel('requirements.yaml', document => { document.requirements['ui.view.main'] = ['legacy string']; }, /must be a mapping/);
+invalidModel('requirements.yaml', document => { document.requirements['ui.view.main'] = [{id: 'bad', text: 'Rule', status: 'new'}]; }, /unknown \[status\]/);
+invalidModel('requirements.yaml', document => {
+  document.requirements['ui.view.main'] = [{id: 'submit-input', text: 'Another rule'}];
+}, /Duplicate requirement ID: submit-input/);
+invalidModel('requirements.yaml', document => { document.requirements['pulse.capability.input-handling'] = [{id: 'capability-rule', text: 'Invalid'}]; }, /Unknown Pulse requirement target/);
+invalidModel('pulse.yaml', document => { delete document.pulse.behaviors[0].capability; }, /missing \[capability\]/);
+invalidModel('pulse.yaml', document => { document.pulse.behaviors[0].capability = 'missing'; }, /Unknown Capability for Behavior/);
+invalidModel('pulse.yaml', document => { document.pulse.capabilities.push({...document.pulse.capabilities[0]}); }, /Duplicate Capability ID/);
+invalidModel('pulse.yaml', document => { document.pulse.capabilities[0].owner = 'team'; }, /unknown \[owner\]/);
+invalidModel('pulse.yaml', document => { document.pulse['domain-information'][0].schema = 'string'; }, /unknown \[schema\]/);
+invalidModel('pulse.yaml', document => { document.pulse['domain-information'].push({id: 'unused', name: 'Unused'}); }, /Unreferenced Domain Information/);
+invalidModel('pulse.yaml', document => { document.pulse.behaviors[0]['information-in'] = ['missing']; }, /Unknown Domain Information reference/);
+invalidModel('pulse.yaml', document => { document.pulse.behaviors[0]['information-in'] = ['submitted-input', 'submitted-input']; }, /Duplicate Domain Information reference/);
+invalidModel('pulse.yaml', document => { delete document.pulse.capabilities; }, /Behavior capability is forbidden/);
 invalidModel('deployment.yaml', document => {
   document.deployment.programs[0]['health-check'].command = 'unexpected';
 }, /command is not allowed for HTTP/);

@@ -95,7 +95,7 @@ Q
     Type: PDFName.of('Annot'),
     Subtype: PDFName.of('Text'),
     Rect: rect,
-    Contents: PDFHexString.fromText(contents.join('\n\n')),
+    Contents: PDFHexString.fromText(contents.map(requirement => requirement.text).join('\n\n')),
     T: PDFHexString.fromText(title),
     Subj: PDFHexString.fromText('CPU directly attached requirements'),
     Name: PDFName.of('Comment'),

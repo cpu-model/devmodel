@@ -8,7 +8,7 @@ for (const name of ['context', 'pulse', 'ui', 'deployment']) {
   assert.match(source, /AP: \{N: appearanceRef\}/);
   assert.match(source, /Subtype: PDFName\.of\('Popup'\)/);
   assert.match(source, /Open: PDFBool\.False/);
-  assert.match(source, /Contents: PDFHexString\.fromText\(contents\.join\('\\n\\n'\)\)/);
+  assert.match(source, /Contents: PDFHexString\.fromText\(contents\.map\(requirement => requirement\.text\)\.join\('\\n\\n'\)\)/);
   assert.doesNotMatch(source, /Subtype: PDFName\.of\('Link'\)/);
   assert.doesNotMatch(source, /<svg|\.svg\b|D2|ELK/);
 }

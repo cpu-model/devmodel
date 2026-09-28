@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {createRequire} from 'node:module';
+import {loadRequirements, requirementsForPrefix} from './requirements_model.mjs';
 
 const {parseDocument} = createRequire(import.meta.url)('yaml');
 
@@ -183,16 +184,7 @@ export function loadDeploymentModel(sourceDirectory) {
     targets.add(`deployment.connection.${connection.id}`);
   }
 
-  const requirementsSource = parseYaml(path.join(sourceDirectory, 'requirements.yaml'));
-  exactFields(requirementsSource, ['requirements'], ['requirements'], 'requirements.yaml');
-  const allRequirements = mapping(requirementsSource.requirements, 'requirements');
-  const requirements = {};
-  for (const [target, values] of Object.entries(allRequirements)) {
-    if (!target.startsWith('deployment.')) continue;
-    if (!targets.has(target)) throw new Error(`Unknown Deployment requirement target: ${target}`);
-    list(values, `requirements.${target}`);
-    if (!values.length) throw new Error(`requirements.${target} must not be empty`);
-    requirements[target] = values.map((value, index) => nonEmpty(value, `requirements.${target}[${index}]`));
-  }
+  const allRequirements = loadRequirements(sourceDirectory);
+  const requirements = requirementsForPrefix(allRequirements, 'deployment.', targets, 'Deployment');
   return {deployment: {...deployment, hosts, programs, connections}, requirements};
 }

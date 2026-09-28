@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {createRequire} from 'node:module';
+import {loadRequirements, requirementsForPrefix} from './requirements_model.mjs';
 
 const {parseDocument} = createRequire(import.meta.url)('yaml');
 
@@ -94,9 +95,7 @@ export function loadUiModel(sourceDirectory) {
     }
   }
 
-  const requirementsSource = parseYaml(path.join(sourceDirectory, 'requirements.yaml'));
-  exactFields(requirementsSource, ['requirements'], ['requirements'], 'requirements.yaml');
-  const allRequirements = mapping(requirementsSource.requirements, 'requirements');
+  const allRequirements = loadRequirements(sourceDirectory);
   const targets = new Set();
   for (const view of views) {
     targets.add(`ui.view.${view.id}`);
@@ -108,13 +107,6 @@ export function loadUiModel(sourceDirectory) {
     for (const item of subview.actions || []) targets.add(`ui.subview-action.${subview.id}.${item.id}`);
     for (const item of subview.information || []) targets.add(`ui.subview-info.${subview.id}.${item.id}`);
   }
-  const requirements = {};
-  for (const [target, values] of Object.entries(allRequirements)) {
-    if (!target.startsWith('ui.')) continue;
-    if (!targets.has(target)) throw new Error(`Unknown UI requirement target: ${target}`);
-    list(values, `requirements.${target}`);
-    if (!values.length) throw new Error(`requirements.${target} must not be empty`);
-    requirements[target] = values.map((value, index) => nonEmpty(value, `requirements.${target}[${index}]`));
-  }
+  const requirements = requirementsForPrefix(allRequirements, 'ui.', targets, 'UI');
   return {ui: {subviews, views}, requirements};
 }

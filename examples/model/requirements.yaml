@@ -1,23 +1,37 @@
 requirements:
   context.flow.user-input:
-    - The system shall accept user input.
+    - id: accept-user-input
+      text: The system shall accept user input.
   pulse.behavior.process-input:
-    - The system shall process submitted input.
+    - id: process-submitted-input
+      text: The system shall process submitted input.
+  pulse.domain-information.processed-result:
+    - id: preserve-result-meaning
+      text: The processed result shall preserve the domain meaning of the submitted input.
   ui.action.main.submit-input:
-    - The user shall be able to submit input.
+    - id: submit-input
+      text: The user shall be able to submit input.
   ui.subview.shared-status:
-    - Shared status shall be reusable across Views.
+    - id: reuse-shared-status
+      text: Shared status shall be reusable across Views.
   ui.subview-action.shared-status.refresh-status:
-    - The user shall be able to refresh shared status.
+    - id: refresh-shared-status
+      text: The user shall be able to refresh shared status.
   ui.subview-info.shared-status.current-status:
-    - Shared current status shall be visible.
+    - id: show-shared-status
+      text: Shared current status shall be visible.
   deployment.host.application-host:
-    - The application shall run on a Linux host.
+    - id: use-linux-host
+      text: The application shall run on a Linux host.
   deployment.program.example-application:
-    - The server and Web UI shall be delivered as one operating-system process.
+    - id: combine-server-and-web-ui
+      text: The server and Web UI shall be delivered as one operating-system process.
   deployment.program.example-application.port.web:
-    - The Web UI shall listen on port 8080.
+    - id: listen-on-web-port
+      text: The Web UI shall listen on port 8080.
   deployment.service.data-stack.database:
-    - Persistent application data shall be stored in PostgreSQL.
+    - id: store-data-in-postgresql
+      text: Persistent application data shall be stored in PostgreSQL.
   deployment.connection.application-database:
-    - The application shall connect to PostgreSQL over the internal deployment network.
+    - id: connect-over-internal-network
+      text: The application shall connect to PostgreSQL over the internal deployment network.

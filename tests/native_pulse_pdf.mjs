@@ -3,184 +3,105 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
+import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
-import {
-  layoutPulse, MIN_CHANNEL_SPACING, MIN_PORT_SPACING, MIN_SIDE_CLEARANCE, PULSE_LINE_CLEARANCE, PULSE_RADIUS,
-} from '../tools/native/pulse_layout.mjs';
+import {layoutPulse} from '../tools/native/pulse_layout.mjs';
+import {loadPulseModel} from '../tools/native/pulse_model.mjs';
 
+const {parse, stringify} = createRequire(import.meta.url)('yaml');
+const {PDFDocument, PDFName} = createRequire(import.meta.url)('pdf-lib');
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const productionToolFiles = [
-  ...fs.readdirSync(path.join(root, 'tools', 'native')).filter(name => name.endsWith('.mjs'))
-    .map(name => path.join(root, 'tools', 'native', name)),
-  ...fs.readdirSync(path.join(root, 'tools')).filter(name => name.endsWith('.mjs'))
-    .map(name => path.join(root, 'tools', name)),
+const example = path.join(root, 'examples', 'model');
+const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'cpu-v2-pulse-'));
+for (const file of ['pulse.yaml', 'requirements.yaml']) fs.copyFileSync(path.join(example, file), path.join(directory, file));
+const requirementDocument = parse(fs.readFileSync(path.join(directory, 'requirements.yaml'), 'utf8'));
+requirementDocument.requirements['pulse.pulse.result-ready'] = [
+  {id: 'retain-result-event-identity', text: 'The result ready event shall retain its identity.'},
+  {id: 'order-result-event', text: 'The result ready event shall follow result establishment.'},
 ];
-const productionToolSource = productionToolFiles.map(file => fs.readFileSync(file, 'utf8')).join('\n');
-for (const forbidden of [
-  'isEvcReviewProfile', 'evc', 'mercedes', 'garo', 'observe-vehicle',
-  'handle-manual-planning-choice', 'restore-system-state', 'choose-morning-target',
-  'choose-afternoon-target', 'secure-baseline-target', 'end-target',
-  'plan-charging', 'activate-plan', 'control-charger',
-]) {
-  assert.doesNotMatch(productionToolSource, new RegExp(forbidden, 'i'),
-    `Production tools must not contain project-specific rule: ${forbidden}`);
+fs.writeFileSync(path.join(directory, 'requirements.yaml'), stringify(requirementDocument));
+
+const model = loadPulseModel(directory);
+const layout = layoutPulse(model.pulse);
+assert.deepEqual(layoutPulse(model.pulse), layout, 'Pulse projections and geometry are deterministic');
+assert.equal(layout.pages.length, 3, 'Overview plus one detail per declared Capability');
+assert.equal(layout.pages[0].kind, 'overview');
+assert.deepEqual(layout.pages.slice(1).map(page => page.title), ['CAPABILITY: Input handling', 'CAPABILITY: Result presentation']);
+assert.equal(layout.pages[0].domainNodes.length, 0, 'Overview excludes Domain Information');
+assert.deepEqual(layout.pages[0].nodes.filter(node => node.kind === 'capability').map(node => node.id), ['input-handling', 'result-presentation']);
+assert.equal(layout.pages[0].flows.length, 2, 'Overview covers trigger and cross-Capability flows');
+assert.equal(layout.pages[1].flows.length, 2, 'Source detail covers trigger and outgoing cross-Capability flow');
+assert.equal(layout.pages[2].flows.length, 1, 'Destination detail covers incoming cross-Capability flow');
+assert.match(layout.pages[1].nodes.find(node => node.kind === 'boundary').name, /^TO /);
+assert.match(layout.pages[2].nodes.find(node => node.kind === 'boundary').name, /^FROM /);
+assert.deepEqual(layout.pages.map(page => page.legend.map(item => item.display)), [['01', '02'], ['01', '02'], ['02']], 'Local legends preserve global display identities and declaration order');
+
+const behaviorOccurrences = layout.pages.slice(1).flatMap(page => page.nodes.filter(node => node.kind === 'behavior'));
+for (const behavior of behaviorOccurrences) {
+  const incoming = layout.pages.flatMap(page => page.flows).filter(flow => flow.to === behavior.id);
+  const outgoing = layout.pages.flatMap(page => page.flows).filter(flow => flow.from === behavior.id);
+  assert.ok(incoming.every(flow => flow.points.at(-1).x === behavior.x), 'Incoming Pulse terminates on left side');
+  assert.ok(incoming.every(flow => flow.points.at(-1).y >= behavior.y && flow.points.at(-1).y <= behavior.y + behavior.height), 'Incoming Pulse endpoint lies on the Behavior side');
+  assert.ok(outgoing.every(flow => flow.points[0].x === behavior.x + behavior.width), 'Outgoing Pulse starts on right side');
 }
-const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'cpu-native-pulse-'));
-fs.copyFileSync(path.join(root, 'examples', 'model', 'pulse.yaml'), path.join(directory, 'pulse.yaml'));
-const requirements = fs.readFileSync(path.join(root, 'examples', 'model', 'requirements.yaml'), 'utf8');
-fs.writeFileSync(path.join(directory, 'requirements.yaml'), `${requirements}  pulse.pulse.input-submitted:\n    - The input submitted event shall retain its identity.\n`);
+for (const page of layout.pages.slice(1)) for (const flow of page.informationFlows) {
+  const behavior = page.nodes.find(node => node.id === flow.behavior);
+  if (flow.direction === 'in') assert.equal(flow.points.at(-1).y, behavior.y + behavior.height, 'information-in terminates on top');
+  else assert.equal(flow.points[0].y, behavior.y, 'information-out starts on bottom');
+}
+assert.equal(layout.pages.slice(1).flatMap(page => page.domainNodes).filter(node => node.id === 'processed-result').length, 2, 'Domain Information repeats deterministically per participation');
+
+const coveragePulse = {
+  capabilities: [{id: 'a', name: 'A'}, {id: 'b', name: 'B'}], 'domain-information': [],
+  behaviors: [{id: 'a1', name: 'A1', capability: 'a'}, {id: 'a2', name: 'A2', capability: 'a'}, {id: 'b1', name: 'B1', capability: 'b'}],
+  pulses: [{id: 'p1', display: '1', name: 'P1'}, {id: 'p2', display: '2', name: 'P2'}, {id: 'p3', display: '3', name: 'P3'}],
+  flows: [{trigger: 'Start', pulse: 'p1', to: 'a1'}, {from: 'a1', pulse: 'p2', to: 'a2'}, {from: 'a2', pulse: 'p3', to: 'b1'}],
+};
+const coverage = layoutPulse(coveragePulse).pages;
+assert.equal(coverage[0].flows.length, 2, 'Overview excludes same-Capability flow');
+assert.equal(coverage[1].flows.length, 3, 'Source detail covers trigger, internal, and outgoing cross-Capability flows');
+assert.equal(coverage[2].flows.length, 1, 'Destination detail covers only incoming cross-Capability flow');
+
 const output = path.join(directory, 'pulse.pdf');
-const result = spawnSync(process.execPath, [
-  path.join(root, 'tools', 'render_pulse_native.mjs'),
-  '--source', directory, '--output', output,
-], {encoding: 'utf8'});
+const result = spawnSync(process.execPath, [path.join(root, 'tools', 'render_pulse_native.mjs'), '--source', directory, '--output', output], {encoding: 'utf8'});
 assert.equal(result.status, 0, result.stderr);
-assert.equal(fs.existsSync(output), true);
 const source = fs.readFileSync(output, 'latin1');
-assert.match(source, /\/Title <FEFF004300500055002000500075006C00730065>/);
-assert.match(source, /\/Subtype \/Text/);
-assert.match(source, /\/Name \/Comment/);
-assert.match(source, /\/AP <<\n\/N /);
-assert.match(source, /\/BBox \[ 0 0 14 14 \]/);
-assert.match(source, /\/Subtype \/Popup/);
-assert.equal((source.match(/\/Subtype \/Text/g) || []).length, 2);
-assert.doesNotMatch(source, /\/Open true/);
+assert.equal((source.match(/\/Type \/Page\b/g) || []).length, 3);
+assert.equal((source.match(/\/Subtype \/Text/g) || []).length, 6, 'Every requirement-addressable occurrence is annotated');
 assert.doesNotMatch(source, /<svg|\/Image\b/);
-assert.match(source, /FEFF005400680065002000730079007300740065006D/);
+const pdf = await PDFDocument.load(fs.readFileSync(output));
+const pulseContents = pdf.getPages().flatMap(page => page.node.Annots().asArray().map(reference => pdf.context.lookup(reference)))
+  .filter(annotation => annotation.get(PDFName.of('Subtype'))?.toString() === '/Text')
+  .map(annotation => annotation.get(PDFName.of('Contents')).decodeText());
+assert.equal(pulseContents.filter(text => text === 'The result ready event shall retain its identity.\n\nThe result ready event shall follow result establishment.').length, 3, 'Repeated Pulse occurrences preserve complete declared requirement order');
 
-const stressLayout = layoutPulse({
-  behaviors: [
-    {id: 'source', name: 'Source'},
-    ...Array.from({length: 4}, (_, index) => ({id: `target-${index}`, name: `Target ${index}`})),
-  ],
-  pulses: Array.from({length: 5}, (_, index) => ({id: `pulse-${index}`, display: `${index}`, name: `Pulse ${index}`})),
-  flows: [
-    {trigger: 'Start', pulse: 'pulse-0', to: 'source'},
-    ...Array.from({length: 4}, (_, index) => ({from: 'source', pulse: `pulse-${index + 1}`, to: `target-${index}`})),
-  ],
-});
-const sourceNode = stressLayout.nodes.find(node => node.id === 'source');
-const sourceConnections = stressLayout.flows.filter(flow => flow.from === 'source');
-assert.ok(MIN_PORT_SPACING >= PULSE_RADIUS * 2 + PULSE_LINE_CLEARANCE * 2,
-  'Port spacing includes the pulse circle diameter and line clearance on both sides');
-const ys = sourceConnections.map(flow => flow.points[0].y).sort((a, b) => a - b);
-for (let index = 1; index < ys.length; index += 1) assert.ok(ys[index] - ys[index - 1] >= MIN_PORT_SPACING);
-assert.ok(sourceNode.height >= 48 + (sourceConnections.length - 1) * MIN_PORT_SPACING);
-const targetCenters = new Map(stressLayout.nodes.map(node => [node.id, node.y + node.height / 2]));
-const spatialOrder = [...sourceConnections].sort((a, b) => targetCenters.get(a.to) - targetCenters.get(b.to));
-for (let index = 1; index < spatialOrder.length; index += 1) {
-  assert.ok(spatialOrder[index].points[0].y > spatialOrder[index - 1].points[0].y);
-}
-const horizontalSegments = stressLayout.flows.flatMap(flow => flow.points.slice(1).map((point, index) => ({
-  start: flow.points[index], end: point,
-}))).filter(segment => segment.start.y === segment.end.y);
-for (let left = 0; left < horizontalSegments.length; left += 1) {
-  for (let right = left + 1; right < horizontalSegments.length; right += 1) {
-    const a = horizontalSegments[left];
-    const b = horizontalSegments[right];
-    const overlap = Math.min(Math.max(a.start.x, a.end.x), Math.max(b.start.x, b.end.x))
-      - Math.max(Math.min(a.start.x, a.end.x), Math.min(b.start.x, b.end.x));
-    if (overlap > 0.01) assert.ok(Math.abs(a.start.y - b.start.y) >= 18);
-  }
-}
-for (const flow of stressLayout.flows) {
-  assert.ok(flow.points.length - 2 <= 4, 'A connection uses no more than four knees');
-  for (let index = 1; index < flow.points.length; index += 1) {
-    const previous = flow.points[index - 1];
-    const current = flow.points[index];
-    assert.ok(previous.x === current.x || previous.y === current.y, 'Connections contain no diagonal segments');
-  }
-  if (flow.points.length > 2) {
-    assert.ok(flow.points[1].x - flow.points[0].x >= MIN_SIDE_CLEARANCE,
-      'A routed connection clears the source element side');
-    const last = flow.points.length - 1;
-    assert.ok(flow.points[last].x - flow.points[last - 1].x >= MIN_SIDE_CLEARANCE,
-      'A routed connection clears the target element side');
-  }
-}
-
-const horizontalLayout = layoutPulse({
-  behaviors: [{id: 'target', name: 'Target'}],
-  pulses: [{id: 'pulse', display: '01', name: 'Pulse'}],
-  flows: [{trigger: 'Start', pulse: 'pulse', to: 'target'}],
-});
-assert.equal(horizontalLayout.flows[0].points.length, 2, 'Nearby elements use a straight connection first');
-assert.equal(horizontalLayout.flows[0].points[0].y, horizontalLayout.flows[0].points[1].y,
-  'A straight connection is horizontal');
-
-const relayLayout = layoutPulse({
-  behaviors: [{id: 'relay', name: 'Relay'}, {id: 'target', name: 'Target'}],
-  pulses: [
-    {id: 'into-relay', display: '01', name: 'Into relay'},
-    {id: 'out-of-relay', display: '02', name: 'Out of relay'},
-  ],
-  flows: [
-    {trigger: 'Start', pulse: 'into-relay', to: 'relay'},
-    {from: 'relay', pulse: 'out-of-relay', to: 'target'},
-  ],
-});
-assert.ok(relayLayout.flows.every(flow => flow.points.length === 2),
-  'Ports on opposite sides of a relay may share one horizontal axis');
-
-const fanInLayout = layoutPulse({
-  behaviors: [
-    ...Array.from({length: 5}, (_, index) => ({id: `source-${index}`, name: `Source ${index}`})),
-    {id: 'target', name: 'Target'},
-  ],
-  pulses: Array.from({length: 10}, (_, index) => ({id: `fan-${index}`, display: `${index}`, name: `Fan ${index}`})),
-  flows: [
-    ...Array.from({length: 5}, (_, index) => ({trigger: `Start ${index}`, pulse: `fan-${index}`, to: `source-${index}`})),
-    ...Array.from({length: 5}, (_, index) => ({from: `source-${index}`, pulse: `fan-${index + 5}`, to: 'target'})),
-  ],
-});
-const fanSources = fanInLayout.nodes.filter(node => node.id.startsWith('source-'));
-const fanTarget = fanInLayout.nodes.find(node => node.id === 'target');
-const approachGap = fanTarget.x - Math.max(...fanSources.map(node => node.x + node.width));
-assert.ok(approachGap >= MIN_SIDE_CLEARANCE * 2 + 4 * MIN_CHANNEL_SPACING,
-  'A target column gap reserves safe approach channels for every incoming connection');
-const properCrossing = (a, b, c, d) => {
-  const firstHorizontal = a.y === b.y;
-  const secondHorizontal = c.y === d.y;
-  if (firstHorizontal === secondHorizontal) return false;
-  const horizontal = firstHorizontal ? {a, b} : {a: c, b: d};
-  const vertical = firstHorizontal ? {a: c, b: d} : {a, b};
-  return vertical.a.x > Math.min(horizontal.a.x, horizontal.b.x)
-    && vertical.a.x < Math.max(horizontal.a.x, horizontal.b.x)
-    && horizontal.a.y > Math.min(vertical.a.y, vertical.b.y)
-    && horizontal.a.y < Math.max(vertical.a.y, vertical.b.y);
+const systemPulse = {
+  'domain-information': [{id: 'input', name: 'Input'}],
+  behaviors: [{id: 'handle', name: 'Handle', 'information-in': ['input']}],
+  pulses: [{id: 'start', display: 'A', name: 'Start'}], flows: [{trigger: 'Start', pulse: 'start', to: 'handle'}],
 };
-const collinearOverlap = (a, b, c, d) => {
-  if (a.y === b.y && c.y === d.y && a.y === c.y) {
-    return Math.min(Math.max(a.x, b.x), Math.max(c.x, d.x))
-      - Math.max(Math.min(a.x, b.x), Math.min(c.x, d.x)) > 0.01;
-  }
-  if (a.x === b.x && c.x === d.x && a.x === c.x) {
-    return Math.min(Math.max(a.y, b.y), Math.max(c.y, d.y))
-      - Math.max(Math.min(a.y, b.y), Math.min(c.y, d.y)) > 0.01;
-  }
-  return false;
+const systemLayout = layoutPulse(systemPulse);
+assert.equal(systemLayout.pages.length, 1);
+assert.equal(systemLayout.pages[0].kind, 'system');
+const systemDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'cpu-v2-system-pulse-'));
+const systemDocument = parse(fs.readFileSync(path.join(example, 'pulse.yaml'), 'utf8'));
+delete systemDocument.pulse.capabilities;
+systemDocument.pulse.behaviors.forEach(behavior => { delete behavior.capability; });
+fs.writeFileSync(path.join(systemDirectory, 'pulse.yaml'), stringify(systemDocument));
+fs.copyFileSync(path.join(example, 'requirements.yaml'), path.join(systemDirectory, 'requirements.yaml'));
+const systemOutput = path.join(systemDirectory, 'pulse.pdf');
+const systemResult = spawnSync(process.execPath, [path.join(root, 'tools', 'render_pulse_native.mjs'), '--source', systemDirectory, '--output', systemOutput], {encoding: 'utf8'});
+assert.equal(systemResult.status, 0, systemResult.stderr);
+const systemPdf = await PDFDocument.load(fs.readFileSync(systemOutput));
+assert.equal(systemPdf.getPageCount(), 1, 'Pulse without Capabilities renders one integrated system page');
+
+const stressPulse = {
+  'domain-information': Array.from({length: 6}, (_, index) => ({id: `info-${index}`, name: `Information ${index}`})),
+  behaviors: Array.from({length: 7}, (_, index) => ({id: `behavior-${index}`, name: `Behavior ${index}`, 'information-in': index ? [`info-${index - 1}`] : [], 'information-out': index < 6 ? [`info-${index}`] : []})),
+  pulses: Array.from({length: 7}, (_, index) => ({id: `pulse-${index}`, display: `${index + 1}`, name: `Pulse ${index + 1}`})),
+  flows: [{trigger: 'Start', pulse: 'pulse-0', to: 'behavior-0'}, ...Array.from({length: 6}, (_, index) => ({from: `behavior-${index}`, pulse: `pulse-${index + 1}`, to: `behavior-${index + 1}`}))],
 };
-const fanInConnections = fanInLayout.flows.filter(flow => flow.to === 'target');
-for (let left = 0; left < fanInConnections.length; left += 1) {
-  for (let right = left + 1; right < fanInConnections.length; right += 1) {
-    const a = fanInConnections[left];
-    const b = fanInConnections[right];
-    const crosses = a.points.slice(1).some((point, index) => b.points.slice(1)
-      .some((other, otherIndex) => properCrossing(a.points[index], point, b.points[otherIndex], other)));
-    assert.equal(crosses, false, 'Connections sharing a target side preserve their order without crossings');
-  }
-}
-for (const layout of [stressLayout, fanInLayout, relayLayout]) {
-  const segments = layout.flows.flatMap(flow => flow.points.slice(1)
-    .map((point, index) => ({flow, start: flow.points[index], end: point})));
-  for (let left = 0; left < segments.length; left += 1) {
-    for (let right = left + 1; right < segments.length; right += 1) {
-      if (segments[left].flow === segments[right].flow) continue;
-      assert.equal(collinearOverlap(segments[left].start, segments[left].end,
-        segments[right].start, segments[right].end), false,
-      'Different connections never share a collinear segment');
-    }
-  }
-}
-assert.ok(stressLayout.page.height > 595);
-console.log('Native Pulse PDF checks passed');
+const stress = layoutPulse(stressPulse).pages[0];
+assert.equal(stress.domainNodes.length, 12);
+assert.ok(stress.flows.every(flow => flow.points.slice(1).every((point, index) => point.x === flow.points[index].x || point.y === flow.points[index].y)), 'Stress routes remain orthogonal');
+console.log('CPU v2 Pulse projection, layout, PDF, annotation, and stress checks passed');

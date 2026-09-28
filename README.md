@@ -6,8 +6,8 @@ This repository contains the reusable methodology and tooling for the Context-Pu
 
 - [`SPEC.md`](SPEC.md) explains the model, source hierarchy, and project adoption rules.
 - [`AGENTS.md`](AGENTS.md) tells Codex and other coding agents how to interpret and change CPU models.
-- [`CPU Artifact Formats v1`](CPU/PROCESS/CPU-Artifact-Formats-v1.md) defines the semantic YAML formats and requirement attachments.
-- [`CPU Visual Language v1`](CPU/PROCESS/CPU-Visual-Language-v1.md) defines diagram notation, rendering, and interactive requirement review.
+- [`CPU Artifact Formats v2`](CPU/PROCESS/CPU-Artifact-Formats-v2.md) defines the semantic YAML formats and requirement attachments.
+- [`CPU Visual Language v2`](CPU/PROCESS/CPU-Visual-Language-v2.md) defines diagram notation, rendering, and interactive requirement review.
 - [`examples/model`](examples/model) is a minimal valid model.
 - [`CPU - lathund för ett nytt projekt`](CPU-nytt-projekt-lathund.md) is a concise Swedish guide from an empty repository to incremental CPU development.
 
@@ -22,6 +22,8 @@ A concrete system model consists of:
 - `ui.yaml`
 - `deployment.yaml`
 - `requirements.yaml`
+
+Pulse optionally declares flat Capabilities for deterministic local causal review and Domain Information for domain-significant participation in Behaviors. `information-in` and `information-out` remain independent of Pulse causality. Requirements are objects containing exactly stable `id` and normative `text`; IDs are globally unique within the concrete model's `requirements.yaml`.
 
 `UI` is the top-level artifact. `View` remains the term for an individual user-relevant surface inside UI.
 
@@ -60,7 +62,7 @@ The project keeps only its concrete five-file model under `CPU/`. It does not co
 npm run validate -- --source /path/to/model
 ```
 
-Validation is strict: duplicate YAML keys, unknown fields, invalid identities, unresolved references, invalid requirement targets, and blank requirements are rejected.
+Validation is strict: duplicate YAML keys, unknown fields, invalid identities, unresolved references, invalid requirement targets, malformed requirement objects, and requirement-ID collisions are rejected.
 
 ## Render and review a model
 
@@ -70,7 +72,7 @@ npm run render -- \
   --out /path/to/model
 ```
 
-The renderer strictly validates all five YAML sources, computes artifact-specific layout, and writes only `context.pdf`, `pulse.pdf`, `ui.pdf`, and `deployment.pdf`. The diagrams are native PDF vector graphics. Elements with attached requirements carry blue speech-bubble Text annotations containing the exact complete ordered requirement text.
+The renderer strictly validates all five YAML sources, computes artifact-specific layout, and writes only `context.pdf`, `pulse.pdf`, `ui.pdf`, and `deployment.pdf`. `pulse.pdf` is one system diagram without Capabilities or an overview plus one detail page per Capability. The diagrams are native PDF vector graphics. Every rendered occurrence with attached requirements carries a blue speech-bubble Text annotation containing the exact complete ordered requirement text.
 
 ## Repository checks
 

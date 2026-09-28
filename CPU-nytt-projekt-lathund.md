@@ -25,6 +25,8 @@ ln -s ../devmodel devmodel
 
 Projektets `CPU/` innehåller endast `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml` och `requirements.yaml`. Root `AGENTS.md` innehåller endast bootstrap till aktuell devmodel och eventuella projektspecifika instruktioner.
 
+Aktuell metodik är CPU v2. Pulse kan använda platta Capabilities och Domain Information; requirements skrivs som objekt med exakt `id` och `text`, och requirement-ID:n är globellt unika i `requirements.yaml`. Äldre strängposter eller v1-fältsyntax är inte giltiga.
+
 ## 3. ChatGPT Project
 
 Använd normalt ett ChatGPT Project per CPU-projekt. Projektinstruktionerna ska vara korta och främst ange vilket repo som är source of truth samt verkligt projektspecifika regler. Duplicera inte generell CPU-metodik i ChatGPT-instruktionerna.

@@ -1,13 +1,13 @@
-# CPU Visual Language v1
+# CPU Visual Language v2
 
-- Status: Normative v1
+- Status: Normative v2
 - Renderer baseline: Node.js native PDF renderer
 - PDF library: pdf-lib 1.17.1
 - Primary and permanent review output: native vector PDF
 
 ## 1. Purpose
 
-Visual Language v1 defines the notation used to render Context, Pulse, UI, and the complementary Deployment artifact.
+Visual Language v2 defines the notation used to render Context, Pulse, UI, and the complementary Deployment artifact.
 
 The semantic artifacts are authoritative. The visual language defines notation. The renderer computes artifact-specific layout and draws vector primitives directly into PDF pages.
 
@@ -118,23 +118,27 @@ The verified Context rendering establishes that initiative, data direction, and 
 
 ### 4.1 Purpose
 
-Pulse describes how event chains start and how they can propagate through the system. It describes possible causal event flows.
+Pulse describes what the system functionally does, what domain events can start or propagate causal Behavior, and what domain-significant information participates in that Behavior.
 
-Pulse does not describe implementation, execution logic, data dependencies, or exact runtime traces. Using, reading, or depending on data does not by itself create Pulse semantics.
+Pulse has independent causal and information-participation dimensions. Neither is inferred from the other. Pulse does not describe implementation, exact execution traces, function signatures, storage, message payloads, or implementation architecture.
 
 ### 4.2 Semantic elements
 
-Pulse has three fundamental semantic concepts: Behavior, Pulse, and Flow.
+Pulse has Behavior, Pulse, Flow, optional Capability, and optional Domain Information.
 
 Trigger is a role played by an external or starting cause. It is not a separate permanent semantic element.
 
 - **Behavior:** something the system does in reaction to a Pulse; rendered as a rounded rectangle.
 - **Pulse:** an identified event that can drive a Behavior; has a stable semantic ID and may have a short display identity such as `01`.
 - **Flow:** introduces or emits a Pulse and directs it to a Behavior.
+- **Capability:** an optional flat functional review partition rendered as a strong rectangular node in the overview only.
+- **Domain Information:** domain-significant information participating in Behavior; rendered as a square-corner rectangle.
 
 A Behavior may emit zero, one, or several Pulses. An outgoing Pulse means "can emit", not "always emits". Conditions remain internal to Behavior.
 
 Multiple incoming Pulses have independent or OR semantics. The same Pulse may fan out to several Behaviors. Cycles are allowed. No special gateway, end, or loop notation is required.
+
+Behavior is the integrated meeting point. Incoming Pulse terminates on its left side; outgoing Pulse starts on its right side; `information-in` terminates on its top side; `information-out` starts on its bottom side. Attachment side is normative even where an orthogonal connector routes backward or around the graph.
 
 ### 4.3 Trigger role and notation
 
@@ -158,7 +162,7 @@ The same semantic Pulse uses the same display number wherever it appears. A diff
 
 ### 4.5 Pulse legend
 
-Every Pulse diagram includes a Pulse legend listing every declared Pulse in declaration order:
+Every Pulse diagram includes a local Pulse legend listing only identities rendered in that diagram, ordered by global Pulse declaration order:
 
 ```text
 PULSES
@@ -167,13 +171,34 @@ PULSES
 03  Price retrieval
 ```
 
-The legend is part of the diagram itself and therefore appears in the permanent PDF review artifact, not only in supplementary HTML. The short number is display identity only. Cross-references use the semantic Pulse ID.
+Display identity remains globally stable and is never renumbered per diagram. The legend is part of the permanent PDF review artifact.
 
-### 4.6 Rendering status
+### 4.6 Review projections
+
+Without Capabilities, `pulse.pdf` contains one integrated system Pulse diagram. With Capabilities it contains, in order, a Capability overview and one integrated detail diagram per Capability in declaration order.
+
+The overview contains Capability nodes, cross-Capability Flow occurrences, external-trigger Pulses entering Capability boundaries, and its local legend. It excludes Domain Information, internal flows, invented Capability dependencies, and full trigger text beyond the external trigger occurrence.
+
+Flow coverage is exact and deterministic:
+
+- trigger source: overview and receiving Capability detail;
+- same-Capability source and destination: that Capability detail only;
+- different source and destination Capabilities: overview, source detail, and destination detail.
+
+Cross-Capability details use graphical `FROM <Capability>` and `TO <Capability>` boundary references. They are presentation context, not semantic or requirement-addressable elements. Different Pulses between the same Capabilities remain distinct; real fan-out preserves Pulse identity; internal flows never become overview self-loops.
+
+### 4.7 Domain Information notation
+
+Domain Information uses square-corner rectangles. Direction and the Behavior attachment side express participation without extra symbols or labels. A Behavior has exactly one occurrence in its Capability detail. Domain Information may repeat deterministically where needed for orthogonal reading and reduced crossings; repeated occurrences retain the same identity and requirements.
+
+The renderer prioritizes: semantic attachment sides; clear causal reading; clear input/output reading; node, text, symbol, and annotation clearance; reduced crossings; natural occurrence reuse; then deterministic repetition. It preferentially preserves vertical information zones above and below Behaviors and never mutates the model or uses per-diagram manual positions.
+
+### 4.8 Rendering status
 
 - Behavior, Trigger, connector, arrowhead, and Pulse symbol are native PDF vector constructions.
 - Trigger text wrapping and sizing are deterministic.
 - Pulse-symbol placement derives from the computed connector geometry and lies exactly on its path.
+- Capability projections, Flow coverage, Domain Information repetition, and page order are deterministic.
 
 ## 5. UI
 
@@ -271,7 +296,7 @@ Host, program, service, port, containment, and network connectors are native PDF
 
 ## 7. Artifact-specific semantic sources
 
-Visual Language v1 intentionally does not define a generic metamodel. The preferred sources are small artifact-specific YAML formats:
+Visual Language v2 intentionally does not define a generic metamodel. The preferred sources are small artifact-specific YAML formats:
 
 ```text
 system/
@@ -295,11 +320,11 @@ Artifact-specific vocabulary is intentionally asymmetric and should remain under
 
 ## 8. Identity
 
-Machine-readable IDs are simple and stable within their natural artifact scope. v1 does not introduce UUIDs, namespaces, or a global identity registry.
+Machine-readable IDs are simple and stable within their natural artifact scope. v2 does not introduce UUIDs, namespaces, or a global identity registry.
 
 `name` is display text and may change while `id` remains stable. Pulse additionally has a short display identity such as `01`; that display identity is not semantic identity.
 
-General cross-artifact references are not normative in v1. Semantic duplication between artifacts is acceptable rather than prematurely introducing cross-artifact reference machinery. Requirement addresses are the defined limited exception.
+General cross-artifact references are not normative in v2. Semantic duplication between artifacts is acceptable rather than prematurely introducing cross-artifact reference machinery. Requirement addresses are the defined limited exception.
 
 ## 9. Renderer acceptance classes
 
@@ -307,7 +332,7 @@ General cross-artifact references are not normative in v1. Semantic duplication 
 - **Computed:** deterministic geometry is calculated from validated semantic input before drawing.
 - **Unsupported:** notation would require manual per-diagram positioning or semantic inference from generated layout.
 
-Current v1 classification:
+Current v2 classification:
 
 | Feature | Classification |
 | --- | --- |
@@ -316,6 +341,7 @@ Current v1 classification:
 | Information | Native |
 | Action | Native |
 | Behavior | Native |
+| Capability / Domain Information / boundary reference | Native |
 | Trigger | Native |
 | Deployment host / program / service / port | Native |
 | Deployment network connection | Native |
@@ -339,19 +365,19 @@ The renderer implementation:
 - avoids image-AI redrawing;
 - preserves semantic meaning independently of renderer limitations.
 
-## 11. Verified v1 decisions
+## 11. Verified v2 decisions
 
 - **Context:** system and external-system composition; domain data-flow labels; independent arrowhead for data direction; initiative circle centered on connector path; visible separation between initiative circle and arrowhead; connector and label clearance; sufficient relation spacing.
-- **Pulse:** left-to-right causal flow; Behavior nodes; Trigger diamonds with centered, deterministically wrapped text and fan-out for identical trigger text; numbered Pulse circle integrated into connector; Pulse circle centered on the computed connector path; Pulse legend included in the diagram.
+- **Pulse:** deterministic system or Capability projections; integrated four-sided Behavior notation; square-corner Domain Information; graphical `FROM`/`TO` references; globally stable local legends; numbered Pulse circle integrated into the connector.
 - **UI:** View containers; Action and Information symbols; Actions in the left column; Information in the right column; left-aligned item labels; deterministic declared ordering within each column.
 - **Deployment:** nested host/program/service topology; visible ports and directed connections; connection labels clearly separated above connector geometry; implementation selections shown in labels.
 - **All diagrams:** consistent outer clearance between visible diagram content and the exported viewport.
 
-These verified rendering decisions constitute Visual Language v1.
+These verified rendering decisions constitute Visual Language v2.
 
 ## 12. Requirement popup annotations
 
-Requirement popup annotations provide interactive access to requirements without changing Context, Pulse, UI, or Deployment semantics. Requirement targets and source format are defined by Artifact Formats v1.
+Requirement popup annotations provide interactive access to requirements without changing Context, Pulse, UI, or Deployment semantics. Requirement targets and source format are defined by Artifact Formats v2.
 
 ### 12.1 Purpose and meaning
 
@@ -365,14 +391,14 @@ Show a marker if and only if the element has a resolved, non-empty requirement a
 
 Each annotation binds to exactly one target address from `requirements.yaml`. Its `Contents` contains the complete requirement strings for that target in declared order, separated by one blank line. Never bind by label text or Pulse display number.
 
-One annotation is created per rendered occurrence. Where the same Pulse or SubView is drawn more than once, every occurrence receives an annotation opening the same attachment.
+One annotation is created per rendered occurrence. Where the same Pulse, Domain Information, or SubView is drawn more than once, every occurrence receives an annotation opening the same attachment. Capability and graphical boundary references never receive annotations.
 
 ### 12.3 Placement
 
 Placement is deterministic and derives from the same computed geometry used to draw the diagram. The marker appears close enough to its element that the attachment is unambiguous.
 
 - Context flow: immediately to the left of the data-flow label, on the same visual baseline and clear of the connector.
-- System, party, Behavior, View, SubView, Deployment host, program, service, or port: in a clear upper corner inside the shape.
+- System, party, Behavior, Domain Information, View, SubView, Deployment host, program, service, or port: in a clear upper corner inside the shape. Behavior placement preserves clearance from top information connectors and lateral Pulse connectors.
 - Pulse: beside the numbered Pulse symbol and away from the connector path.
 - Action or Information: immediately to the right of the visible label.
 - Included SubView reference: at the right side of the reference box.

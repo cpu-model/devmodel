@@ -24,7 +24,11 @@ for (const name of ['context', 'pulse', 'ui', 'deployment']) {
 
 const expectedContents = {
   context: ['The system shall accept user input.'],
-  pulse: ['The system shall process submitted input.'],
+  pulse: [
+    'The system shall process submitted input.',
+    'The processed result shall preserve the domain meaning of the submitted input.',
+    'The processed result shall preserve the domain meaning of the submitted input.',
+  ],
   ui: [
     'The user shall be able to submit input.',
     'Shared status shall be reusable across Views.',
@@ -41,14 +45,16 @@ const expectedContents = {
 };
 for (const [name, expected] of Object.entries(expectedContents)) {
   const document = await PDFDocument.load(fs.readFileSync(path.join(output, `${name}.pdf`)));
-  const annotations = document.getPages()[0].node.Annots();
   const contents = [];
   let popups = 0;
-  for (const reference of annotations.asArray()) {
-    const annotation = document.context.lookup(reference);
-    const subtype = annotation.get(PDFName.of('Subtype'))?.toString();
-    if (subtype === '/Text') contents.push(annotation.get(PDFName.of('Contents')).decodeText());
-    if (subtype === '/Popup') popups += 1;
+  for (const page of document.getPages()) {
+    const annotations = page.node.Annots();
+    for (const reference of annotations.asArray()) {
+      const annotation = document.context.lookup(reference);
+      const subtype = annotation.get(PDFName.of('Subtype'))?.toString();
+      if (subtype === '/Text') contents.push(annotation.get(PDFName.of('Contents')).decodeText());
+      if (subtype === '/Popup') popups += 1;
+    }
   }
   assert.deepEqual(contents.sort(), expected.sort(), `${name} requirement annotation contents`);
   assert.equal(popups, expected.length, `${name} popup count`);
