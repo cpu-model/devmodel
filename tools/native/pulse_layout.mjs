@@ -1089,6 +1089,17 @@ function causalPage(pulse, projection, title, kind) {
     if (boundaryIds.has(node.id)) node.kind = 'boundary';
     if (capabilityIds.has(node.id)) node.kind = 'capability';
   }
+  // Incoming cross-Capability sources are projected through the causal
+  // trigger column but rendered as FROM boundary boxes. Keep the routed
+  // connector authoritative and center each synthetic boundary occurrence on
+  // its outgoing port. This is detail-page presentation only; overview and
+  // real external triggers are untouched.
+  if (kind === 'capability-detail') {
+    for (const node of layout.nodes.filter(item => item.kind === 'boundary' && item.id.startsWith('trigger:'))) {
+      const outgoingFlow = layout.flows.find(flow => 'trigger' in flow && `trigger:${flow.trigger}` === node.id);
+      if (outgoingFlow) node.y = outgoingFlow.points[0].y - node.height / 2;
+    }
+  }
   const informationById = new Map((pulse['domain-information'] || []).map(item => [item.id, item]));
   const actualBehaviorIds = new Set(pulse.behaviors.map(item => item.id));
   const actualNodes = kind === 'overview' ? [] : layout.nodes.filter(node => actualBehaviorIds.has(node.id));
