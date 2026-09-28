@@ -1200,6 +1200,63 @@ function causalPage(pulse, projection, title, kind) {
     const shiftedMaxY = maxY + lowerShift;
     layout.page.height = Math.max(layout.page.height + lowerShift, shiftedMaxY + PAGE.margin);
   }
+  // Re-anchor causal presentation to the finished geometry. Later packing
+  // and page normalization may move nodes or endpoint legs; Pulse symbols and
+  // endpoint coordinates must therefore be derived from the final connector,
+  // never incrementally shifted.
+  const nodeById = new Map(layout.nodes.map(node => [node.id, node]));
+  for (const flow of layout.flows) {
+    const sourceId = 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
+    const source = nodeById.get(sourceId);
+    const target = nodeById.get(flow.to);
+    if (source && flow.points.length) {
+      flow.points[0].x = source.x + source.width;
+      if (flow.points.length > 1) flow.points[1].y = flow.points[0].y;
+    }
+    if (target && flow.points.length) {
+      const last = flow.points.length - 1;
+      flow.points[last].x = target.x;
+      if (last > 0) flow.points[last - 1].y = flow.points[last].y;
+    }
+    const horizontal = flow.points.slice(1).map((point, index) => [flow.points[index], point])
+      .find(([a, b]) => a.y === b.y && Math.abs(b.x - a.x) >= 36);
+    if (horizontal) {
+      const [a, b] = horizontal;
+      const direction = Math.sign(b.x - a.x) || 1;
+      flow.symbol.x = a.x + direction * Math.min(18, Math.abs(b.x - a.x) / 2);
+      flow.symbol.y = a.y;
+      flow.annotation.x = flow.symbol.x + direction * 15;
+      flow.annotation.y = flow.symbol.y + 5;
+    }
+  }
+
+  // Apply final bounds to every Pulse page, including the overview. This keeps
+  // the normal top and bottom margins after all routing and symbol placement.
+  {
+    const ys = [
+      ...layout.nodes.flatMap(node => [node.y, node.y + node.height]),
+      ...layout.domainNodes.flatMap(node => [node.y, node.y + node.height]),
+      ...layout.flows.flatMap(flow => [
+        ...flow.points.map(point => point.y),
+        flow.symbol.y - PULSE_RADIUS, flow.symbol.y + PULSE_RADIUS,
+      ]),
+      ...layout.informationFlows.flatMap(flow => flow.points.map(point => point.y)),
+    ];
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    const lowerShift = Math.max(0, PAGE.margin - minY);
+    if (lowerShift) {
+      for (const node of layout.nodes) node.y += lowerShift;
+      for (const node of layout.domainNodes) node.y += lowerShift;
+      for (const flow of layout.flows) {
+        flow.points.forEach(point => { point.y += lowerShift; });
+        flow.symbol.y += lowerShift;
+        flow.annotation.y += lowerShift;
+      }
+      for (const flow of layout.informationFlows) flow.points.forEach(point => { point.y += lowerShift; });
+    }
+    layout.page.height = Math.max(layout.page.height + lowerShift, maxY + lowerShift + PAGE.margin);
+  }
   return layout;
 }
 
