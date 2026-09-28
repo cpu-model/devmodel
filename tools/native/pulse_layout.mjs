@@ -1078,13 +1078,7 @@ function usedLegend(allPulses, flows) {
 
 function causalPage(pulse, projection, title, kind) {
   const pagePulse = {behaviors: projection.behaviors, pulses: pulse.pulses, flows: projection.flows};
-  const hasDomainInformation = kind !== 'overview' && projection.behaviors.some(item =>
-    (item['information-in'] || []).length || (item['information-out'] || []).length);
-  // Domain Information boxes extend 78 pt beyond a Behavior on the top/bottom.
-  // Reserve both adjacent information zones plus a small visual clearance so
-  // information occurrences cannot intrude into neighbouring Behaviors.
-  const detailNodeGap = hasDomainInformation ? 168 : NODE_GAP;
-  const layout = layoutCausal(pagePulse, {nodeGap: detailNodeGap});
+  const layout = layoutCausal(pagePulse);
   layout.title = title;
   layout.kind = kind;
   layout.legend = usedLegend(pulse.pulses, projection.flows);
@@ -1099,6 +1093,43 @@ function causalPage(pulse, projection, title, kind) {
   const actualNodes = kind === 'overview' ? [] : layout.nodes.filter(node => actualBehaviorIds.has(node.id));
   const maxInputs = Math.max(0, ...projection.behaviors.map(item => (item['information-in'] || []).length));
   const maxOutputs = Math.max(0, ...projection.behaviors.map(item => (item['information-out'] || []).length));
+  // The causal layout knows nothing about the vertical Domain Information
+  // zones added below. Pack each causal column again using the complete
+  // Behavior footprint: 78 pt below for information-out and 78 pt above for
+  // information-in, plus a visible clearance between adjacent footprints.
+  // Move the already-routed causal geometry with its Behavior so causality is
+  // preserved while the information projection gets guaranteed free space.
+  if (kind !== 'overview') {
+    const byId = new Map(pulse.behaviors.map(item => [item.id, item]));
+    const columns = new Map();
+    for (const node of actualNodes) {
+      if (!columns.has(node.x)) columns.set(node.x, []);
+      columns.get(node.x).push(node);
+    }
+    for (const nodes of columns.values()) {
+      nodes.sort((a, b) => a.y - b.y);
+      let floor = Math.min(...nodes.map(node => node.y));
+      for (const node of nodes) {
+        const behavior = byId.get(node.id);
+        const lower = (behavior['information-out'] || []).length ? 78 : 0;
+        const upper = (behavior['information-in'] || []).length ? 78 : 0;
+        const desiredY = Math.max(node.y, floor + lower);
+        const delta = desiredY - node.y;
+        if (delta) {
+          node.y += delta;
+          for (const flow of layout.flows) {
+            if (flow.from === node.id || flow.to === node.id) {
+              if (flow.from === node.id) flow.points[0].y += delta;
+              if (flow.to === node.id) flow.points.at(-1).y += delta;
+              if (flow.symbol) flow.symbol.y += delta / 2;
+              if (flow.annotation) flow.annotation.y += delta / 2;
+            }
+          }
+        }
+        floor = node.y + node.height + upper + 18;
+      }
+    }
+  }
   const topExtra = maxInputs ? 86 : 0;
   const bottomExtra = maxOutputs ? 86 : 0;
   if (topExtra || bottomExtra) {
