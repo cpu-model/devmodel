@@ -1119,8 +1119,15 @@ function causalPage(pulse, projection, title, kind) {
           node.y += delta;
           for (const flow of layout.flows) {
             if (flow.from === node.id || flow.to === node.id) {
-              if (flow.from === node.id) flow.points[0].y += delta;
-              if (flow.to === node.id) flow.points.at(-1).y += delta;
+              if (flow.from === node.id) {
+                flow.points[0].y += delta;
+                if (flow.points.length > 1 && flow.points[1].x === flow.points[0].x) flow.points[1].y += delta;
+              }
+              if (flow.to === node.id) {
+                const last = flow.points.length - 1;
+                flow.points[last].y += delta;
+                if (last > 0 && flow.points[last - 1].x === flow.points[last].x) flow.points[last - 1].y += delta;
+              }
               if (flow.symbol) flow.symbol.y += delta / 2;
               if (flow.annotation) flow.annotation.y += delta / 2;
             }
