@@ -1155,20 +1155,19 @@ function causalPage(pulse, projection, title, kind) {
     for (const [direction, field, side] of [['in', 'information-in', 'top'], ['out', 'information-out', 'bottom']]) {
       const refs = behavior[field] || [];
       refs.forEach((reference, index) => {
-        const centerX = node.x + node.width / 2 + (index - (refs.length - 1) / 2) * 126;
+        const anchorX = node.x + node.width * (index + 1) / (refs.length + 1);
         const info = informationById.get(reference);
         const occurrence = {
           ...info, kind: 'domain-information', occurrence: `${node.id}:${direction}:${index}`,
-          x: centerX - 56, y: direction === 'in' ? node.y + node.height + 42 : node.y - 78,
+          x: anchorX - 56, y: direction === 'in' ? node.y + node.height + 42 : node.y - 78,
           width: 112, height: 36,
         };
         layout.domainNodes.push(occurrence);
-        const behaviorPoint = {x: node.x + node.width * (index + 1) / (refs.length + 1), y: side === 'top' ? node.y + node.height : node.y};
-        const informationPoint = {x: centerX, y: direction === 'in' ? occurrence.y : occurrence.y + occurrence.height};
-        const middleY = (behaviorPoint.y + informationPoint.y) / 2;
+        const behaviorPoint = {x: anchorX, y: side === 'top' ? node.y + node.height : node.y};
+        const informationPoint = {x: anchorX, y: direction === 'in' ? occurrence.y : occurrence.y + occurrence.height};
         const points = direction === 'in'
-          ? [informationPoint, {x: informationPoint.x, y: middleY}, {x: behaviorPoint.x, y: middleY}, behaviorPoint]
-          : [behaviorPoint, {x: behaviorPoint.x, y: middleY}, {x: informationPoint.x, y: middleY}, informationPoint];
+          ? [informationPoint, behaviorPoint]
+          : [behaviorPoint, informationPoint];
         layout.informationFlows.push({direction, information: info, behavior: node.id, points});
       });
     }
