@@ -74,7 +74,8 @@ function layoutCausal(pulse, options = {}) {
   const depths = behaviorDepths(pulse);
   const maxDepth = Math.max(1, ...depths.values());
   const behaviorLevels = Array.from({length: maxDepth}, (_, i) => pulse.behaviors.filter(item => depths.get(item.id) === i + 1));
-  const levels = [triggers.map(name => ({id: `trigger:${name}`, name})), ...behaviorLevels.map(items => [...items])];
+  const triggerLabel = name => pulse.flows.find(flow => 'trigger' in flow && flow.trigger === name)?.triggerLabel || name;
+  const levels = [triggers.map(name => ({id: `trigger:${name}`, name: triggerLabel(name)})), ...behaviorLevels.map(items => [...items])];
   const predecessorIds = id => pulse.flows.filter(flow => flow.to === id)
     .map(flow => 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from);
   const successorIds = id => pulse.flows.filter(flow => ('trigger' in flow ? `trigger:${flow.trigger}` : flow.from) === id).map(flow => flow.to);
@@ -1285,9 +1286,10 @@ function capabilityProjections(pulse) {
         boundary.set(id, {id, name: `TO ${pulse.capabilities.find(item => item.id === destinationCapability).name}`});
         flows.push({...flow, to: id});
       } else if (destinationCapability === capability.id) {
-        const name = `FROM ${pulse.capabilities.find(item => item.id === sourceCapability).name}`;
-        const id = `trigger:${name}`;
-        flows.push({trigger: name, pulse: flow.pulse, to: flow.to});
+        const label = `FROM ${pulse.capabilities.find(item => item.id === sourceCapability).name}`;
+        const source = `${label} · ${flow.pulse}`;
+        const id = `trigger:${source}`;
+        flows.push({trigger: source, triggerLabel: label, pulse: flow.pulse, to: flow.to});
         boundary.set(id, null);
       }
     }
