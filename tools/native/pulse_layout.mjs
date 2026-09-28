@@ -1267,7 +1267,7 @@ function capabilityProjections(pulse) {
   const overview = {
     behaviors: pulse.capabilities.map(item => ({...item})),
     flows: overviewFlows.map(flow => 'trigger' in flow
-      ? {trigger: 'EXTERNAL TRIGGER', pulse: flow.pulse, to: behaviorById.get(flow.to).capability}
+      ? {trigger: flow.trigger, pulse: flow.pulse, to: behaviorById.get(flow.to).capability}
       : {...flow, from: behaviorById.get(flow.from).capability, to: behaviorById.get(flow.to).capability}),
     capabilityIds: pulse.capabilities.map(item => item.id), boundaryIds: [],
   };
