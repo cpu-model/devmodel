@@ -50,6 +50,15 @@ for (const page of layout.pages.slice(1)) for (const flow of page.informationFlo
   else assert.equal(flow.points[0].y, behavior.y, 'information-out starts on bottom');
 }
 assert.equal(layout.pages.slice(1).flatMap(page => page.domainNodes).filter(node => node.id === 'processed-result').length, 2, 'Domain Information repeats deterministically per participation');
+for (const page of layout.pages.slice(1)) {
+  for (const information of page.domainNodes) {
+    for (const behavior of page.nodes.filter(node => node.kind === 'behavior')) {
+      const overlapX = information.x < behavior.x + behavior.width && information.x + information.width > behavior.x;
+      const overlapY = information.y < behavior.y + behavior.height && information.y + information.height > behavior.y;
+      assert.ok(!(overlapX && overlapY), `Domain Information ${information.id} must not overlap Behavior ${behavior.id}`);
+    }
+  }
+}
 
 const coveragePulse = {
   capabilities: [{id: 'a', name: 'A'}, {id: 'b', name: 'B'}], 'domain-information': [],
