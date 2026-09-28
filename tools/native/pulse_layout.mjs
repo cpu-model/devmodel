@@ -67,6 +67,7 @@ function segmentIntersectsBox(start, end, box, padding = 10) {
 }
 
 function layoutCausal(pulse, options = {}) {
+  const nodeGap = options.nodeGap ?? nodeGap;
   const eventById = new Map(pulse.pulses.map(item => [item.id, item]));
   const semanticFlowKey = flow => `${'trigger' in flow ? `trigger:${flow.trigger}` : `from:${flow.from}`}\u0000${flow.pulse}\u0000${flow.to}`;
   const triggers = [...new Set(pulse.flows.filter(flow => 'trigger' in flow).map(flow => flow.trigger))];
@@ -122,7 +123,7 @@ function layoutCausal(pulse, options = {}) {
   const levelHeights = levels.map((items, level) => items.reduce((sum, item) => {
     const id = item.id;
     return sum + (level === 0 ? TRIGGER.height : nodeHeight(id));
-  }, 0) + Math.max(0, items.length - 1) * NODE_GAP);
+  }, 0) + Math.max(0, items.length - 1) * nodeGap);
   const graphHeight = Math.max(...levelHeights);
   const legendColumns = 3;
   const legendHeight = Math.ceil(pulse.pulses.length / legendColumns) * LEGEND_ROW + 42;
@@ -166,7 +167,7 @@ function layoutCausal(pulse, options = {}) {
         ...item, id, kind: level === 0 ? 'trigger' : 'behavior',
         x, y: top - height, width, height,
       });
-      top -= height + NODE_GAP;
+      top -= height + nodeGap;
     });
   }
   levels.forEach(place);
@@ -187,17 +188,17 @@ function layoutCausal(pulse, options = {}) {
     for (const node of levelNodes) {
       const center = Math.max(desiredCenter(node), floor + node.height / 2);
       node.y = center - node.height / 2;
-      floor = node.y + node.height + NODE_GAP;
+      floor = node.y + node.height + nodeGap;
     }
     let ceiling = graphTop;
     for (const node of [...levelNodes].reverse()) {
       if (node.y + node.height > ceiling) node.y = ceiling - node.height;
-      ceiling = node.y - NODE_GAP;
+      ceiling = node.y - nodeGap;
     }
     floor = graphBottom;
     for (const node of levelNodes) {
       if (node.y < floor) node.y = floor;
-      floor = node.y + node.height + NODE_GAP;
+      floor = node.y + node.height + nodeGap;
     }
   }
 
@@ -244,8 +245,8 @@ function layoutCausal(pulse, options = {}) {
     if (node.kind !== 'behavior' || ins.length !== 1 || outs.length > 1) continue;
     const desiredY = provisionalSourcePort(ins[0]).y - node.height / 2;
     const peers = [...nodes.values()].filter(peer => peer.id !== node.id && peer.x === node.x);
-    const clear = peers.every(peer => desiredY + node.height + NODE_GAP <= peer.y
-      || desiredY >= peer.y + peer.height + NODE_GAP);
+    const clear = peers.every(peer => desiredY + node.height + nodeGap <= peer.y
+      || desiredY >= peer.y + peer.height + nodeGap);
     if (clear && desiredY >= graphBottom && desiredY + node.height <= graphTop) node.y = desiredY;
   }
 
@@ -260,10 +261,10 @@ function layoutCausal(pulse, options = {}) {
     const peers = [...nodes.values()].filter(peer => peer.id !== node.id && peer.x === node.x);
     const lowerBound = Math.max(graphBottom, ...peers
       .filter(peer => centerY(peer) < centerY(node))
-      .map(peer => peer.y + peer.height + NODE_GAP));
+      .map(peer => peer.y + peer.height + nodeGap));
     const upperBound = Math.min(graphTop, ...peers
       .filter(peer => centerY(peer) > centerY(node))
-      .map(peer => peer.y - NODE_GAP));
+      .map(peer => peer.y - nodeGap));
     const proposedBottom = Math.max(lowerBound, Math.min(node.y, desired[0] - PORT_PADDING));
     const proposedTop = Math.min(upperBound, Math.max(node.y + node.height, desired.at(-1) + PORT_PADDING));
     if (proposedTop > proposedBottom && proposedTop - proposedBottom > node.height) {
@@ -288,8 +289,8 @@ function layoutCausal(pulse, options = {}) {
       positions.set(node.id, node.y + delta);
       const nodeIndex = column.findIndex(peer => peer.id === node.id);
       if (!collectiveNodeMoves && column.some(peer => peer.id !== node.id
-        && !(positions.get(node.id) + node.height + NODE_GAP <= peer.y
-          || positions.get(node.id) >= peer.y + peer.height + NODE_GAP))) {
+        && !(positions.get(node.id) + node.height + nodeGap <= peer.y
+          || positions.get(node.id) >= peer.y + peer.height + nodeGap))) {
         return {value: Number.NEGATIVE_INFINITY, positions};
       }
       if (collectiveNodeMoves && delta < 0) {
@@ -640,8 +641,8 @@ function layoutCausal(pulse, options = {}) {
       const proposedTop = Math.max(source.y + source.height, targetY + PORT_PADDING);
       if (proposedBottom < graphBottom || proposedTop > graphTop) continue;
       const peers = [...nodes.values()].filter(node => node.id !== source.id && node.x === source.x);
-      if (peers.some(peer => !(proposedTop + NODE_GAP <= peer.y
-        || proposedBottom >= peer.y + peer.height + NODE_GAP))) continue;
+      if (peers.some(peer => !(proposedTop + nodeGap <= peer.y
+        || proposedBottom >= peer.y + peer.height + nodeGap))) continue;
       const start = {x: source.x + source.width, y: targetY};
       const end = {x: target.x, y: targetY};
       if ([...nodes.values()].some(node => node.id !== source.id && node.id !== target.id
@@ -714,8 +715,8 @@ function layoutCausal(pulse, options = {}) {
         const proposedTop = Math.max(source.y + source.height, ...ys.map(y => y + PORT_PADDING));
         if (proposedBottom < graphBottom || proposedTop > graphTop) continue;
         const peers = [...nodes.values()].filter(node => node.id !== source.id && node.x === source.x);
-        if (peers.some(peer => !(proposedTop + NODE_GAP <= peer.y
-          || proposedBottom >= peer.y + peer.height + NODE_GAP))) continue;
+        if (peers.some(peer => !(proposedTop + nodeGap <= peer.y
+          || proposedBottom >= peer.y + peer.height + nodeGap))) continue;
         const proposedBox = {...source, y: proposedBottom, height: proposedTop - proposedBottom};
         const engulfsLine = flows.some(flow => flow.from !== source.id && flow.to !== source.id
           && flow.points.slice(1).some((point, index) =>
@@ -1077,7 +1078,13 @@ function usedLegend(allPulses, flows) {
 
 function causalPage(pulse, projection, title, kind) {
   const pagePulse = {behaviors: projection.behaviors, pulses: pulse.pulses, flows: projection.flows};
-  const layout = layoutCausal(pagePulse);
+  const hasDomainInformation = kind !== 'overview' && projection.behaviors.some(item =>
+    (item['information-in'] || []).length || (item['information-out'] || []).length);
+  // Domain Information boxes extend 78 pt beyond a Behavior on the top/bottom.
+  // Reserve both adjacent information zones plus a small visual clearance so
+  // information occurrences cannot intrude into neighbouring Behaviors.
+  const detailNodeGap = hasDomainInformation ? 168 : NODE_GAP;
+  const layout = layoutCausal(pagePulse, {nodeGap: detailNodeGap});
   layout.title = title;
   layout.kind = kind;
   layout.legend = usedLegend(pulse.pulses, projection.flows);
