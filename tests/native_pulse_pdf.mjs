@@ -71,6 +71,43 @@ assert.equal(coverage[0].flows.length, 2, 'Overview excludes same-Capability flo
 assert.equal(coverage[1].flows.length, 3, 'Source detail covers trigger, internal, and outgoing cross-Capability flows');
 assert.equal(coverage[2].flows.length, 1, 'Destination detail covers only incoming cross-Capability flow');
 
+const capabilitySourcePulse = {
+  capabilities: [{id: 'source', name: 'Source'}, {id: 'detail', name: 'Detail'}],
+  'domain-information': [{id: 'state', name: 'State'}],
+  behaviors: [
+    {id: 'source-a', name: 'Source A', capability: 'source'},
+    {id: 'source-b', name: 'Source B', capability: 'source'},
+    {id: 'detail-a', name: 'Detail A', capability: 'detail', 'information-out': ['state']},
+    {id: 'detail-b', name: 'Detail B', capability: 'detail', 'information-out': ['state']},
+    {id: 'detail-c', name: 'Detail C', capability: 'detail', 'information-in': ['state']},
+    {id: 'detail-d', name: 'Detail D', capability: 'detail', 'information-in': ['state']},
+  ],
+  pulses: Array.from({length: 6}, (_, index) => ({id: `cp-${index}`, display: `${index + 1}`, name: `CP ${index + 1}`})),
+  flows: [
+    {trigger: 'External A', pulse: 'cp-0', to: 'detail-a'},
+    {trigger: 'External B', pulse: 'cp-1', to: 'detail-b'},
+    {from: 'source-a', pulse: 'cp-2', to: 'detail-c'},
+    {from: 'source-b', pulse: 'cp-3', to: 'detail-d'},
+    {from: 'detail-a', pulse: 'cp-4', to: 'detail-c'},
+    {from: 'detail-b', pulse: 'cp-5', to: 'detail-d'},
+  ],
+};
+const capabilitySourcePage = layoutPulse(capabilitySourcePulse).pages.find(page => page.title === 'CAPABILITY: Detail');
+const leftSources = capabilitySourcePage.nodes.filter(node => node.kind === 'trigger' || (node.kind === 'boundary' && /^FROM /.test(node.name)));
+assert.equal(leftSources.length, 4, 'Capability detail preserves every external and cross-Capability source occurrence');
+for (const source of leftSources) {
+  const sourceFlows = capabilitySourcePage.flows.filter(flow =>
+    ('trigger' in flow ? `trigger:${flow.trigger}` : flow.from) === source.id);
+  assert.ok(sourceFlows.length > 0, `Capability source ${source.name} has an outgoing Pulse`);
+  for (const flow of sourceFlows) {
+    assert.equal(flow.points[0].x, source.x + source.width, `Capability source ${source.name} connects at its right edge`);
+    assert.ok(flow.points[0].y >= source.y && flow.points[0].y <= source.y + source.height,
+      `Capability source ${source.name} connector starts within its visible vertical extent`);
+    assert.equal(flow.points[1].y, flow.points[0].y,
+      `Capability source ${source.name} connector leaves horizontally`);
+  }
+}
+
 const output = path.join(directory, 'pulse.pdf');
 const result = spawnSync(process.execPath, [path.join(root, 'tools', 'render_pulse_native.mjs'), '--source', directory, '--output', output], {encoding: 'utf8'});
 assert.equal(result.status, 0, result.stderr);
