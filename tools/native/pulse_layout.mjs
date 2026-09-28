@@ -1211,13 +1211,22 @@ function causalPage(pulse, projection, title, kind) {
     const source = nodeById.get(sourceId);
     const target = nodeById.get(flow.to);
     if (source && flow.points.length) {
-      flow.points[0].x = source.x + source.width;
-      if (flow.points.length > 1) flow.points[1].y = flow.points[0].y;
+      const sourceFlows = layout.flows.filter(candidate =>
+        ('trigger' in candidate ? `trigger:${candidate.trigger}` : candidate.from) === sourceId);
+      const sourceSlot = sourceFlows.findIndex(candidate => candidate === flow);
+      const sourcePort = port(source, sourceSlot, sourceFlows.length, 'out');
+      flow.points[0].x = sourcePort.x;
+      flow.points[0].y = sourcePort.y;
+      if (flow.points.length > 1) flow.points[1].y = sourcePort.y;
     }
     if (target && flow.points.length) {
+      const targetFlows = layout.flows.filter(candidate => candidate.to === flow.to);
+      const targetSlot = targetFlows.findIndex(candidate => candidate === flow);
+      const targetPort = port(target, targetSlot, targetFlows.length, 'in');
       const last = flow.points.length - 1;
-      flow.points[last].x = target.x;
-      if (last > 0) flow.points[last - 1].y = flow.points[last].y;
+      flow.points[last].x = targetPort.x;
+      flow.points[last].y = targetPort.y;
+      if (last > 0) flow.points[last - 1].y = targetPort.y;
     }
     const horizontal = flow.points.slice(1).map((point, index) => [flow.points[index], point])
       .find(([a, b]) => a.y === b.y && Math.abs(b.x - a.x) >= 36);
