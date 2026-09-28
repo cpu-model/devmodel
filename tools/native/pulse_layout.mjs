@@ -67,7 +67,7 @@ function segmentIntersectsBox(start, end, box, padding = 10) {
 }
 
 function layoutCausal(pulse, options = {}) {
-  const nodeGap = options.nodeGap ?? nodeGap;
+  const nodeGap = options.nodeGap ?? NODE_GAP;
   const eventById = new Map(pulse.pulses.map(item => [item.id, item]));
   const semanticFlowKey = flow => `${'trigger' in flow ? `trigger:${flow.trigger}` : `from:${flow.from}`}\u0000${flow.pulse}\u0000${flow.to}`;
   const triggers = [...new Set(pulse.flows.filter(flow => 'trigger' in flow).map(flow => flow.trigger))];
