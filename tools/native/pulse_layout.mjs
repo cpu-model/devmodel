@@ -1173,6 +1173,34 @@ function causalPage(pulse, projection, title, kind) {
       });
     }
   }
+  // Packing can expand a capability detail beyond the causal page height.
+  // Normalize the finished projection from its actual geometry rather than a
+  // fixed estimate so Behaviors, Domain Information and their connectors all
+  // remain inside the page with the normal margin.
+  if (kind !== 'overview') {
+    const ys = [
+      ...layout.nodes.flatMap(node => [node.y, node.y + node.height]),
+      ...layout.domainNodes.flatMap(node => [node.y, node.y + node.height]),
+      ...layout.flows.flatMap(flow => flow.points.map(point => point.y)),
+      ...layout.informationFlows.flatMap(flow => flow.points.map(point => point.y)),
+    ];
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    const lowerLimit = PAGE.margin;
+    const lowerShift = Math.max(0, lowerLimit - minY);
+    if (lowerShift) {
+      for (const node of layout.nodes) node.y += lowerShift;
+      for (const node of layout.domainNodes) node.y += lowerShift;
+      for (const flow of layout.flows) {
+        flow.points.forEach(point => { point.y += lowerShift; });
+        flow.symbol.y += lowerShift;
+        flow.annotation.y += lowerShift;
+      }
+      for (const flow of layout.informationFlows) flow.points.forEach(point => { point.y += lowerShift; });
+    }
+    const shiftedMaxY = maxY + lowerShift;
+    layout.page.height = Math.max(layout.page.height + lowerShift, shiftedMaxY + PAGE.margin);
+  }
   return layout;
 }
 
