@@ -113,6 +113,28 @@ for (const source of leftSources) {
   }
 }
 
+
+// Every final causal connector must remain attached to the visible source and
+// destination nodes after all projection, packing, routing, and normalization.
+for (const page of layoutPulse(capabilitySourcePulse).pages) {
+  const nodes = new Map(page.nodes.map(node => [node.id, node]));
+  for (const flow of page.flows) {
+    const sourceId = 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
+    const source = nodes.get(sourceId);
+    const target = nodes.get(flow.to);
+    assert.ok(source, `${page.title}: source ${sourceId} is visible`);
+    assert.ok(target, `${page.title}: target ${flow.to} is visible`);
+    assert.equal(flow.points[0].x, source.x + source.width,
+      `${page.title}: ${flow.pulse} starts on source right side`);
+    assert.ok(flow.points[0].y >= source.y && flow.points[0].y <= source.y + source.height,
+      `${page.title}: ${flow.pulse} starts within source vertical extent`);
+    assert.equal(flow.points.at(-1).x, target.x,
+      `${page.title}: ${flow.pulse} ends on target left side`);
+    assert.ok(flow.points.at(-1).y >= target.y && flow.points.at(-1).y <= target.y + target.height,
+      `${page.title}: ${flow.pulse} ends within target vertical extent`);
+  }
+}
+
 const output = path.join(directory, 'pulse.pdf');
 const result = spawnSync(process.execPath, [path.join(root, 'tools', 'render_pulse_native.mjs'), '--source', directory, '--output', output], {encoding: 'utf8'});
 assert.equal(result.status, 0, result.stderr);
