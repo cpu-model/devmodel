@@ -132,13 +132,13 @@ Trigger is a role played by an external or starting cause. It is not a separate 
 - **Pulse:** an identified event that can drive a Behavior; has a stable semantic ID and may have a short display identity such as `01`.
 - **Flow:** introduces or emits a Pulse and directs it to a Behavior.
 - **Capability:** an optional flat functional review partition rendered as a strong rectangular node in the overview only.
-- **Domain Information:** domain-significant information participating in Behavior; rendered as a square-corner rectangle.
+- **Domain Information:** domain-significant information participating in Behavior; rendered as a bullet-list entry inside the participating Behavior.
 
 A Behavior may emit zero, one, or several Pulses. An outgoing Pulse means "can emit", not "always emits". Conditions remain internal to Behavior.
 
 Multiple incoming Pulses have independent or OR semantics. The same Pulse may fan out to several Behaviors. Cycles are allowed. No special gateway, end, or loop notation is required.
 
-Behavior is the integrated meeting point. Incoming Pulse terminates on its left side; outgoing Pulse starts on its right side; `information-in` terminates on its top side; `information-out` starts on its bottom side. Attachment side is normative even where an orthogonal connector routes backward or around the graph.
+Behavior is the integrated meeting point for causal Pulse Flow. Incoming Pulse terminates on its left side and outgoing Pulse starts on its right side. Domain Information participation is rendered inside the Behavior and has no connector geometry.
 
 ### 4.3 Trigger role and notation
 
@@ -189,9 +189,15 @@ Cross-Capability details use graphical `FROM <Capability>` and `TO <Capability>`
 
 ### 4.7 Domain Information notation
 
-Domain Information uses square-corner rectangles. Direction and the Behavior attachment side express participation without extra symbols or labels. A Behavior has exactly one occurrence in its Capability detail. Domain Information may repeat deterministically where needed for orthogonal reading and reduced crossings; repeated occurrences retain the same identity and requirements.
+Domain Information participation is rendered inside each Behavior as unlabeled bullet lists. The Behavior has three vertical zones: an optional upper Domain Information zone, a central Behavior-name zone, and an optional lower Domain Information zone.
 
-The renderer prioritizes: semantic attachment sides; clear causal reading; clear input/output reading; node, text, symbol, and annotation clearance; reduced crossings; natural occurrence reuse; then deterministic repetition. It preferentially preserves vertical information zones above and below Behaviors and never mutates the model or uses per-diagram manual positions.
+The upper zone lists the Behavior's `information-in` references in declared order. The lower zone lists its `information-out` references in declared order. The zones carry no headings: their position alone expresses the two participation directions, keeping the notation independent of terminology used to describe those directions.
+
+An empty upper or lower zone is omitted and consumes no space. The renderer determines the complete Behavior dimensions, including wrapped Domain Information entries and the central Behavior name, before causal Pulse layout and routing. Those dimensions do not change during subsequent routing.
+
+Domain Information has no separate node and no connector in the Pulse diagram. The same Domain Information identity may therefore appear as a bullet entry in every participating Behavior. Each rendered entry retains the Domain Information identity and, when requirements are directly attached to that Domain Information, its own requirement annotation.
+
+The renderer prioritizes: clear causal reading; deterministic internal Behavior composition; node, text, Pulse-symbol, and annotation clearance; reduced causal crossings; and deterministic layout. It never mutates the model or uses per-diagram manual positions.
 
 ### 4.8 Rendering status
 
@@ -368,7 +374,7 @@ The renderer implementation:
 ## 11. Verified v2 decisions
 
 - **Context:** system and external-system composition; domain data-flow labels; independent arrowhead for data direction; initiative circle centered on connector path; visible separation between initiative circle and arrowhead; connector and label clearance; sufficient relation spacing.
-- **Pulse:** deterministic system or Capability projections; integrated four-sided Behavior notation; square-corner Domain Information; graphical `FROM`/`TO` references; globally stable local legends; numbered Pulse circle integrated into the connector.
+- **Pulse:** deterministic system or Capability projections; Behavior boxes with unlabeled upper/lower Domain Information bullet zones; graphical `FROM`/`TO` references; globally stable local legends; numbered Pulse circle integrated into the connector.
 - **UI:** View containers; Action and Information symbols; Actions in the left column; Information in the right column; left-aligned item labels; deterministic declared ordering within each column.
 - **Deployment:** nested host/program/service topology; visible ports and directed connections; connection labels clearly separated above connector geometry; implementation selections shown in labels.
 - **All diagrams:** consistent outer clearance between visible diagram content and the exported viewport.
