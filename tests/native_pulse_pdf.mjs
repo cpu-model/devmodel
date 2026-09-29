@@ -174,6 +174,10 @@ const stressPulse = {
   flows: [{trigger: 'Start', pulse: 'pulse-0', to: 'behavior-0'}, ...Array.from({length: 6}, (_, index) => ({from: `behavior-${index}`, pulse: `pulse-${index + 1}`, to: `behavior-${index + 1}`}))],
 };
 const stress = layoutPulse(stressPulse).pages[0];
-assert.equal(stress.domainNodes.length, 12);
+assert.equal(stress.domainNodes.length, 0, 'Stress layout has no standalone Domain Information nodes');
+assert.equal(stress.informationFlows.length, 0, 'Stress layout has no Domain Information connectors');
+assert.equal(stress.nodes.filter(node => node.kind === 'behavior')
+  .flatMap(node => [...node.informationIn, ...node.informationOut]).length, 12,
+  'Stress layout preserves all Domain Information occurrences inside Behaviors');
 assert.ok(stress.flows.every(flow => flow.points.slice(1).every((point, index) => point.x === flow.points[index].x || point.y === flow.points[index].y)), 'Stress routes remain orthogonal');
 console.log('CPU v2 Pulse projection, layout, PDF, annotation, and stress checks passed');
