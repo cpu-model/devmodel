@@ -44,21 +44,20 @@ for (const behavior of behaviorOccurrences) {
   assert.ok(incoming.every(flow => flow.points.at(-1).y >= behavior.y && flow.points.at(-1).y <= behavior.y + behavior.height), 'Incoming Pulse endpoint lies on the Behavior side');
   assert.ok(outgoing.every(flow => flow.points[0].x === behavior.x + behavior.width), 'Outgoing Pulse starts on right side');
 }
-for (const page of layout.pages.slice(1)) for (const flow of page.informationFlows) {
-  const behavior = page.nodes.find(node => node.id === flow.behavior);
-  if (flow.direction === 'in') assert.equal(flow.points.at(-1).y, behavior.y + behavior.height, 'information-in terminates on top');
-  else assert.equal(flow.points[0].y, behavior.y, 'information-out starts on bottom');
-}
-assert.equal(layout.pages.slice(1).flatMap(page => page.domainNodes).filter(node => node.id === 'processed-result').length, 2, 'Domain Information repeats deterministically per participation');
 for (const page of layout.pages.slice(1)) {
-  for (const information of page.domainNodes) {
-    for (const behavior of page.nodes.filter(node => node.kind === 'behavior')) {
-      const overlapX = information.x < behavior.x + behavior.width && information.x + information.width > behavior.x;
-      const overlapY = information.y < behavior.y + behavior.height && information.y + information.height > behavior.y;
-      assert.ok(!(overlapX && overlapY), `Domain Information ${information.id} must not overlap Behavior ${behavior.id}`);
-    }
+  assert.equal(page.domainNodes.length, 0, 'Domain Information has no standalone nodes');
+  assert.equal(page.informationFlows.length, 0, 'Domain Information has no connector geometry');
+  for (const behavior of page.nodes.filter(node => node.kind === 'behavior')) {
+    assert.ok(Array.isArray(behavior.informationIn), 'Behavior carries its upper Domain Information entries');
+    assert.ok(Array.isArray(behavior.informationOut), 'Behavior carries its lower Domain Information entries');
   }
 }
+const processedResultOccurrences = layout.pages.slice(1)
+  .flatMap(page => page.nodes.filter(node => node.kind === 'behavior'))
+  .flatMap(node => [...node.informationIn, ...node.informationOut])
+  .filter(item => item.id === 'processed-result');
+assert.equal(processedResultOccurrences.length, 2, 'Domain Information repeats inside each participating Behavior');
+
 
 const coveragePulse = {
   capabilities: [{id: 'a', name: 'A'}, {id: 'b', name: 'B'}], 'domain-information': [],
