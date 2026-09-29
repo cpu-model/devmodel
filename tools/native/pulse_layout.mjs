@@ -1231,11 +1231,13 @@ function causalPage(pulse, projection, title, kind) {
     }
   }
 
-  // The final causal re-anchoring above can change the source-port Y after
-  // capability-detail projection and packing. Align synthetic FROM boundary
-  // boxes only now, against the finished connector geometry.
+  // The final causal re-anchoring above can change source-port Y after
+  // capability-detail packing. Align every source in the trigger column
+  // against its finished outgoing connector only now. This covers genuine
+  // external trigger diamonds and projected FROM boundary boxes while leaving
+  // the separately reviewed Overview geometry untouched.
   if (kind === 'capability-detail') {
-    for (const node of layout.nodes.filter(item => boundaryIds.has(item.id) && item.id.startsWith('trigger:'))) {
+    for (const node of layout.nodes.filter(item => item.id.startsWith('trigger:'))) {
       const outgoingFlow = layout.flows.find(flow => 'trigger' in flow && `trigger:${flow.trigger}` === node.id);
       if (outgoingFlow) node.y = outgoingFlow.points[0].y - node.height / 2;
     }
