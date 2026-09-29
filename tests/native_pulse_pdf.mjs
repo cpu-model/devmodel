@@ -135,46 +135,43 @@ for (const page of layoutPulse(capabilitySourcePulse).pages) {
 }
 
 
-const evcOverviewPulse = {
+const repeatedCapabilityFlowPulse = {
   capabilities: [
-    {id: 'observation', name: 'Observation'},
-    {id: 'target-management', name: 'Målstyrning'},
-    {id: 'charging-planning', name: 'Laddplanering'},
-    {id: 'charging-control', name: 'Laddstyrning'},
+    {id: 'source', name: 'Source'},
+    {id: 'branch', name: 'Branch'},
+    {id: 'relay', name: 'Relay'},
+    {id: 'sink', name: 'Sink'},
   ],
   'domain-information': [],
   behaviors: [
-    {id: 'fetch-prices', name: 'Hämta elpriser', capability: 'observation'},
-    {id: 'observe-vehicle', name: 'Observera fordon', capability: 'observation'},
-    {id: 'choose-afternoon-target', name: 'Välj eftermiddagsmål', capability: 'target-management'},
-    {id: 'end-target', name: 'Avsluta målbild', capability: 'target-management'},
-    {id: 'establish-target', name: 'Etablera målbild', capability: 'target-management'},
-    {id: 'plan-charging', name: 'Planera laddning', capability: 'charging-planning'},
-    {id: 'activate-plan', name: 'Aktivera plan', capability: 'charging-planning'},
-    {id: 'control-charger', name: 'Styra laddare', capability: 'charging-control'},
+    {id: 'source-a', name: 'Source A', capability: 'source'},
+    {id: 'source-b', name: 'Source B', capability: 'source'},
+    {id: 'branch-a', name: 'Branch A', capability: 'branch'},
+    {id: 'branch-b', name: 'Branch B', capability: 'branch'},
+    {id: 'relay-a', name: 'Relay A', capability: 'relay'},
+    {id: 'relay-b', name: 'Relay B', capability: 'relay'},
+    {id: 'sink-a', name: 'Sink A', capability: 'sink'},
   ],
   pulses: [
-    {id: 'p4', display: '04', name: 'Tomorrow prices available'},
-    {id: 'p6', display: '06', name: 'SoC changed'},
-    {id: 'p13', display: '13', name: 'Planning needed'},
-    {id: 'p15', display: '15', name: 'Operational plan updated'},
-    {id: 'p17', display: '17', name: 'Target reached'},
+    {id: 'branch-a-ready', display: 'A', name: 'Branch A ready'},
+    {id: 'relay-ready', display: 'B', name: 'Relay ready'},
+    {id: 'branch-b-ready', display: 'C', name: 'Branch B ready'},
+    {id: 'shared-update', display: 'D', name: 'Shared update'},
   ],
   flows: [
-    {from: 'fetch-prices', pulse: 'p4', to: 'choose-afternoon-target'},
-    {from: 'observe-vehicle', pulse: 'p6', to: 'plan-charging'},
-    {from: 'observe-vehicle', pulse: 'p17', to: 'end-target'},
-    {from: 'establish-target', pulse: 'p13', to: 'plan-charging'},
-    {from: 'plan-charging', pulse: 'p15', to: 'control-charger'},
-    {from: 'activate-plan', pulse: 'p15', to: 'control-charger'},
+    {from: 'source-a', pulse: 'branch-a-ready', to: 'branch-a'},
+    {from: 'source-b', pulse: 'relay-ready', to: 'relay-a'},
+    {from: 'source-b', pulse: 'branch-b-ready', to: 'branch-b'},
+    {from: 'relay-a', pulse: 'shared-update', to: 'sink-a'},
+    {from: 'relay-b', pulse: 'shared-update', to: 'sink-a'},
   ],
 };
-const evcOverview = layoutPulse(evcOverviewPulse).pages[0];
+const repeatedCapabilityOverview = layoutPulse(repeatedCapabilityFlowPulse).pages[0];
 const segmentContains = (a, b, point) => a.y === b.y && point.y === a.y
   && point.x >= Math.min(a.x, b.x) && point.x <= Math.max(a.x, b.x);
-for (const flow of evcOverview.flows) {
+for (const flow of repeatedCapabilityOverview.flows) {
   assert.ok(flow.points.slice(1).some((point, index) => segmentContains(flow.points[index], point, flow.symbol)),
-    `EVC-shaped Overview keeps Pulse ${flow.event.display} symbol on its own connector`);
+    `Overview keeps Pulse ${flow.event.display} symbol on its own connector`);
 }
 const positiveOverlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max(b1, b2))
   - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 0.01;
@@ -190,10 +187,10 @@ const collinearOverlap = (first, second) => first.points.slice(1).some((aEnd, aI
     }
     return false;
   }));
-for (let left = 0; left < evcOverview.flows.length; left += 1) {
-  for (let right = left + 1; right < evcOverview.flows.length; right += 1) {
-    assert.ok(!collinearOverlap(evcOverview.flows[left], evcOverview.flows[right]),
-      `EVC-shaped Overview keeps ${evcOverview.flows[left].event.display} and ${evcOverview.flows[right].event.display} visually distinct`);
+for (let left = 0; left < repeatedCapabilityOverview.flows.length; left += 1) {
+  for (let right = left + 1; right < repeatedCapabilityOverview.flows.length; right += 1) {
+    assert.ok(!collinearOverlap(repeatedCapabilityOverview.flows[left], repeatedCapabilityOverview.flows[right]),
+      `Overview keeps Pulse ${repeatedCapabilityOverview.flows[left].event.display} and ${repeatedCapabilityOverview.flows[right].event.display} visually distinct`);
   }
 }
 
