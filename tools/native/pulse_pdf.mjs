@@ -38,12 +38,33 @@ function drawPage(document, layout, requirements, font, bold) {
   const annots = document.context.obj([]); page.node.set(PDFName.of('Annots'), annots);
   page.drawText(layout.title || 'PULSE', {x: layout.page.margin, y: layout.page.height - 38, size: 10, font: bold, color: palette.accent});
   for (const flow of layout.flows) for (let index = 1; index < flow.points.length; index += 1) line(page, flow.points[index - 1], flow.points[index]);
-  for (const flow of layout.informationFlows || []) for (let index = 1; index < flow.points.length; index += 1) line(page, flow.points[index - 1], flow.points[index], 1.1);
   for (const node of layout.nodes) {
     if (node.kind === 'behavior') {
-      rounded(page, node); centered(page, bold, node.name, node, 11);
+      rounded(page, node);
+      const inputs = node.informationIn || [];
+      const outputs = node.informationOut || [];
+      const rowHeight = 16;
+      const zonePadding = 10;
+      const inputHeight = inputs.length ? inputs.length * rowHeight + zonePadding : 0;
+      const outputHeight = outputs.length ? outputs.length * rowHeight + zonePadding : 0;
+      const middle = {x: node.x, y: node.y + outputHeight, width: node.width, height: node.height - inputHeight - outputHeight};
+      if (outputs.length) line(page, {x: node.x, y: middle.y}, {x: node.x + node.width, y: middle.y}, 0.8);
+      if (inputs.length) line(page, {x: node.x, y: middle.y + middle.height}, {x: node.x + node.width, y: middle.y + middle.height}, 0.8);
+      centered(page, bold, node.name, middle, 11);
+      const drawInformation = (items, bottom, targetPrefix) => items.forEach((information, index) => {
+        const y = bottom + zonePadding / 2 + (items.length - index - 1) * rowHeight + 3;
+        page.drawCircle({x: node.x + 13, y: y + 2.5, size: 2, color: palette.ink});
+        page.drawText(information.name, {x: node.x + 21, y, size: 8.3, font, color: palette.ink});
+        const target = `${targetPrefix}.${information.id}`;
+        if (requirements[target]) addTextAnnotation(document, annots, {
+          rect: [node.x + node.width - 18, y - 2, node.x + node.width - 4, y + 12],
+          title: information.name, contents: requirements[target],
+        });
+      });
+      drawInformation(outputs, node.y, 'pulse.domain-information');
+      drawInformation(inputs, middle.y + middle.height, 'pulse.domain-information');
       const target = `pulse.behavior.${node.id}`;
-      if (requirements[target]) addTextAnnotation(document, annots, {rect: [node.x + 4, node.y + node.height - 18, node.x + 18, node.y + node.height - 4], title: node.name, contents: requirements[target]});
+      if (requirements[target]) addTextAnnotation(document, annots, {rect: [node.x + 4, middle.y + middle.height - 18, node.x + 18, middle.y + middle.height - 4], title: node.name, contents: requirements[target]});
     } else if (node.kind === 'trigger') {
       page.drawSvgPath(`M ${node.width / 2} 0 L ${node.width} ${node.height / 2} L ${node.width / 2} ${node.height} L 0 ${node.height / 2} Z`, {x: node.x, y: node.y + node.height, color: palette.fill, borderColor: palette.line, borderWidth: 1.6});
       const lines = wrappedLines(font, node.name, 9, node.width * 0.58); const startY = node.y + node.height / 2 + ((lines.length - 1) * 11) / 2 - 3;
@@ -53,14 +74,7 @@ function drawPage(document, layout, requirements, font, bold) {
       centered(page, node.kind === 'capability' ? bold : font, node.name, node, 10);
     }
   }
-  for (const node of layout.domainNodes || []) {
-    page.drawRectangle({x: node.x, y: node.y, width: node.width, height: node.height, color: palette.white, borderColor: palette.line, borderWidth: 1.4});
-    centered(page, font, node.name, node, 8.5);
-    const target = `pulse.domain-information.${node.id}`;
-    if (requirements[target]) addTextAnnotation(document, annots, {rect: [node.x + node.width - 18, node.y + node.height - 18, node.x + node.width - 4, node.y + node.height - 4], title: node.name, contents: requirements[target]});
-  }
   for (const flow of layout.flows) arrow(page, flow.points.at(-2), flow.points.at(-1));
-  for (const flow of layout.informationFlows || []) arrow(page, flow.points.at(-2), flow.points.at(-1));
   for (const flow of layout.flows) {
     page.drawCircle({x: flow.symbol.x, y: flow.symbol.y, size: 14, color: palette.white, borderColor: palette.accent, borderWidth: 2});
     const displayWidth = bold.widthOfTextAtSize(flow.event.display, 9);
