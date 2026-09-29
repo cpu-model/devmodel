@@ -104,7 +104,7 @@ for (const source of leftSources) {
     const verticalExtent = {
       source: {id: source.id, kind: source.kind, name: source.name, y: source.y, height: source.height, top: source.y + source.height},
       connector: {x: flow.points[0].x, y: flow.points[0].y},
-      flow: {'trigger' in flow ? 'trigger' : 'from': 'trigger' in flow ? flow.trigger : flow.from, pulse: flow.pulse, to: flow.to},
+      flow: {sourceKind: 'trigger' in flow ? 'trigger' : 'from', source: 'trigger' in flow ? flow.trigger : flow.from, pulse: flow.pulse, to: flow.to},
     };
     assert.ok(flow.points[0].y >= source.y && flow.points[0].y <= source.y + source.height,
       `Capability source connector starts within visible vertical extent: ${JSON.stringify(verticalExtent)}`);
