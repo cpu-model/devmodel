@@ -1089,18 +1089,6 @@ function causalPage(pulse, projection, title, kind) {
     if (boundaryIds.has(node.id)) node.kind = 'boundary';
     if (capabilityIds.has(node.id)) node.kind = 'capability';
   }
-  // Incoming cross-Capability sources occupy the trigger column but are
-  // rendered as FROM boundary boxes. Their connector was routed against a
-  // trigger diamond whose usable side is only its centre. A boundary box has
-  // a full vertical side, so align the box centre to that already-routed port.
-  // This is capability-detail presentation only and does not touch Overview
-  // or genuine external trigger diamonds.
-  if (kind === 'capability-detail') {
-    for (const node of layout.nodes.filter(item => boundaryIds.has(item.id) && item.id.startsWith('trigger:'))) {
-      const outgoingFlow = layout.flows.find(flow => 'trigger' in flow && `trigger:${flow.trigger}` === node.id);
-      if (outgoingFlow) node.y = outgoingFlow.points[0].y - node.height / 2;
-    }
-  }
   const informationById = new Map((pulse['domain-information'] || []).map(item => [item.id, item]));
   const actualBehaviorIds = new Set(pulse.behaviors.map(item => item.id));
   const actualNodes = kind === 'overview' ? [] : layout.nodes.filter(node => actualBehaviorIds.has(node.id));
@@ -1240,6 +1228,16 @@ function causalPage(pulse, projection, title, kind) {
       flow.symbol.y = a.y;
       flow.annotation.x = flow.symbol.x + direction * 15;
       flow.annotation.y = flow.symbol.y + 5;
+    }
+  }
+
+  // The final causal re-anchoring above can change the source-port Y after
+  // capability-detail projection and packing. Align synthetic FROM boundary
+  // boxes only now, against the finished connector geometry.
+  if (kind === 'capability-detail') {
+    for (const node of layout.nodes.filter(item => boundaryIds.has(item.id) && item.id.startsWith('trigger:'))) {
+      const outgoingFlow = layout.flows.find(flow => 'trigger' in flow && `trigger:${flow.trigger}` === node.id);
+      if (outgoingFlow) node.y = outgoingFlow.points[0].y - node.height / 2;
     }
   }
 
