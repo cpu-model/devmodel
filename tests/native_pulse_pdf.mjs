@@ -101,8 +101,13 @@ for (const source of leftSources) {
   assert.ok(sourceFlows.length > 0, `Capability source ${source.name} has an outgoing Pulse`);
   for (const flow of sourceFlows) {
     assert.equal(flow.points[0].x, source.x + source.width, `Capability source ${source.name} connects at its right edge`);
+    const verticalExtent = {
+      source: {id: source.id, kind: source.kind, name: source.name, y: source.y, height: source.height, top: source.y + source.height},
+      connector: {x: flow.points[0].x, y: flow.points[0].y},
+      flow: {'trigger' in flow ? 'trigger' : 'from': 'trigger' in flow ? flow.trigger : flow.from, pulse: flow.pulse, to: flow.to},
+    };
     assert.ok(flow.points[0].y >= source.y && flow.points[0].y <= source.y + source.height,
-      `Capability source ${source.name} connector starts within its visible vertical extent`);
+      `Capability source connector starts within visible vertical extent: ${JSON.stringify(verticalExtent)}`);
     assert.equal(flow.points[1].y, flow.points[0].y,
       `Capability source ${source.name} connector leaves horizontally`);
   }
