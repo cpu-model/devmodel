@@ -447,7 +447,8 @@ function layoutCausal(pulse, options = {}) {
     }
     item.sourceEscapeX = candidates.find(x => x >= minimumX && x <= maximumX
       && [...nodes.values()].every(node => node.id === item.sourceId || node.id === item.flow.to
-        || !segmentIntersectsBox({x, y: item.start.y}, {x, y: item.end.y}, node)));
+        || (!segmentIntersectsBox(item.start, {x, y: item.start.y}, node)
+          && !segmentIntersectsBox({x, y: item.start.y}, {x, y: item.end.y}, node))));
   }
   const unroutable = routed.filter(item => !item.direct && item.minimalBendX === undefined
     && item.sourceEscapeX === undefined);
