@@ -136,6 +136,10 @@ for (const page of layoutPulse(capabilitySourcePulse).pages) {
     assert.ok(target, `${page.title}: target ${flow.to} is visible`);
     assert.equal(flow.points[0].x, source.x + source.width,
       `${page.title}: ${flow.pulse} starts on source right side`);
+    if ('trigger' in flow) {
+      assert.equal(flow.points[0].y, source.y + source.height / 2,
+        `${page.title}: ${flow.pulse} leaves Trigger at its right vertex`);
+    }
     assert.ok(flow.points[0].y >= source.y && flow.points[0].y <= source.y + source.height,
       `${page.title}: ${flow.pulse} starts within source vertical extent`);
     assert.equal(flow.points.at(-1).x, target.x,
