@@ -438,7 +438,21 @@ function layoutCausal(pulse, options = {}) {
     group.forEach((item, index) => { item.targetEscapeX = item.end.x - MIN_SIDE_CLEARANCE - index * MIN_CHANNEL_SPACING; });
   }
   for (const item of routed.filter(item => !item.direct && item.minimalBendX === undefined)) {
-    item.sourceEscapeX = item.midX;
+    const minimumX = item.start.x + MIN_SIDE_CLEARANCE;
+    const maximumX = item.end.x - MIN_SIDE_CLEARANCE;
+    const preferredX = Math.max(minimumX, Math.min(maximumX, item.midX));
+    const candidates = [preferredX];
+    for (let offset = MIN_CHANNEL_SPACING; offset <= maximumX - minimumX; offset += MIN_CHANNEL_SPACING) {
+      candidates.push(preferredX + offset, preferredX - offset);
+    }
+    item.sourceEscapeX = candidates.find(x => x >= minimumX && x <= maximumX
+      && [...nodes.values()].every(node => node.id === item.sourceId || node.id === item.flow.to
+        || !segmentIntersectsBox({x, y: item.start.y}, {x, y: item.end.y}, node)));
+  }
+  const unroutable = routed.filter(item => !item.direct && item.minimalBendX === undefined
+    && item.sourceEscapeX === undefined);
+  if (unroutable.length) {
+    throw new Error(`No clear source escape channel for Pulse Flow: ${unroutable.map(item => item.flow.pulse).join(', ')}`);
   }
   const reservations = [...minimalReservations, ...routed.filter(item => !item.direct && item.minimalBendX === undefined).flatMap(item => [
     {x1: item.start.x, x2: item.sourceEscapeX, y: item.start.y},
@@ -451,7 +465,7 @@ function layoutCausal(pulse, options = {}) {
     x2: item.targetEscapeX,
   })).sort((a, b) => a.baseY - b.baseY || a.item.flow.pulse.localeCompare(b.item.flow.pulse));
   for (const request of requests) {
-    let best = {score: Number.POSITIVE_INFINITY, y: request.baseY};
+    let best = null;
     for (let step = 0; step < 240; step += 1) {
       const trackY = request.baseY + (step === 0 ? 0
         : (step % 2 ? 1 : -1) * Math.ceil(step / 2) * MIN_LINE_SPACING);
@@ -483,8 +497,11 @@ function layoutCausal(pulse, options = {}) {
         && other.x < Math.max(request.x1, request.x2)).length;
       const score = endpointCrossings * 1000000 + trackCrossings * 10000 + parallelConflicts * 100
         + Math.abs(trackY - request.baseY);
-      if (score < best.score) best = {score, y: trackY};
+      if (best === null || score < best.score) best = {score, y: trackY};
       if (score === 0) break;
+    }
+    if (best === null) {
+      throw new Error(`No clear track for Pulse Flow: ${request.item.flow.pulse}`);
     }
     const trackY = best.y;
     reservations.push({x1: request.x1, x2: request.x2, y: trackY});
