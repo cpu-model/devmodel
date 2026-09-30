@@ -437,6 +437,7 @@ function layoutCausal(pulse, options = {}) {
     group.sort((a, b) => a.end.y - b.end.y || a.flow.pulse.localeCompare(b.flow.pulse));
     group.forEach((item, index) => { item.targetEscapeX = item.end.x - MIN_SIDE_CLEARANCE - index * MIN_CHANNEL_SPACING; });
   }
+  const sourceEscapeDiagnostics = [];
   for (const item of routed.filter(item => !item.direct && item.minimalBendX === undefined)) {
     const minimumX = item.start.x + MIN_SIDE_CLEARANCE;
     const maximumX = item.end.x - MIN_SIDE_CLEARANCE;
@@ -445,10 +446,19 @@ function layoutCausal(pulse, options = {}) {
     for (let offset = MIN_CHANNEL_SPACING; offset <= maximumX - minimumX; offset += MIN_CHANNEL_SPACING) {
       candidates.push(preferredX + offset, preferredX - offset);
     }
-    item.sourceEscapeX = candidates.find(x => x >= minimumX && x <= maximumX
-      && [...nodes.values()].every(node => node.id === item.sourceId || node.id === item.flow.to
-        || (!segmentIntersectsBox(item.start, {x, y: item.start.y}, node)
-          && !segmentIntersectsBox({x, y: item.start.y}, {x, y: item.end.y}, node))));
+    const evaluatedCandidates = candidates.filter(x => x >= minimumX && x <= maximumX).map(x => ({
+      x,
+      blockers: [...nodes.values()].filter(node => node.id !== item.sourceId && node.id !== item.flow.to
+        && (segmentIntersectsBox(item.start, {x, y: item.start.y}, node)
+          || segmentIntersectsBox({x, y: item.start.y}, {x, y: item.end.y}, node)))
+        .map(node => node.id),
+    }));
+    item.sourceEscapeX = evaluatedCandidates.find(candidate => candidate.blockers.length === 0)?.x;
+    if (options.debugRouting) sourceEscapeDiagnostics.push({
+      pulse: item.flow.pulse, sourceId: item.sourceId, targetId: item.flow.to,
+      start: {...item.start}, end: {...item.end}, midX: item.midX,
+      candidates: evaluatedCandidates, selectedX: item.sourceEscapeX ?? null,
+    });
   }
   const unroutable = routed.filter(item => !item.direct && item.minimalBendX === undefined
     && item.sourceEscapeX === undefined);
@@ -1107,8 +1117,10 @@ function layoutCausal(pulse, options = {}) {
       finalOrders = passOrders;
       finalScore = passScore;
     }
+    if (options.debugRouting) finalLayout.debug = {sourceEscapes: sourceEscapeDiagnostics};
     return finalLayout;
   }
+  if (options.debugRouting) result.debug = {sourceEscapes: sourceEscapeDiagnostics};
   return result;
 }
 
@@ -1117,7 +1129,7 @@ function usedLegend(allPulses, flows) {
   return allPulses.filter(pulse => used.has(pulse.id));
 }
 
-function causalPage(pulse, projection, title, kind) {
+function causalPage(pulse, projection, title, kind, options = {}) {
   const informationById = new Map((pulse['domain-information'] || []).map(item => [item.id, item]));
   const behaviors = projection.behaviors.map(behavior => ({
     ...behavior,
@@ -1125,7 +1137,7 @@ function causalPage(pulse, projection, title, kind) {
     informationOut: (behavior['information-out'] || []).map(id => informationById.get(id)).filter(Boolean),
   }));
   const pagePulse = {behaviors, pulses: pulse.pulses, flows: projection.flows};
-  const layout = layoutCausal(pagePulse);
+  const layout = layoutCausal(pagePulse, options);
   layout.title = title;
   layout.kind = kind;
   layout.legend = usedLegend(pulse.pulses, projection.flows);
@@ -1177,13 +1189,13 @@ function capabilityProjections(pulse) {
   return {overview, details};
 }
 
-export function layoutPulse(pulse) {
+export function layoutPulse(pulse, options = {}) {
   if (!('capabilities' in pulse)) {
-    const page = causalPage(pulse, {behaviors: pulse.behaviors, flows: pulse.flows}, 'SYSTEM PULSE', 'system');
+    const page = causalPage(pulse, {behaviors: pulse.behaviors, flows: pulse.flows}, 'SYSTEM PULSE', 'system', options);
     return {...page, pages: [page]};
   }
   const {overview, details} = capabilityProjections(pulse);
-  const pages = [causalPage(pulse, overview, 'PULSE CAPABILITY OVERVIEW', 'overview')];
-  for (const detail of details) pages.push(causalPage(pulse, detail, `CAPABILITY: ${detail.capability.name}`, 'capability-detail'));
+  const pages = [causalPage(pulse, overview, 'PULSE CAPABILITY OVERVIEW', 'overview', options)];
+  for (const detail of details) pages.push(causalPage(pulse, detail, `CAPABILITY: ${detail.capability.name}`, 'capability-detail', options));
   return {pages};
 }
