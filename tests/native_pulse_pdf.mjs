@@ -191,8 +191,10 @@ const repeatedCapabilityFlowPulse = {
   ],
 };
 const repeatedCapabilityOverview = layoutPulse(repeatedCapabilityFlowPulse).pages[0];
-const segmentContains = (a, b, point) => a.y === b.y && point.y === a.y
-  && point.x >= Math.min(a.x, b.x) && point.x <= Math.max(a.x, b.x);
+const segmentContains = (a, b, point) => (a.y === b.y && point.y === a.y
+  && point.x >= Math.min(a.x, b.x) && point.x <= Math.max(a.x, b.x))
+  || (a.x === b.x && point.x === a.x
+    && point.y >= Math.min(a.y, b.y) && point.y <= Math.max(a.y, b.y));
 for (const flow of repeatedCapabilityOverview.flows) {
   assert.ok(flow.points.slice(1).some((point, index) => segmentContains(flow.points[index], point, flow.symbol)),
     `Overview keeps Pulse ${flow.event.display} symbol on its own connector`);
