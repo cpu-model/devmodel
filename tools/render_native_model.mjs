@@ -19,12 +19,13 @@ import {renderDeploymentPdf} from './native/deployment_pdf.mjs';
 const here = path.dirname(fileURLToPath(import.meta.url));
 
 function parseArgs(argv) {
-  const options = {source: path.resolve('CPU'), out: null};
+  const options = {source: path.resolve('CPU'), out: null, debugPulseLayout: false};
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === '--source') options.source = path.resolve(argv[++index]);
     else if (argument === '--out') options.out = path.resolve(argv[++index]);
     else if (argument === '--review-title') index += 1;
+    else if (argument === '--debug-pulse-layout') options.debugPulseLayout = true;
     else throw new Error(`Unknown argument: ${argument}`);
   }
   options.out ||= options.source;
@@ -45,10 +46,17 @@ const context = loadContextModel(options.source);
 const pulse = loadPulseModel(options.source);
 const ui = loadUiModel(options.source);
 const deployment = loadDeploymentModel(options.source);
+const pulseLayout = layoutPulse(pulse.pulse);
+
+if (options.debugPulseLayout) {
+  console.log('--- PULSE LAYOUT DEBUG ---');
+  console.log(JSON.stringify(pulseLayout, null, 2));
+  console.log('--- END PULSE LAYOUT DEBUG ---');
+}
 
 await Promise.all([
   renderContextPdf({layout: layoutContext(context.context), requirements: context.requirements, output: path.join(options.out, 'context.pdf')}),
-  renderPulsePdf({layout: layoutPulse(pulse.pulse), requirements: pulse.requirements, output: path.join(options.out, 'pulse.pdf')}),
+  renderPulsePdf({layout: pulseLayout, requirements: pulse.requirements, output: path.join(options.out, 'pulse.pdf')}),
   renderUiPdf({layout: layoutUi(ui.ui), requirements: ui.requirements, output: path.join(options.out, 'ui.pdf')}),
   renderDeploymentPdf({layout: layoutDeployment(deployment.deployment), requirements: deployment.requirements, output: path.join(options.out, 'deployment.pdf')}),
 ]);
