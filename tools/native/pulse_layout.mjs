@@ -831,6 +831,10 @@ function layoutCausal(pulse, options = {}) {
       candidate.points[candidate.points.length - 3].x = x;
       candidate.points[candidate.points.length - 2].x = x;
       candidate.points = simplify(candidate.points);
+      const routeIsClear = candidate.points.slice(1).every((point, index) =>
+        [...nodes.values()].every(node => node.id === sourceId || node.id === flow.to
+          || !segmentIntersectsBox(candidate.points[index], point, node, MIN_SIDE_CLEARANCE)));
+      if (!routeIsClear) continue;
       const after = groupGeometryScore(flows.map(item => item === flow ? candidate : item));
       if (after > before) continue;
       flow.points = candidate.points;
