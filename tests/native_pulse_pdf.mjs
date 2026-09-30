@@ -141,6 +141,8 @@ const repeatedCapabilityFlowPulse = {
     {id: 'branch', name: 'Branch'},
     {id: 'relay', name: 'Relay'},
     {id: 'sink', name: 'Sink'},
+    {id: 'auxiliary', name: 'Auxiliary'},
+    {id: 'archive', name: 'Archive'},
   ],
   'domain-information': [],
   behaviors: [
@@ -151,6 +153,8 @@ const repeatedCapabilityFlowPulse = {
     {id: 'relay-a', name: 'Relay A', capability: 'relay'},
     {id: 'relay-b', name: 'Relay B', capability: 'relay'},
     {id: 'sink-a', name: 'Sink A', capability: 'sink'},
+    {id: 'auxiliary-a', name: 'Auxiliary A', capability: 'auxiliary'},
+    {id: 'archive-a', name: 'Archive A', capability: 'archive'},
   ],
   pulses: [
     {id: 'branch-a-ready', display: 'A', name: 'Branch A ready'},
@@ -159,6 +163,14 @@ const repeatedCapabilityFlowPulse = {
     {id: 'shared-update', display: 'D', name: 'Shared update'},
     {id: 'alternate-branch-update', display: 'E', name: 'Alternate branch update'},
     {id: 'direct-update', display: 'F', name: 'Direct update'},
+    {id: 'source-triggered', display: 'G', name: 'Source triggered'},
+    {id: 'branch-triggered', display: 'H', name: 'Branch triggered'},
+    {id: 'relay-triggered', display: 'I', name: 'Relay triggered'},
+    {id: 'sink-triggered', display: 'J', name: 'Sink triggered'},
+    {id: 'auxiliary-triggered', display: 'K', name: 'Auxiliary triggered'},
+    {id: 'archive-triggered', display: 'L', name: 'Archive triggered'},
+    {id: 'source-to-auxiliary', display: 'M', name: 'Source to auxiliary'},
+    {id: 'branch-to-archive', display: 'N', name: 'Branch to archive'},
   ],
   flows: [
     {from: 'source-a', pulse: 'branch-a-ready', to: 'branch-a'},
@@ -168,6 +180,14 @@ const repeatedCapabilityFlowPulse = {
     {from: 'branch-a', pulse: 'direct-update', to: 'sink-a'},
     {from: 'relay-a', pulse: 'shared-update', to: 'sink-a'},
     {from: 'relay-b', pulse: 'shared-update', to: 'sink-a'},
+    {from: 'source-a', pulse: 'source-to-auxiliary', to: 'auxiliary-a'},
+    {from: 'branch-b', pulse: 'branch-to-archive', to: 'archive-a'},
+    {trigger: 'Source event', pulse: 'source-triggered', to: 'source-a'},
+    {trigger: 'Branch event', pulse: 'branch-triggered', to: 'branch-a'},
+    {trigger: 'Relay event', pulse: 'relay-triggered', to: 'relay-a'},
+    {trigger: 'Sink event', pulse: 'sink-triggered', to: 'sink-a'},
+    {trigger: 'Auxiliary event', pulse: 'auxiliary-triggered', to: 'auxiliary-a'},
+    {trigger: 'Archive event', pulse: 'archive-triggered', to: 'archive-a'},
   ],
 };
 const repeatedCapabilityOverview = layoutPulse(repeatedCapabilityFlowPulse).pages[0];
