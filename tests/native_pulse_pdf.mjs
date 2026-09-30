@@ -21,6 +21,17 @@ requirementDocument.requirements['pulse.pulse.result-ready'] = [
 ];
 fs.writeFileSync(path.join(directory, 'requirements.yaml'), stringify(requirementDocument));
 
+const debugRender = spawnSync(process.execPath, [
+  path.join(root, 'tools', 'render_native_model.mjs'),
+  '--source', example,
+  '--out', path.join(directory, 'debug-render'),
+  '--debug-pulse-layout',
+], {encoding: 'utf8'});
+assert.equal(debugRender.status, 0, debugRender.stderr);
+assert.match(debugRender.stdout, /--- PULSE LAYOUT DEBUG ---/);
+assert.match(debugRender.stdout, /"kind": "overview"/);
+assert.match(debugRender.stdout, /--- END PULSE LAYOUT DEBUG ---/);
+
 const model = loadPulseModel(directory);
 const layout = layoutPulse(model.pulse);
 assert.deepEqual(layoutPulse(model.pulse), layout, 'Pulse projections and geometry are deterministic');
