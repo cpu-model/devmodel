@@ -384,9 +384,11 @@ function layoutCausal(pulse, options = {}) {
     const preferred = Math.max(low, Math.min(high, (centerY(item.source) + centerY(item.target)) / 2));
     // Either endpoint may move along its side. Trying both existing endpoint
     // heights first makes this symmetric instead of favoring the target side.
-    const candidates = [item.start.y, item.end.y, preferred];
-    for (let offset = 6; offset <= high - low; offset += 6) candidates.push(preferred - offset, preferred + offset);
-    const y = candidates.find(value => value >= low && value <= high
+    const sourceCandidates = item.source.kind === 'trigger' ? [item.start.y] : [item.start.y, item.end.y, preferred];
+    if (item.source.kind !== 'trigger') {
+      for (let offset = 6; offset <= high - low; offset += 6) sourceCandidates.push(preferred - offset, preferred + offset);
+    }
+    const y = sourceCandidates.find(value => value >= low && value <= high
       && candidateFits(`${item.sourceId}:out`, item.flow, value)
       && candidateFits(`${item.flow.to}:in`, item.flow, value)
       && [...nodes.values()].every(node => node.id === item.sourceId || node.id === item.flow.to
