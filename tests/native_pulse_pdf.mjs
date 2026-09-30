@@ -198,6 +198,14 @@ const segmentContains = (a, b, point) => (a.y === b.y && point.y === a.y
 for (const flow of repeatedCapabilityOverview.flows) {
   assert.ok(flow.points.slice(1).some((point, index) => segmentContains(flow.points[index], point, flow.symbol)),
     `Overview keeps Pulse ${flow.event.display} symbol on its own connector`);
+  const target = repeatedCapabilityOverview.nodes.find(node => node.id === flow.to);
+  assert.equal(flow.points.at(-1).x, target.x,
+    `Overview Pulse ${flow.event.display} enters its target on the left side`);
+  if ('from' in flow) {
+    const source = repeatedCapabilityOverview.nodes.find(node => node.id === flow.from);
+    assert.equal(flow.points[0].x, source.x + source.width,
+      `Overview Pulse ${flow.event.display} leaves its source on the right side`);
+  }
 }
 const positiveOverlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max(b1, b2))
   - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 0.01;
