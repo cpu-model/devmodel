@@ -455,8 +455,15 @@ function layoutCausal(pulse, options = {}) {
     for (let step = 0; step < 240; step += 1) {
       const trackY = request.baseY + (step === 0 ? 0
         : (step % 2 ? 1 : -1) * Math.ceil(step / 2) * MIN_LINE_SPACING);
+      const routeSegments = [
+        [{x: request.item.start.x, y: request.item.start.y}, {x: request.x1, y: request.item.start.y}],
+        [{x: request.x1, y: request.item.start.y}, {x: request.x1, y: trackY}],
+        [{x: request.x1, y: trackY}, {x: request.x2, y: trackY}],
+        [{x: request.x2, y: trackY}, {x: request.x2, y: request.item.end.y}],
+        [{x: request.x2, y: request.item.end.y}, {x: request.item.end.x, y: request.item.end.y}],
+      ];
       if ([...nodes.values()].some(node => node.id !== request.item.sourceId && node.id !== request.item.flow.to
-        && segmentIntersectsBox({x: request.x1, y: trackY}, {x: request.x2, y: trackY}, node))) continue;
+        && routeSegments.some(([start, end]) => segmentIntersectsBox(start, end, node)))) continue;
       const parallelConflicts = reservations.filter(other => intervalsOverlap(request.x1, request.x2, other.x1, other.x2)
         && Math.abs(trackY - other.y) < MIN_LINE_SPACING).length;
       const endpointCrossings = reservations.filter(other => {
