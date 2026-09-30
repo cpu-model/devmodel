@@ -148,7 +148,7 @@ A trigger is rendered as a diamond with the trigger text centered inside it. The
 
 The diamond is sized deterministically to its content. Long trigger text is wrapped deterministically inside the diamond, and the diamond is sized to the resulting wrapped text with sufficient internal clearance.
 
-A Trigger is only a source of Pulse Flows and therefore has only outgoing connectors. Identical trigger text is rendered as one diamond with fan-out where applicable.
+A Trigger is only a source of Pulse Flows and therefore has only outgoing connectors. Every outgoing Pulse connector starts at the diamond's right vertex, on the Trigger's vertical centerline. Identical trigger text is rendered as one diamond with fan-out where applicable.
 
 Trigger remains a role in a Flow rather than a separately declared semantic element. It has no direct requirement address and therefore no requirement annotation.
 
