@@ -812,6 +812,13 @@ function layoutCausal(pulse, options = {}) {
           replacement.points[1].x = escapeX;
           firstVerticalTop.x = escapeX;
           replacement.points = simplify(replacement.points);
+          const sourceId = 'trigger' in replacement ? `trigger:${replacement.trigger}` : replacement.from;
+          if (replacement.points.slice(1).some((point, pointIndex) =>
+            [...nodes.values()].some(node => node.id !== sourceId && node.id !== replacement.to
+              && segmentIntersectsBox(replacement.points[pointIndex], point, node, 10)))) {
+            valid = false;
+            break;
+          }
         }
         if (!valid) continue;
         const candidateFlows = flows.map(flow => replacements.get(flow) || flow);
