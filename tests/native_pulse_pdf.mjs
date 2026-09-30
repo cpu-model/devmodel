@@ -5,7 +5,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
-import {layoutPulse} from '../tools/native/pulse_layout.mjs';
+import {layoutPulse, PULSE_RADIUS} from '../tools/native/pulse_layout.mjs';
 import {loadPulseModel} from '../tools/native/pulse_model.mjs';
 
 const {parse, stringify} = createRequire(import.meta.url)('yaml');
@@ -215,8 +215,13 @@ const collinearOverlap = (first, second) => first.points.slice(1).some((aEnd, aI
   }));
 for (let left = 0; left < repeatedCapabilityOverview.flows.length; left += 1) {
   for (let right = left + 1; right < repeatedCapabilityOverview.flows.length; right += 1) {
-    assert.ok(!collinearOverlap(repeatedCapabilityOverview.flows[left], repeatedCapabilityOverview.flows[right]),
-      `Overview keeps Pulse ${repeatedCapabilityOverview.flows[left].event.display} and ${repeatedCapabilityOverview.flows[right].event.display} visually distinct`);
+    const first = repeatedCapabilityOverview.flows[left];
+    const second = repeatedCapabilityOverview.flows[right];
+    assert.ok(!collinearOverlap(first, second),
+      `Overview keeps Pulse ${first.event.display} and ${second.event.display} visually distinct`);
+    const symbolDistance = Math.hypot(first.symbol.x - second.symbol.x, first.symbol.y - second.symbol.y);
+    assert.ok(symbolDistance >= PULSE_RADIUS * 2,
+      `Overview keeps Pulse symbols ${first.event.display} and ${second.event.display} separately visible`);
   }
 }
 
