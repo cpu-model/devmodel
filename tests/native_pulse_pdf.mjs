@@ -213,6 +213,28 @@ for (const flow of repeatedCapabilityOverview.flows) {
       `Overview Pulse ${flow.event.display} leaves within the source side, not at a corner`);
   }
 }
+const connectorTouchesUnrelatedNode = (flow, node) => {
+  const sourceId = 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
+  if (node.id === sourceId || node.id === flow.to) return false;
+  return flow.points.slice(1).some((end, index) => {
+    const start = flow.points[index];
+    if (start.y === end.y) {
+      return start.y >= node.y && start.y <= node.y + node.height
+        && Math.max(Math.min(start.x, end.x), node.x) <= Math.min(Math.max(start.x, end.x), node.x + node.width);
+    }
+    if (start.x === end.x) {
+      return start.x >= node.x && start.x <= node.x + node.width
+        && Math.max(Math.min(start.y, end.y), node.y) <= Math.min(Math.max(start.y, end.y), node.y + node.height);
+    }
+    return false;
+  });
+};
+for (const flow of repeatedCapabilityOverview.flows) {
+  for (const node of repeatedCapabilityOverview.nodes) {
+    assert.ok(!connectorTouchesUnrelatedNode(flow, node),
+      `Overview Pulse ${flow.event.display} stays clear of unrelated node ${node.name}`);
+  }
+}
 const positiveOverlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max(b1, b2))
   - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 0.01;
 const collinearOverlap = (first, second) => first.points.slice(1).some((aEnd, aIndex) =>
