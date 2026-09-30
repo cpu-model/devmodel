@@ -69,7 +69,10 @@ function segmentIntersectsBox(start, end, box, padding = 10) {
 function layoutCausal(pulse, options = {}) {
   const nodeGap = options.nodeGap ?? NODE_GAP;
   const eventById = new Map(pulse.pulses.map(item => [item.id, item]));
-  const semanticFlowKey = flow => `${'trigger' in flow ? `trigger:${flow.trigger}` : `from:${flow.from}`}\u0000${flow.pulse}\u0000${flow.to}`;
+  // Layout ordering needs occurrence identity, not only semantic equality:
+  // distinct Flow occurrences may project to the same source, Pulse and target.
+  const flowOccurrence = new Map(pulse.flows.map((flow, index) => [flow, index]));
+  const semanticFlowKey = flow => `${'trigger' in flow ? `trigger:${flow.trigger}` : `from:${flow.from}`}\u0000${flow.pulse}\u0000${flow.to}\u0000${flowOccurrence.get(flow)}`;
   const triggers = [...new Set(pulse.flows.filter(flow => 'trigger' in flow).map(flow => flow.trigger))];
   const depths = behaviorDepths(pulse);
   const maxDepth = Math.max(1, ...depths.values());
