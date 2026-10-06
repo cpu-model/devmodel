@@ -70,16 +70,15 @@ const intervalsOverlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max
   - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 0.01;
 
 function layoutCapabilityOverview(pulse) {
-  const sourceId = flow => 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
-  const relationKey = flow => `${sourceId(flow)}\u0000${flow.pulse}\u0000${flow.to}`;
+  const sourceId = flow => flow.from;
+  const relationKey = flow => `${sourceId(flow)}\u0000${flow.to}`;
   const keys = pulse.flows.map(relationKey);
   if (new Set(keys).size !== keys.length) throw new Error('Duplicate capability overview relations reached layout');
   if (process.env.CPU_TRACE_OVERVIEW_RELATIONS === '1') {
     console.error('[pulse-overview-relations]');
-    for (const flow of pulse.flows) console.error(JSON.stringify({source: sourceId(flow), pulse: flow.pulse, target: flow.to}));
+    for (const flow of pulse.flows) console.error(JSON.stringify({source: sourceId(flow), target: flow.to}));
   }
 
-  const eventById = new Map(pulse.pulses.map(item => [item.id, item]));
   const capabilities = [...pulse.behaviors];
   const capIds = new Set(capabilities.map(item => item.id));
   const depth = new Map(capabilities.map(item => [item.id, 0]));
@@ -127,15 +126,7 @@ function layoutCapabilityOverview(pulse) {
     }
   }
   const nodeById = new Map(capabilityNodes.map(n=>[n.id,n]));
-  const triggers = [...new Set(pulse.flows.filter(f=>'trigger' in f).map(f=>f.trigger))].sort();
-  const triggerNodes = triggers.map((id,index) => ({
-    id:`trigger:${id}`,
-    name:pulse.flows.find(f=>f.trigger===id)?.triggerLabel || id,
-    kind:'trigger', x:PAGE.margin, y:top + index*(TRIGGER.height+rowGap),
-    width:TRIGGER.width, height:TRIGGER.height,
-  }));
-  for (const n of triggerNodes) nodeById.set(n.id,n);
-  const nodes=[...capabilityNodes,...triggerNodes];
+  const nodes=[...capabilityNodes];
 
   const outgoing = new Map(), incoming = new Map();
   for (const flow of orderedFlows) {
@@ -154,39 +145,31 @@ function layoutCapabilityOverview(pulse) {
     const ins=incoming.get(flow.to);
     const sy=source.y + source.height*(outs.indexOf(flow)+1)/(outs.length+1);
     const ty=target.y + target.height*(ins.indexOf(flow)+1)/(ins.length+1);
-    const sourceDepth='trigger' in flow ? -1 : (depth.get(flow.from)||0);
+    const sourceDepth=depth.get(flow.from)||0;
     const targetDepth=depth.get(flow.to)||0;
     const laneOffset=(lane.get(relationKey(flow))+1)*MIN_CHANNEL_SPACING;
     // The lane is deterministic inside the first corridor crossed by the
     // relation. Long relations remain in the open corridor band above nodes,
     // then approach the target through the target's own left corridor.
-    const firstCorridorLeft = sourceDepth < 0
-      ? PAGE.margin + TRIGGER.width
-      : source.x + source.width;
+    const firstCorridorLeft = source.x + source.width;
     const x1=firstCorridorLeft + MIN_SIDE_CLEARANCE + laneOffset;
     const targetCorridorLeft=target.x-corridorWidth;
     const x2=targetCorridorLeft + MIN_SIDE_CLEARANCE + laneOffset;
     const trackY=top - MIN_SIDE_CLEARANCE - laneOffset;
     const start={x:source.x+source.width,y:sy}, end={x:target.x,y:ty};
     const points=[start,{x:x1,y:sy},{x:x1,y:trackY},{x:x2,y:trackY},{x:x2,y:ty},end];
-    return {...flow,event:eventById.get(flow.pulse),points,
-      symbol:{x:start.x+PULSE_RADIUS+4,y:start.y},
-      symbolGroup:`${sourceId(flow)}\u0000${flow.pulse}`,
-      annotation:{x:start.x+PULSE_RADIUS*2+10,y:start.y+5}};
+    return {...flow,points};
   });
 
   const minY=Math.min(...flows.flatMap(f=>f.points.map(p=>p.y)),top);
   if(minY<PAGE.margin) {
     const shift=PAGE.margin-minY;
     for(const node of nodes) node.y+=shift;
-    for(const flow of flows){for(const p of flow.points)p.y+=shift; flow.symbol.y+=shift; flow.annotation.y+=shift;}
+    for(const flow of flows) for(const p of flow.points) p.y+=shift;
   }
   const bottom=Math.max(...nodes.map(n=>n.y+n.height),...flows.flatMap(f=>f.points.map(p=>p.y)));
   const right=Math.max(...nodes.map(n=>n.x+n.width),...flows.flatMap(f=>f.points.map(p=>p.x)));
-  const legendColumns=3, legendHeight=Math.ceil(pulse.pulses.length/legendColumns)*LEGEND_ROW+42;
-  return {page:{...PAGE,width:right+PAGE.margin,height:bottom+72+legendHeight+PAGE.margin},
-    nodes,flows,legend:pulse.pulses,
-    legendArea:{x:PAGE.margin,y:bottom+72,width:right-PAGE.margin,height:legendHeight,columns:legendColumns}};
+  return {page:{...PAGE,width:right+PAGE.margin,height:bottom+PAGE.margin+72}, nodes,flows,legend:[]};
 }
 
 function layoutCausal(pulse, options = {}) {
