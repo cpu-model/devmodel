@@ -81,7 +81,7 @@ function drawPage(document, layout, requirements, font, bold) {
   }
   for (const flow of layout.flows) arrow(page, flow.points.at(-2), flow.points.at(-1));
   const drawnSymbols = new Set();
-  for (const flow of layout.flows) {
+  for (const flow of layout.flows.filter(flow => flow.event && flow.symbol)) {
     const symbolKey = flow.symbolGroup || `${flow.symbol.x}:${flow.symbol.y}:${flow.event.id}`;
     if (drawnSymbols.has(symbolKey)) continue;
     drawnSymbols.add(symbolKey);
@@ -91,9 +91,11 @@ function drawPage(document, layout, requirements, font, bold) {
     const target = `pulse.pulse.${flow.event.id}`;
     if (requirements[target]) addTextAnnotation(document, annots, {rect: [flow.annotation.x, flow.annotation.y, flow.annotation.x + 14, flow.annotation.y + 14], title: flow.event.name, contents: requirements[target]});
   }
-  const rows = Math.max(1, Math.ceil(layout.legend.length / layout.legendArea.columns)); const columnWidth = layout.legendArea.width / layout.legendArea.columns;
-  page.drawText('PULSES', {x: layout.legendArea.x, y: layout.legendArea.y + layout.legendArea.height - 18, size: 10, font: bold, color: palette.accent});
-  layout.legend.forEach((event, index) => { const column = Math.floor(index / rows); const row = index % rows; const x = layout.legendArea.x + column * columnWidth; const y = layout.legendArea.y + layout.legendArea.height - 40 - row * 18; page.drawText(event.display, {x, y, size: 9, font: bold, color: palette.accent}); page.drawText(event.name, {x: x + 28, y, size: 8.3, font, color: palette.ink}); });
+  if (layout.legend?.length && layout.legendArea) {
+    const rows = Math.max(1, Math.ceil(layout.legend.length / layout.legendArea.columns)); const columnWidth = layout.legendArea.width / layout.legendArea.columns;
+    page.drawText('PULSES', {x: layout.legendArea.x, y: layout.legendArea.y + layout.legendArea.height - 18, size: 10, font: bold, color: palette.accent});
+    layout.legend.forEach((event, index) => { const column = Math.floor(index / rows); const row = index % rows; const x = layout.legendArea.x + column * columnWidth; const y = layout.legendArea.y + layout.legendArea.height - 40 - row * 18; page.drawText(event.display, {x, y, size: 9, font: bold, color: palette.accent}); page.drawText(event.name, {x: x + 28, y, size: 8.3, font, color: palette.ink}); });
+  }
 }
 
 export async function renderPulsePdf({layout, requirements, output}) {
