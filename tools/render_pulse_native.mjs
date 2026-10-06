@@ -13,5 +13,5 @@ function option(name) {
 const source = path.resolve(option('--source'));
 const output = path.resolve(option('--output'));
 const model = loadPulseModel(source);
-await renderPulsePdf({layout: layoutPulse(model.pulse), requirements: model.requirements, output});
+await renderPulsePdf({layout: layoutPulse(model.pulse, {tracePhases: process.env.CPU_TRACE_PULSE === '1'}), requirements: model.requirements, output});
 console.log(`Native Pulse PDF ready: ${output}`);
