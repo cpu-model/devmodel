@@ -98,8 +98,9 @@ function layoutCapabilityOverview(pulse) {
     routeDensity.set(key, (routeDensity.get(key) || 0) + 1);
   }
   const maxParallelRoutes = Math.max(1, ...routeDensity.values());
-  const columnGap = Math.max(260,
-    MIN_SIDE_CLEARANCE * 2 + (maxParallelRoutes + 2) * MIN_CHANNEL_SPACING);
+  const channelBankWidth = MIN_SIDE_CLEARANCE * 2
+    + (pulse.flows.length + 2) * MIN_CHANNEL_SPACING;
+  const columnGap = Math.max(260, channelBankWidth);
   const capabilityIds = new Set(capabilities.map(item => item.id));
   const incomingCapability = new Map(capabilities.map(item => [item.id, []]));
   for (const flow of pulse.flows) {
@@ -141,7 +142,8 @@ function layoutCapabilityOverview(pulse) {
   const graphHeight = Math.max(nodeHeight, yCursor - (PAGE.margin + 140) - rowGap);
   const capabilityNodes = levels.flatMap((items, d) => items.map(item => ({
       ...item, kind: 'capability',
-      x: PAGE.margin + TRIGGER.width + outerRouting + d * (nodeWidth + columnGap),
+      x: PAGE.margin + TRIGGER.width + outerRouting + channelBankWidth
+        + d * (nodeWidth + columnGap),
       y: yById.get(item.id),
       width: nodeWidth, height: heightById.get(item.id),
   })));
@@ -256,7 +258,7 @@ function layoutCapabilityOverview(pulse) {
   const graphWidth = (maxDepth + 1) * nodeWidth + maxDepth * columnGap;
   const legendColumns = 3;
   const legendHeight = Math.ceil(pulse.pulses.length / legendColumns) * LEGEND_ROW + 42;
-  const pageWidth = PAGE.margin * 2 + TRIGGER.width + outerRouting + graphWidth;
+  const pageWidth = PAGE.margin * 2 + TRIGGER.width + outerRouting + channelBankWidth + graphWidth;
   return {
     page: {...PAGE, width: pageWidth,
       height: contentBottom + 72 + legendHeight + PAGE.margin},
