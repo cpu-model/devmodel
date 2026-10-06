@@ -74,7 +74,7 @@ function layoutCapabilityOverview(pulse) {
   const nodeWidth = 190;
   const nodeHeight = 72;
   const columnGap = 260;
-  const rowGap = 86;
+  const rowGap = 120;
   const outerRouting = 108;
   const capabilities = pulse.behaviors;
   const capabilityIds = new Set(capabilities.map(item => item.id));
@@ -128,7 +128,6 @@ function layoutCapabilityOverview(pulse) {
   const nodeById = new Map(nodes.map(node => [node.id, node]));
   const overviewSourceId = flow => 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
   const reservations = [];
-  const symbolReservations = [];
   const flows = [...pulse.flows].sort((a, b) =>
     overviewSourceId(a).localeCompare(overviewSourceId(b))
       || a.to.localeCompare(b.to) || a.pulse.localeCompare(b.pulse))
@@ -139,22 +138,11 @@ function layoutCapabilityOverview(pulse) {
       const siblingsIn = pulse.flows.filter(other => other.to === flow.to);
       const outIndex = siblingsOut.indexOf(flow);
       const inIndex = siblingsIn.indexOf(flow);
-      const baseStartY = 'trigger' in flow
+      const startY = 'trigger' in flow
         ? source.y + source.height / 2
         : source.y + source.height * (outIndex + 1) / (siblingsOut.length + 1);
-      const candidateStartYs = 'trigger' in flow ? [baseStartY] : [
-        baseStartY,
-        ...Array.from({length: 8}, (_, index) => {
-          const step = Math.floor(index / 2) + 1;
-          return baseStartY + (index % 2 === 0 ? step : -step) * (PULSE_RADIUS * 2 + 4);
-        }),
-      ].filter(y => y > source.y && y < source.y + source.height);
-      const startY = candidateStartYs.find(y => symbolReservations.every(symbol =>
-        Math.hypot((source.x + source.width + PULSE_RADIUS + 4) - symbol.x, y - symbol.y) >= PULSE_RADIUS * 2))
-        ?? baseStartY;
       const start = {x: source.x + source.width, y: startY};
       const symbolPoint = {x: start.x + PULSE_RADIUS + 4, y: start.y};
-      symbolReservations.push(symbolPoint);
       const endPoint = {x: target.x,
         y: target.y + target.height * (inIndex + 1) / (siblingsIn.length + 1)};
       let channel = 'trigger' in flow
