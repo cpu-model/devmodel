@@ -369,7 +369,8 @@ while (densePulseIndex < 36) {
 }
 const denseLayout = layoutPulse(denseOverviewPulse, {tracePhases: true});
 const denseOverview = denseLayout.pages[0];
-assert.equal(denseOverview.flows.length, 36, 'Dense overview preserves all flows');
+const densePairs = new Set(denseOverviewPulse.flows.filter(flow => 'from' in flow).map(flow => { const from = denseOverviewPulse.behaviors.find(b => b.id === flow.from).capability; const to = denseOverviewPulse.behaviors.find(b => b.id === flow.to).capability; return from === to ? null : `${from}->${to}`; }).filter(Boolean));
+assert.equal(denseOverview.flows.length, densePairs.size, 'Dense overview collapses flows to unique directed Capability dependencies');
 assert.equal(denseLayout.pages.length, 9, 'Dense projection includes overview and capability detail pages');
 
 console.log('CPU v2 Pulse projection, layout, PDF, annotation, and stress checks passed');
