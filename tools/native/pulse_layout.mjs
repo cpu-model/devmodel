@@ -132,13 +132,13 @@ function layoutCausal(pulse, options = {}) {
     const informationHeight = (inputs + outputs) * 16 + (inputs ? 10 : 0) + (outputs ? 10 : 0);
     return BEHAVIOR.height + informationHeight;
   };
-  const nodeHeight = id => {
-    const portCount = Math.max(incoming.get(id)?.length || 0, outgoing.get(id)?.length || 0);
-    return Math.max(intrinsicBehaviorHeight(id), PORT_PADDING * 2 + Math.max(0, portCount - 1) * MIN_PORT_SPACING);
-  };
+  const portCountFor = id => Math.max(incoming.get(id)?.length || 0, outgoing.get(id)?.length || 0);
+  const portHeight = id => PORT_PADDING * 2 + Math.max(0, portCountFor(id) - 1) * MIN_PORT_SPACING;
+  const nodeHeight = id => Math.max(intrinsicBehaviorHeight(id), portHeight(id));
+  const triggerHeight = id => Math.max(TRIGGER.height, portHeight(id));
   const levelHeights = levels.map((items, level) => items.reduce((sum, item) => {
     const id = item.id;
-    return sum + (level === 0 ? TRIGGER.height : nodeHeight(id));
+    return sum + (level === 0 ? triggerHeight(id) : nodeHeight(id));
   }, 0) + Math.max(0, items.length - 1) * nodeGap);
   const graphHeight = Math.max(...levelHeights);
   const legendColumns = 3;
@@ -178,7 +178,7 @@ function layoutCausal(pulse, options = {}) {
     let top = graphTop - (graphHeight - usedHeight) / 2;
     items.forEach((item, index) => {
       const id = item.id;
-      const height = level === 0 ? TRIGGER.height : nodeHeight(id);
+      const height = level === 0 ? triggerHeight(id) : nodeHeight(id);
       nodes.set(id, {
         ...item, id, kind: level === 0 ? 'trigger' : 'behavior',
         x, y: top - height, width, height,
