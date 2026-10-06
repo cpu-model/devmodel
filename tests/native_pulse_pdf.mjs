@@ -308,7 +308,7 @@ const result = spawnSync(process.execPath, [path.join(root, 'tools', 'render_pul
 assert.equal(result.status, 0, result.stderr);
 const source = fs.readFileSync(output, 'latin1');
 assert.equal((source.match(/\/Type \/Page\b/g) || []).length, 3);
-assert.equal((source.match(/\/Subtype \/Text/g) || []).length, 6, 'Every requirement-addressable occurrence is annotated');
+assert.equal((source.match(/\/Subtype \/Text/g) || []).length, 5, 'Every rendered requirement-addressable occurrence is annotated; collapsed overview dependencies add no Pulse annotation');
 assert.doesNotMatch(source, /<svg|\/Image\b/);
 const pdf = await PDFDocument.load(fs.readFileSync(output));
 const pulseContents = pdf.getPages().flatMap(page => page.node.Annots().asArray().map(reference => pdf.context.lookup(reference)))
