@@ -89,7 +89,7 @@ assert.ok(coverageDetail.nodes.some(node => node.kind === 'trigger' && node.name
   'Capability detail preserves the concrete external trigger');
 
 
-// Capability overview collapses Behavior-level multiplicity into one source/Pulse/target relation.
+// Capability overview collapses Behavior-level multiplicity and Pulse identity into one directed Capability dependency.
 const projectionDedupPulse = {
   capabilities: [{id: 'source-cap', name: 'Source'}, {id: 'target-cap', name: 'Target'}],
   'domain-information': [],
@@ -109,10 +109,10 @@ const projectionDedupPulse = {
 };
 const projectionDedupOverview = layoutPulse(projectionDedupPulse).pages[0];
 assert.equal(projectionDedupOverview.flows.length, 1,
-  'Capability overview renders one line per source Capability, Pulse, and target Capability');
+  'Capability overview renders one line per directed source/target Capability pair');
 assert.equal(projectionDedupOverview.flows[0].from, 'source-cap');
 assert.equal(projectionDedupOverview.flows[0].to, 'target-cap');
-assert.equal(projectionDedupOverview.flows[0].pulse, 'shared');
+assert.equal(projectionDedupOverview.flows[0].pulse, undefined);
 
 const largePulse = {
   capabilities: [{id: 'large', name: 'Large'}], 'domain-information': [],
@@ -123,7 +123,7 @@ const largePulse = {
 const largeStart = performance.now();
 const largeLayout = layoutPulse(largePulse);
 assert.ok(performance.now() - largeStart < 2000, 'Large Pulse projection avoids combinatorial order search');
-assert.equal(largeLayout.pages[0].flows.length, 16);
+assert.equal(largeLayout.pages[0].flows.length, 0, 'Single-Capability model has no overview dependencies');
 
 const fanoutPulse = {
   capabilities: [{id: 'fanout', name: 'Fanout'}], 'domain-information': [],
@@ -143,7 +143,7 @@ assert.ok(performance.now() - fanoutStart < 2000, 'Large fan-out avoids factoria
 assert.equal(fanoutLayout.pages[1].flows.length, 9);
 
 const coverage = layoutPulse(coveragePulse).pages;
-assert.equal(coverage[0].flows.length, 2, 'Overview excludes same-Capability flow');
+assert.equal(coverage[0].flows.length, 1, 'Overview excludes same-Capability and external-trigger flows');
 assert.equal(coverage[1].flows.length, 3, 'Source detail covers trigger, internal, and outgoing cross-Capability flows');
 assert.equal(coverage[2].flows.length, 1, 'Destination detail covers only incoming cross-Capability flow');
 
