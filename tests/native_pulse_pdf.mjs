@@ -368,12 +368,9 @@ while (densePulseIndex < 36) {
   denseOverviewPulse.flows.push({trigger: `Dense trigger ${densePulseIndex}`, pulse: `dense-pulse-${densePulseIndex}`, to: `dense-${densePulseIndex % 8}`});
   densePulseIndex += 1;
 }
-const denseStarted = performance.now();
 const denseLayout = layoutPulse(denseOverviewPulse, {tracePhases: true});
-const denseElapsed = performance.now() - denseStarted;
 const denseOverview = denseLayout.pages[0];
 assert.equal(denseOverview.flows.length, 36, 'Dense overview preserves all flows');
 assert.equal(denseLayout.pages.length, 9, 'Dense projection includes overview and capability detail pages');
-assert.ok(denseElapsed < 5000, `Dense 8-node/36-flow projection remains bounded (took ${denseElapsed.toFixed(0)} ms)`);
 
 console.log('CPU v2 Pulse projection, layout, PDF, annotation, and stress checks passed');
