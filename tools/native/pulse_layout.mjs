@@ -134,8 +134,10 @@ function layoutCapabilityOverview(pulse) {
   const nodes = [...capabilityNodes, ...triggerNodes];
   const nodeById = new Map(nodes.map(node => [node.id, node]));
   const routeHitsUnrelatedNode = (points, sourceId, targetId) => nodes.some(node => {
-    if (node.id === sourceId || node.id === targetId) return false;
+    if (node.id === sourceId) return false;
     for (let index = 1; index < points.length; index += 1) {
+      const isFinalTargetSegment = node.id === targetId && index === points.length - 1;
+      if (isFinalTargetSegment) continue;
       if (segmentIntersectsBox(points[index - 1], points[index], node, 8)) return true;
     }
     return false;
