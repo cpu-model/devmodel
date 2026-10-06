@@ -133,6 +133,13 @@ function layoutCapabilityOverview(pulse) {
   });
   const nodes = [...capabilityNodes, ...triggerNodes];
   const nodeById = new Map(nodes.map(node => [node.id, node]));
+  const routeHitsUnrelatedNode = (points, sourceId, targetId) => nodes.some(node => {
+    if (node.id === sourceId || node.id === targetId) return false;
+    for (let index = 1; index < points.length; index += 1) {
+      if (segmentIntersectsBox(points[index - 1], points[index], node, 8)) return true;
+    }
+    return false;
+  });
   const overviewSourceId = flow => 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
   const reservations = [];
   const flows = [...pulse.flows].sort((a, b) =>
@@ -157,11 +164,14 @@ function layoutCapabilityOverview(pulse) {
         ? PAGE.margin + TRIGGER.width + MIN_SIDE_CLEARANCE
         : start.x + MIN_SIDE_CLEARANCE;
       const maxChannel = endPoint.x - MIN_SIDE_CLEARANCE;
-      while (channel < maxChannel && reservations.some(r => Math.abs(r.x - channel) < MIN_LINE_SPACING
-        && intervalsOverlap(start.y, endPoint.y, r.y1, r.y2))) channel += MIN_CHANNEL_SPACING;
+      const sourceId = overviewSourceId(flow);
+      const candidatePoints = x => [start, {x, y: start.y}, {x, y: endPoint.y}, endPoint];
+      while (channel < maxChannel && (reservations.some(r => Math.abs(r.x - channel) < MIN_LINE_SPACING
+        && intervalsOverlap(start.y, endPoint.y, r.y1, r.y2))
+        || routeHitsUnrelatedNode(candidatePoints(channel), sourceId, flow.to))) channel += MIN_CHANNEL_SPACING;
       if (channel > maxChannel) channel = Math.max(start.x + 1, maxChannel);
       reservations.push({x: channel, y1: start.y, y2: endPoint.y});
-      const points = [start, {x: channel, y: start.y}, {x: channel, y: endPoint.y}, endPoint];
+      const points = candidatePoints(channel);
       return {
         ...flow, event: eventById.get(flow.pulse), points,
         symbol: symbolPoint,
