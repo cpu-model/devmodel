@@ -98,14 +98,19 @@ function layoutCapabilityOverview(pulse) {
   const maxDepth = Math.max(0, ...depth.values());
   const levels = Array.from({length: maxDepth + 1}, (_, d) =>
     capabilities.filter(item => depth.get(item.id) === d).sort((a, b) => a.name.localeCompare(b.name)));
-  const maxRows = Math.max(1, ...levels.map(items => items.length));
+  const orderedCapabilities = levels.flat();
+  const rowById = new Map(orderedCapabilities.map((item, row) => [item.id, row]));
+  const maxRows = Math.max(1, orderedCapabilities.length);
   const graphHeight = maxRows * nodeHeight + Math.max(0, maxRows - 1) * rowGap;
-  const capabilityNodes = levels.flatMap((items, d) => items.map((item, row) => ({
-    ...item, kind: 'capability',
-    x: PAGE.margin + TRIGGER.width + outerRouting + d * (nodeWidth + columnGap),
-    y: PAGE.margin + 140 + graphHeight - nodeHeight - row * (nodeHeight + rowGap),
-    width: nodeWidth, height: nodeHeight,
-  })));
+  const capabilityNodes = levels.flatMap((items, d) => items.map(item => {
+    const row = rowById.get(item.id);
+    return {
+      ...item, kind: 'capability',
+      x: PAGE.margin + TRIGGER.width + outerRouting + d * (nodeWidth + columnGap),
+      y: PAGE.margin + 140 + row * (nodeHeight + rowGap),
+      width: nodeWidth, height: nodeHeight,
+    };
+  }));
   const triggerNames = [...new Set(pulse.flows.filter(flow => 'trigger' in flow).map(flow => flow.trigger))];
   const triggerNodes = triggerNames.map(name => {
     const triggerFlow = pulse.flows.find(flow => flow.trigger === name);
