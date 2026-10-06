@@ -195,11 +195,7 @@ function layoutCapabilityOverview(pulse) {
         : source.y + source.height * (pulseIndex + 1) / (sourcePulses.length + 1);
       const start = {x: source.x + source.width, y: startY};
       const symbolPoint = {x: start.x + PULSE_RADIUS + 4, y: start.y};
-      const pair = `${sourceId}\u0000${flow.to}`;
-      const laneIndex = pairLaneIndex.get(`${pair}\u0000${flow.pulse}`) || 0;
-      const laneCount = pairLaneCount.get(pair)?.length || 1;
-      const pairOffset = (laneIndex - (laneCount - 1) / 2) * pulsePortSpacing;
-      const baseEndY = target.y + target.height * (inIndex + 1) / (incomingGroups.length + 1) + pairOffset;
+      const baseEndY = target.y + target.height * (inIndex + 1) / (incomingGroups.length + 1);
       let endY = baseEndY;
       const reservedTargetYs = approachReservations.filter(r => r.target === flow.to).map(r => r.y);
       while (reservedTargetYs.some(y => Math.abs(y - endY) < pulsePortSpacing)) {
