@@ -469,7 +469,12 @@ function layoutCausal(pulse, options = {}) {
   const unroutable = routed.filter(item => !item.direct && item.minimalBendX === undefined
     && item.sourceEscapeX === undefined);
   if (unroutable.length) {
-    throw new Error(`No clear source escape channel for Pulse Flow: ${unroutable.map(item => item.flow.pulse).join(', ')}`);
+    const detail = options.debugRouting ? unroutable.map(item => {
+      const diagnostic = sourceEscapeDiagnostics.find(entry => entry.pulse === item.flow.pulse
+        && entry.sourceId === item.sourceId && entry.targetId === item.flow.to);
+      return `${item.sourceId} --${item.flow.pulse}--> ${item.flow.to} candidates=${JSON.stringify(diagnostic?.candidates || [])}`;
+    }).join('\n') : unroutable.map(item => item.flow.pulse).join(', ');
+    throw new Error(`No clear source escape channel for Pulse Flow: ${detail}`);
   }
   const reservations = [...minimalReservations, ...routed.filter(item => !item.direct && item.minimalBendX === undefined).flatMap(item => [
     {x1: item.start.x, x2: item.sourceEscapeX, y: item.start.y},
