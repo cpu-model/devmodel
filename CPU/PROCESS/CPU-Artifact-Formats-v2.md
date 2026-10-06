@@ -205,7 +205,20 @@ A Flow contains exactly one source form: either free-text `trigger` or Behavior 
 
 The invariant is `trigger` XOR `from`. A Flow with both is invalid; a Flow with neither is invalid.
 
-### 4.6 Pulse validation
+### 4.6 Functional decomposition guidance
+
+Capability grouping should express coherent functional responsibility rather than merely collect Behaviors that concern the same subject area.
+
+- During modeling and review, state the functional question answered by each Capability. If that question requires materially different decisions joined by “and”, or spans distinct lifecycle stages that can change independently, reconsider the Capability boundary.
+- Treat policy or decision, lifecycle or state transition, planning, execution, and physical control as distinct responsibility candidates when they can change independently or when one produces a domain-significant result consumed by the next. This is a decomposition signal, not a requirement to create those Capabilities in every system.
+- When one responsibility produces a domain-significant result that another responsibility accepts, activates, supersedes, suspends, or terminates, model that intermediate result explicitly when doing so is necessary to preserve the functional distinction. Do not collapse distinct responsibilities around one mutable Domain Information identity merely for compactness.
+- A Behavior should perform a domain responsibility rather than primarily inspect an event and redistribute consequences to unrelated Capabilities. A Behavior that mainly receives one Pulse and emits several Pulses toward different functional responsibilities is a decomposition warning. Prefer direct fan-out of the original domain event to independently responsible Behaviors when those reactions are independently meaningful.
+- Prefer Pulses that name the domain-significant event that occurred over Pulses that prescribe the next Behavior's work. Names framed as something being needed, requested, or required should be reviewed for orchestration leakage and retained only when that need or request is itself a meaningful domain event.
+- When a domain concept retains its identity while participating information changes, consider whether its lifecycle is a responsibility distinct from the Behavior that calculates or updates that information.
+- Review Capability boundaries using representative domain disturbances and lifecycle transitions. For each event, identify independently which responsibilities must react. If one Capability or Behavior repeatedly dispatches consequences on behalf of several others, reconsider the decomposition.
+- These tests refine functional semantics only. They do not make Capabilities implementation components, assign Domain Information ownership, or require a one-to-one mapping from Pulse structure to packages, processes, services, interfaces, or deployment units.
+
+### 4.7 Pulse validation
 
 - Behavior IDs are unique.
 - Capability IDs are unique. If Capabilities are present every Behavior has exactly one resolving `capability`; otherwise `capability` is forbidden.
@@ -221,7 +234,7 @@ The invariant is `trigger` XOR `from`. A Flow with both is invalid; a Flow with 
 - Cycles and fan-out are valid and require no special syntax.
 - No validation rule infers Pulse relations from data dependencies.
 
-### 4.7 Pulse field reference
+### 4.8 Pulse field reference
 
 The top-level document contains exactly `pulse`. Its value contains exactly:
 
@@ -264,7 +277,7 @@ Flow mapping:
 
 `trigger` XOR `from` is mandatory. A Pulse Flow has no ID, name, or direct requirement address. No other fields are allowed.
 
-### 4.8 Invalid Pulse examples
+### 4.9 Invalid Pulse examples
 
 ```yaml
 # Invalid: both source forms are present.
