@@ -189,6 +189,7 @@ function layoutCapabilityOverview(pulse) {
         .map(other => `${overviewSourceId(other)}\u0000${other.pulse}`))].sort();
       const incomingGroup = `${overviewSourceId(flow)}\u0000${flow.pulse}`;
       const inIndex = incomingGroups.indexOf(incomingGroup);
+      const sourceId = overviewSourceId(flow);
       const startY = 'trigger' in flow
         ? source.y + source.height / 2
         : source.y + source.height * (pulseIndex + 1) / (sourcePulses.length + 1);
@@ -209,7 +210,6 @@ function layoutCapabilityOverview(pulse) {
         while (reservedTargetYs.some(y => Math.abs(y - endY) < pulsePortSpacing)) endY -= pulsePortSpacing;
       }
       const endPoint = {x: target.x, y: endY};
-      const sourceId = overviewSourceId(flow);
       let channel = 'trigger' in flow
         ? PAGE.margin + TRIGGER.width + MIN_SIDE_CLEARANCE
         : start.x + MIN_SIDE_CLEARANCE;
