@@ -645,7 +645,16 @@ function layoutCausal(pulse, options = {}) {
   }
   for (const group of targetApproaches.values()) {
     group.sort((a, b) => a.end.y - b.end.y || a.flow.pulse.localeCompare(b.flow.pulse));
-    group.forEach((item, index) => { item.targetEscapeX = item.end.x - MIN_SIDE_CLEARANCE - index * MIN_CHANNEL_SPACING; });
+    group.forEach((item, index) => {
+      let x = item.end.x - MIN_SIDE_CLEARANCE - index * MIN_CHANNEL_SPACING;
+      if (options.projectionKind === 'overview') {
+        while (verticalReservations.some(other => Math.abs(other.x - x) < MIN_CHANNEL_SPACING
+          && intervalsOverlap(other.y1, other.y2, item.start.y, item.end.y))) {
+          x -= MIN_CHANNEL_SPACING;
+        }
+      }
+      item.targetEscapeX = x;
+    });
   }
   const sourceEscapeDiagnostics = [];
   for (const item of routed.filter(item => !item.direct && item.minimalBendX === undefined)) {
@@ -663,7 +672,10 @@ function layoutCausal(pulse, options = {}) {
           || segmentIntersectsBox({x, y: item.start.y}, {x, y: item.end.y}, node)))
         .map(node => node.id),
     }));
-    item.sourceEscapeX = evaluatedCandidates.find(candidate => candidate.blockers.length === 0)?.x;
+    item.sourceEscapeX = evaluatedCandidates.find(candidate => candidate.blockers.length === 0
+      && (options.projectionKind !== 'overview' || verticalReservations.every(other =>
+        Math.abs(other.x - candidate.x) >= MIN_CHANNEL_SPACING
+        || !intervalsOverlap(other.y1, other.y2, item.start.y, item.end.y))))?.x;
     if (item.sourceEscapeX === undefined) {
       // A projected external trigger may span every straight source-escape
       // candidate. Defer the vertical detour to track routing; only the short
