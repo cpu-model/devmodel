@@ -738,6 +738,9 @@ function layoutCausal(pulse, options = {}) {
     const group = flows.filter(flow => flow.from === sourceId);
     if (!group.some(flow => flow.points.length > 2)) continue;
     const originalYs = group.map(flow => flow.points[0].y);
+    // Exhaustive group optimization is factorial/exponential. Large fan-outs
+    // keep the deterministic routed geometry rather than making rendering unbounded.
+    if (group.length > 5) continue;
     let best;
     let bestScore = groupGeometryScore(flows);
     for (const assignedSlots of permutations(originalYs)) {
