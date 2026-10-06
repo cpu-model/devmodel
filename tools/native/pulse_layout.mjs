@@ -1265,31 +1265,44 @@ function capabilityProjections(pulse) {
   const behaviorById = new Map(pulse.behaviors.map(item => [item.id, item]));
   const overviewFlows = pulse.flows.filter(flow => 'trigger' in flow
     || behaviorById.get(flow.from).capability !== behaviorById.get(flow.to).capability);
+  const projectedOverviewFlows = overviewFlows.map(flow => 'trigger' in flow
+    ? {trigger: flow.trigger, pulse: flow.pulse, to: behaviorById.get(flow.to).capability}
+    : {from: behaviorById.get(flow.from).capability, pulse: flow.pulse, to: behaviorById.get(flow.to).capability});
+  const overviewFlowKey = flow => 'trigger' in flow
+    ? `trigger:${flow.trigger}\u0000${flow.pulse}\u0000${flow.to}`
+    : `from:${flow.from}\u0000${flow.pulse}\u0000${flow.to}`;
   const overview = {
     behaviors: pulse.capabilities.map(item => ({...item})),
-    flows: overviewFlows.map(flow => 'trigger' in flow
-      ? {trigger: flow.trigger, pulse: flow.pulse, to: behaviorById.get(flow.to).capability}
-      : {...flow, from: behaviorById.get(flow.from).capability, to: behaviorById.get(flow.to).capability}),
+    flows: [...new Map(projectedOverviewFlows.map(flow => [overviewFlowKey(flow), flow])).values()],
     capabilityIds: pulse.capabilities.map(item => item.id), boundaryIds: [],
   };
   const details = pulse.capabilities.map(capability => {
     const behaviors = pulse.behaviors.filter(behavior => behavior.capability === capability.id);
     const boundary = new Map();
     const flows = [];
+    const projectedFlowKeys = new Set();
+    const addProjectedFlow = flow => {
+      const key = 'trigger' in flow
+        ? `trigger:${flow.trigger}\u0000${flow.pulse}\u0000${flow.to}`
+        : `from:${flow.from}\u0000${flow.pulse}\u0000${flow.to}`;
+      if (projectedFlowKeys.has(key)) return;
+      projectedFlowKeys.add(key);
+      flows.push(flow);
+    };
     for (const flow of pulse.flows) {
       const destinationCapability = behaviorById.get(flow.to).capability;
-      if ('trigger' in flow) { if (destinationCapability === capability.id) flows.push({...flow}); continue; }
+      if ('trigger' in flow) { if (destinationCapability === capability.id) addProjectedFlow({...flow}); continue; }
       const sourceCapability = behaviorById.get(flow.from).capability;
-      if (sourceCapability === capability.id && destinationCapability === capability.id) flows.push({...flow});
+      if (sourceCapability === capability.id && destinationCapability === capability.id) addProjectedFlow({...flow});
       else if (sourceCapability === capability.id) {
         const id = `boundary-to-${destinationCapability}`;
         boundary.set(id, {id, name: `TO ${pulse.capabilities.find(item => item.id === destinationCapability).name}`});
-        flows.push({...flow, to: id});
+        addProjectedFlow({...flow, to: id});
       } else if (destinationCapability === capability.id) {
         const label = `FROM ${pulse.capabilities.find(item => item.id === sourceCapability).name}`;
         const source = `${label} · ${flow.pulse}`;
         const id = `trigger:${source}`;
-        flows.push({trigger: source, triggerLabel: label, pulse: flow.pulse, to: flow.to});
+        addProjectedFlow({trigger: source, triggerLabel: label, pulse: flow.pulse, to: flow.to});
         boundary.set(id, null);
       }
     }
