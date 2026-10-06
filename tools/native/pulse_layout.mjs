@@ -460,6 +460,20 @@ function layoutCausal(pulse, options = {}) {
         .map(node => node.id),
     }));
     item.sourceEscapeX = evaluatedCandidates.find(candidate => candidate.blockers.length === 0)?.x;
+    if (item.sourceEscapeX === undefined) {
+      // A projected external trigger may span every straight source-escape
+      // candidate. Defer the vertical detour to track routing; only the short
+      // horizontal source leg must be clear here.
+      const horizontalCandidate = evaluatedCandidates.find(candidate => {
+        const x = candidate.x;
+        return ![...nodes.values()].some(node => node.id !== item.sourceId && node.id !== item.flow.to
+          && segmentIntersectsBox(item.start, {x, y: item.start.y}, node));
+      });
+      if (horizontalCandidate) {
+        item.sourceEscapeX = horizontalCandidate.x;
+        item.sourceEscapeNeedsDetour = true;
+      }
+    }
     if (options.debugRouting) sourceEscapeDiagnostics.push({
       pulse: item.flow.pulse, sourceId: item.sourceId, targetId: item.flow.to,
       start: {...item.start}, end: {...item.end}, midX: item.midX,
