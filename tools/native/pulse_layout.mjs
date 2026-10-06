@@ -1404,11 +1404,14 @@ function capabilityProjections(pulse) {
     ? {trigger: flow.trigger, pulse: flow.pulse, to: behaviorById.get(flow.to).capability}
     : {from: behaviorById.get(flow.from).capability, pulse: flow.pulse, to: behaviorById.get(flow.to).capability});
   const overviewFlowKey = flow => 'trigger' in flow
-    ? `trigger:${flow.trigger}\u0000${flow.pulse}\u0000${flow.to}`
+    ? `external:\u0000${flow.pulse}\u0000${flow.to}`
     : `from:${flow.from}\u0000${flow.pulse}\u0000${flow.to}`;
+  const deduplicatedOverviewFlows = [...new Map(projectedOverviewFlows.map(flow => [overviewFlowKey(flow), flow])).values()]
+    .map(flow => 'trigger' in flow ? {...flow, trigger: `external:${flow.pulse}:${flow.to}`,
+      triggerLabel: pulse.pulses.find(item => item.id === flow.pulse)?.name || flow.trigger} : flow);
   const overview = {
     behaviors: pulse.capabilities.map(item => ({...item})),
-    flows: [...new Map(projectedOverviewFlows.map(flow => [overviewFlowKey(flow), flow])).values()],
+    flows: deduplicatedOverviewFlows,
     capabilityIds: pulse.capabilities.map(item => item.id), boundaryIds: [],
   };
   const details = pulse.capabilities.map(capability => {
