@@ -128,6 +128,7 @@ function layoutCapabilityOverview(pulse) {
   const nodeById = new Map(nodes.map(node => [node.id, node]));
   const overviewSourceId = flow => 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
   const reservations = [];
+  const symbolReservations = [];
   const flows = [...pulse.flows].sort((a, b) =>
     overviewSourceId(a).localeCompare(overviewSourceId(b))
       || a.to.localeCompare(b.to) || a.pulse.localeCompare(b.pulse))
@@ -138,8 +139,20 @@ function layoutCapabilityOverview(pulse) {
       const siblingsIn = pulse.flows.filter(other => other.to === flow.to);
       const outIndex = siblingsOut.indexOf(flow);
       const inIndex = siblingsIn.indexOf(flow);
-      const start = {x: source.x + source.width,
-        y: source.y + source.height * (outIndex + 1) / (siblingsOut.length + 1)};
+      const baseStartY = source.y + source.height * (outIndex + 1) / (siblingsOut.length + 1);
+      const candidateStartYs = [
+        baseStartY,
+        ...Array.from({length: 8}, (_, index) => {
+          const step = Math.floor(index / 2) + 1;
+          return baseStartY + (index % 2 === 0 ? step : -step) * (PULSE_RADIUS * 2 + 4);
+        }),
+      ].filter(y => y > source.y && y < source.y + source.height);
+      const startY = candidateStartYs.find(y => symbolReservations.every(symbol =>
+        Math.hypot((source.x + source.width + PULSE_RADIUS + 4) - symbol.x, y - symbol.y) >= PULSE_RADIUS * 2))
+        ?? baseStartY;
+      const start = {x: source.x + source.width, y: startY};
+      const symbolPoint = {x: start.x + PULSE_RADIUS + 4, y: start.y};
+      symbolReservations.push(symbolPoint);
       const endPoint = {x: target.x,
         y: target.y + target.height * (inIndex + 1) / (siblingsIn.length + 1)};
       let channel = 'trigger' in flow
@@ -153,7 +166,7 @@ function layoutCapabilityOverview(pulse) {
       const points = [start, {x: channel, y: start.y}, {x: channel, y: endPoint.y}, endPoint];
       return {
         ...flow, event: eventById.get(flow.pulse), points,
-        symbol: {x: start.x + PULSE_RADIUS + 4, y: start.y},
+        symbol: symbolPoint,
         annotation: {x: start.x + PULSE_RADIUS * 2 + 10, y: start.y + 5},
       };
     });
