@@ -592,7 +592,9 @@ function layoutCausal(pulse, options = {}) {
     .filter((point, index, items) => index === 0 || index === items.length - 1
       || !((items[index - 1].x === point.x && point.x === items[index + 1].x)
         || (items[index - 1].y === point.y && point.y === items[index + 1].y)));
-  const willOptimizeOrders = options.optimizeTriggers !== false && !options.triggerOrder && levels[0].length > 2;
+  const orderSearchPairs = levels.reduce((sum, items) => sum + items.length * Math.max(0, items.length - 1) / 2, 0);
+  const willOptimizeOrders = options.optimizeTriggers !== false && !options.triggerOrder
+    && levels[0].length > 2 && orderSearchPairs <= 120;
 
   // Connections sharing a target side must preserve their vertical order.
   // If their initial routes cross, compact their ports and nest their target
