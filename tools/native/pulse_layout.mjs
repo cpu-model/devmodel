@@ -139,27 +139,37 @@ function layoutCapabilityOverview(pulse) {
   for (const a of outgoing.values()) a.sort((x,y)=>lane.get(relationKey(x))-lane.get(relationKey(y)));
   for (const a of incoming.values()) a.sort((x,y)=>lane.get(relationKey(x))-lane.get(relationKey(y)));
 
+  const usedHorizontalY = [];
+  const usedVerticalX = [];
+  const uniqueCoordinate = (candidate, used, minimum, maximum) => {
+    const step = 1;
+    const available = value => value >= minimum && value <= maximum
+      && used.every(existing => Math.abs(existing - value) >= 0.5);
+    if (available(candidate)) { used.push(candidate); return candidate; }
+    for (let offset = step; offset <= maximum - minimum; offset += step) {
+      if (available(candidate + offset)) { used.push(candidate + offset); return candidate + offset; }
+      if (available(candidate - offset)) { used.push(candidate - offset); return candidate - offset; }
+    }
+    throw new Error('Unable to allocate exclusive Capability overview coordinate');
+  };
   const flows=orderedFlows.map(flow=>{
     const source=nodeById.get(sourceId(flow)), target=nodeById.get(flow.to);
     if(!source||!target) throw new Error(`Missing overview node for ${relationKey(flow)}`);
     const outs=outgoing.get(sourceId(flow));
     const ins=incoming.get(flow.to);
-    const portY = (node, index, count) => count === 1
+    const nominalPortY = (node, index, count) => count === 1
       ? node.y + node.height / 2
       : node.y + portMargin + index * (node.height - 2 * portMargin) / (count - 1);
-    const sy=portY(source, outs.indexOf(flow), outs.length);
-    const ty=portY(target, ins.indexOf(flow), ins.length);
-    // A collapsed Capability dependency is one visual relation. Route it
-    // through the midpoint between source and target columns so it cannot
-    // resemble several independent parallel Pulse connectors.
+    const sy=uniqueCoordinate(nominalPortY(source, outs.indexOf(flow), outs.length), usedHorizontalY,
+      source.y + portMargin, source.y + source.height - portMargin);
+    const ty=uniqueCoordinate(nominalPortY(target, ins.indexOf(flow), ins.length), usedHorizontalY,
+      target.y + portMargin, target.y + target.height - portMargin);
     const start={x:source.x+source.width,y:sy}, end={x:target.x,y:ty};
     const relationIndex=lane.get(relationKey(flow));
-    // Every dependency owns a distinct vertical channel. Even when source and
-    // target ports happen to align, keep the channel bends so no horizontal
-    // connector can collapse onto another connector's horizontal segment.
     const usableLeft=start.x+MIN_SIDE_CLEARANCE;
     const usableRight=end.x-MIN_SIDE_CLEARANCE;
-    const channelX=usableLeft+(relationIndex+1)*(usableRight-usableLeft)/(orderedFlows.length+1);
+    const nominalChannelX=usableLeft+(relationIndex+1)*(usableRight-usableLeft)/(orderedFlows.length+1);
+    const channelX=uniqueCoordinate(nominalChannelX, usedVerticalX, usableLeft, usableRight);
     const points=[start,{x:channelX,y:sy},{x:channelX,y:ty},end];
     return {...flow,points};
   });
