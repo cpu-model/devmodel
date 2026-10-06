@@ -66,6 +66,76 @@ function segmentIntersectsBox(start, end, box, padding = 10) {
   return high >= 0 && low <= 1;
 }
 
+function layoutCapabilityOverview(pulse) {
+  const eventById = new Map(pulse.pulses.map(item => [item.id, item]));
+  const nodeWidth = 190;
+  const nodeHeight = 72;
+  const columnGap = 250;
+  const rowGap = 120;
+  const outerRouting = 96;
+  const columns = Math.max(2, Math.ceil(Math.sqrt(pulse.behaviors.length)));
+  const rows = Math.ceil(pulse.behaviors.length / columns);
+  const nodes = pulse.behaviors.map((item, index) => ({
+    ...item,
+    kind: 'capability',
+    x: PAGE.margin + outerRouting + (index % columns) * (nodeWidth + columnGap),
+    y: PAGE.margin + 140 + (rows - 1 - Math.floor(index / columns)) * (nodeHeight + rowGap),
+    width: nodeWidth,
+    height: nodeHeight,
+  }));
+  const nodeById = new Map(nodes.map(node => [node.id, node]));
+  const reservations = [];
+  const flows = [...pulse.flows].sort((a, b) =>
+    a.from.localeCompare(b.from) || a.to.localeCompare(b.to) || a.pulse.localeCompare(b.pulse))
+    .map((flow, index) => {
+      const source = nodeById.get(flow.from);
+      const target = nodeById.get(flow.to);
+      const horizontal = Math.abs((target.x + target.width / 2) - (source.x + source.width / 2))
+        >= Math.abs((target.y + target.height / 2) - (source.y + source.height / 2));
+      let points;
+      if (horizontal) {
+        const rightward = target.x >= source.x;
+        const start = {x: rightward ? source.x + source.width : source.x, y: source.y + source.height / 2};
+        const end = {x: rightward ? target.x : target.x + target.width, y: target.y + target.height / 2};
+        let channel = (start.x + end.x) / 2;
+        while (reservations.some(r => r.axis === 'v' && Math.abs(r.value - channel) < MIN_LINE_SPACING
+          && intervalsOverlap(start.y, end.y, r.a, r.b))) channel += (rightward ? 1 : -1) * MIN_CHANNEL_SPACING;
+        points = [start, {x: channel, y: start.y}, {x: channel, y: end.y}, end];
+        reservations.push({axis: 'v', value: channel, a: start.y, b: end.y});
+      } else {
+        const upward = target.y >= source.y;
+        const start = {x: source.x + source.width / 2, y: upward ? source.y + source.height : source.y};
+        const end = {x: target.x + target.width / 2, y: upward ? target.y : target.y + target.height};
+        let channel = (start.y + end.y) / 2;
+        while (reservations.some(r => r.axis === 'h' && Math.abs(r.value - channel) < MIN_LINE_SPACING
+          && intervalsOverlap(start.x, end.x, r.a, r.b))) channel += (upward ? 1 : -1) * MIN_CHANNEL_SPACING;
+        points = [start, {x: start.x, y: channel}, {x: end.x, y: channel}, end];
+        reservations.push({axis: 'h', value: channel, a: start.x, b: end.x});
+      }
+      const start = points[0];
+      return {
+        ...flow,
+        event: eventById.get(flow.pulse),
+        points,
+        symbol: {x: start.x + (points[1].x === start.x ? 0 : (points[1].x > start.x ? 18 : -18)),
+          y: start.y + (points[1].y === start.y ? 0 : (points[1].y > start.y ? 18 : -18))},
+        annotation: {x: start.x + 8, y: start.y + 8},
+      };
+    });
+  const graphWidth = columns * nodeWidth + Math.max(0, columns - 1) * columnGap;
+  const graphHeight = rows * nodeHeight + Math.max(0, rows - 1) * rowGap;
+  const legendColumns = 3;
+  const legendHeight = Math.ceil(pulse.pulses.length / legendColumns) * LEGEND_ROW + 42;
+  return {
+    page: {...PAGE, width: PAGE.margin * 2 + outerRouting * 2 + graphWidth,
+      height: PAGE.margin * 2 + outerRouting * 2 + graphHeight + legendHeight + 80},
+    nodes, flows, legend: pulse.pulses,
+    legendArea: {x: PAGE.margin, y: PAGE.margin,
+      width: PAGE.margin * 2 + outerRouting * 2 + graphWidth - PAGE.margin * 2,
+      height: legendHeight, columns: legendColumns},
+  };
+}
+
 function layoutCausal(pulse, options = {}) {
   const trace = options.tracePhases === true;
   const traceLabel = options.traceLabel || 'pulse';
@@ -1254,7 +1324,9 @@ function causalPage(pulse, projection, title, kind, options = {}) {
   }));
   const pagePulse = {behaviors, pulses: pulse.pulses, flows: projection.flows};
   if (options.tracePhases === true) console.error(`[pulse-layout] page-start: ${title}`);
-  const layout = layoutCausal(pagePulse, {...options, traceLabel: title, projectionKind: kind});
+  const layout = kind === 'overview'
+    ? layoutCapabilityOverview(pagePulse)
+    : layoutCausal(pagePulse, {...options, traceLabel: title, projectionKind: kind});
   if (options.tracePhases === true) console.error(`[pulse-layout] page-complete: ${title}`);
   layout.title = title;
   layout.kind = kind;
