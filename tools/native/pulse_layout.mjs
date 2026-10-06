@@ -66,6 +66,9 @@ function segmentIntersectsBox(start, end, box, padding = 10) {
   return high >= 0 && low <= 1;
 }
 
+const intervalsOverlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max(b1, b2))
+  - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 0.01;
+
 function layoutCapabilityOverview(pulse) {
   const eventById = new Map(pulse.pulses.map(item => [item.id, item]));
   const nodeWidth = 190;
@@ -494,8 +497,6 @@ function layoutCausal(pulse, options = {}) {
   const minimalReservations = routed.filter(item => item.direct)
     .map(item => ({x1: item.start.x, x2: item.end.x, y: item.start.y}));
   const verticalReservations = [];
-  const intervalsOverlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max(b1, b2))
-    - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 0.01;
   const horizontalRouteIsClear = (x1, x2, y, item) => [...nodes.values()].every(node =>
     node.id === item.sourceId || node.id === item.flow.to
       || !segmentIntersectsBox({x: x1, y}, {x: x2, y}, node));
