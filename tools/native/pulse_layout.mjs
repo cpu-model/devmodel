@@ -977,6 +977,48 @@ function layoutCausal(pulse, options = {}) {
   }
 
   tracePhase('approach-optimization-complete');
+
+  // Capability overview is intentionally dense. Keep its long internal vertical
+  // channels distinct deterministically instead of relying on the expensive
+  // global overlap resolver, which is bounded off for dense projections.
+  if (options.projectionKind === 'overview') {
+    const usedOverviewChannels = [];
+    const orderedFlows = [...flows].sort((a, b) =>
+      a.points[0].y - b.points[0].y || a.points.at(-1).y - b.points.at(-1).y
+      || a.pulse.localeCompare(b.pulse));
+    for (const flow of orderedFlows) {
+      if (flow.points.length < 4) continue;
+      const sourceId = 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
+      const targetId = flow.to;
+      for (let index = 1; index < flow.points.length; index += 1) {
+        if (flow.points[index - 1].x !== flow.points[index].x) continue;
+        const y1 = flow.points[index - 1].y;
+        const y2 = flow.points[index].y;
+        let x = flow.points[index].x;
+        const minX = nodes.get(sourceId).x + nodes.get(sourceId).width + MIN_SIDE_CLEARANCE;
+        const maxX = nodes.get(targetId).x - MIN_SIDE_CLEARANCE;
+        if (minX > maxX) continue;
+        while (usedOverviewChannels.some(channel => Math.abs(channel.x - x) < MIN_LINE_SPACING
+          && intervalsOverlap(y1, y2, channel.y1, channel.y2))) {
+          x += MIN_CHANNEL_SPACING;
+          if (x > maxX) x = minX;
+          if (usedOverviewChannels.some(channel => channel.x === x
+            && intervalsOverlap(y1, y2, channel.y1, channel.y2))) break;
+        }
+        const candidate = flow.points.map(point => ({...point}));
+        candidate[index - 1].x = x;
+        candidate[index].x = x;
+        const clear = [...nodes.values()].every(node => node.id === sourceId || node.id === targetId
+          || !segmentIntersectsBox(candidate[index - 1], candidate[index], node, MIN_SIDE_CLEARANCE));
+        if (clear) {
+          flow.points = simplify(candidate);
+          usedOverviewChannels.push({x, y1, y2});
+        }
+        break;
+      }
+    }
+  }
+
   tracePhase('overlap-resolver-start');
 
   // Resolve remaining collinear segments by moving internal vertical channels.
@@ -1245,7 +1287,7 @@ function causalPage(pulse, projection, title, kind, options = {}) {
   }));
   const pagePulse = {behaviors, pulses: pulse.pulses, flows: projection.flows};
   if (options.tracePhases === true) console.error(`[pulse-layout] page-start: ${title}`);
-  const layout = layoutCausal(pagePulse, {...options, traceLabel: title});
+  const layout = layoutCausal(pagePulse, {...options, traceLabel: title, projectionKind: kind});
   if (options.tracePhases === true) console.error(`[pulse-layout] page-complete: ${title}`);
   layout.title = title;
   layout.kind = kind;
