@@ -182,8 +182,17 @@ function layoutCapabilityOverview(pulse) {
         : source.y + source.height * (pulseIndex + 1) / (sourcePulses.length + 1);
       const start = {x: source.x + source.width, y: startY};
       const symbolPoint = {x: start.x + PULSE_RADIUS + 4, y: start.y};
-      const endPoint = {x: target.x,
-        y: target.y + target.height * (inIndex + 1) / (incomingGroups.length + 1)};
+      const baseEndY = target.y + target.height * (inIndex + 1) / (incomingGroups.length + 1);
+      let endY = baseEndY;
+      const reservedTargetYs = approachReservations.filter(r => r.target === flow.to).map(r => r.y);
+      while (reservedTargetYs.some(y => Math.abs(y - endY) < pulsePortSpacing)) {
+        endY += pulsePortSpacing;
+      }
+      if (endY >= target.y + target.height) {
+        endY = baseEndY;
+        while (reservedTargetYs.some(y => Math.abs(y - endY) < pulsePortSpacing)) endY -= pulsePortSpacing;
+      }
+      const endPoint = {x: target.x, y: endY};
       const sourceId = overviewSourceId(flow);
       let channel = 'trigger' in flow
         ? PAGE.margin + TRIGGER.width + MIN_SIDE_CLEARANCE
@@ -208,7 +217,7 @@ function layoutCapabilityOverview(pulse) {
       while (channel < maxChannel && routeConflicts(channel)) channel += MIN_CHANNEL_SPACING;
       if (channel > maxChannel) channel = Math.max(start.x + 1, maxChannel);
       reservations.push({x: channel, y1: Math.min(start.y, endPoint.y), y2: Math.max(start.y, endPoint.y)});
-      approachReservations.push({y: endPoint.y, x1: channel, x2: endPoint.x});
+      approachReservations.push({target: flow.to, y: endPoint.y, x1: channel, x2: endPoint.x});
       const points = candidatePoints(channel);
       return {
         ...flow, event: eventById.get(flow.pulse), points,
