@@ -482,6 +482,25 @@ function layoutCausal(pulse, options = {}) {
         || !segmentIntersectsBox(item.start, {x: outsideX, y: item.start.y}, node));
       if (clear) item.sourceEscapeX = outsideX;
     }
+    if (item.sourceEscapeX === undefined && item.source.kind === 'trigger') {
+      const otherNodes = [...nodes.values()].filter(node => node.id !== item.sourceId && node.id !== item.flow.to);
+      const leftX = Math.min(...[...nodes.values()].map(node => node.x)) - MIN_SIDE_CLEARANCE;
+      const ys = [];
+      for (let step = 1; step <= 40; step += 1) {
+        ys.push(item.start.y - step * MIN_LINE_SPACING, item.start.y + step * MIN_LINE_SPACING);
+      }
+      const detourY = ys.find(y => {
+        const segments = [
+          [item.start, {x: item.start.x, y}],
+          [{x: item.start.x, y}, {x: leftX, y}],
+        ];
+        return otherNodes.every(node => segments.every(([a, b]) => !segmentIntersectsBox(a, b, node)));
+      });
+      if (detourY !== undefined) {
+        item.sourceEscapeX = leftX;
+        item.sourceDetourY = detourY;
+      }
+    }
     if (options.debugRouting) sourceEscapeDiagnostics.push({
       pulse: item.flow.pulse, sourceId: item.sourceId, targetId: item.flow.to,
       start: {...item.start}, end: {...item.end}, midX: item.midX,
@@ -499,12 +518,12 @@ function layoutCausal(pulse, options = {}) {
     throw new Error(`No clear source escape channel for Pulse Flow: ${detail}`);
   }
   const reservations = [...minimalReservations, ...routed.filter(item => !item.direct && item.minimalBendX === undefined).flatMap(item => [
-    {x1: item.start.x, x2: item.sourceEscapeX, y: item.start.y},
+    {x1: item.start.x, x2: item.sourceEscapeX, y: item.sourceDetourY ?? item.start.y},
     {x1: item.targetEscapeX, x2: item.end.x, y: item.end.y},
   ])];
   const requests = routed.filter(item => !item.direct && item.minimalBendX === undefined).map(item => ({
     item,
-    baseY: (item.start.y + item.end.y) / 2,
+    baseY: ((item.sourceDetourY ?? item.start.y) + item.end.y) / 2,
     x1: item.sourceEscapeX,
     x2: item.targetEscapeX,
   })).sort((a, b) => a.baseY - b.baseY || a.item.flow.pulse.localeCompare(b.item.flow.pulse));
@@ -514,8 +533,9 @@ function layoutCausal(pulse, options = {}) {
       const trackY = request.baseY + (step === 0 ? 0
         : (step % 2 ? 1 : -1) * Math.ceil(step / 2) * MIN_LINE_SPACING);
       const routeSegments = [
-        [{x: request.item.start.x, y: request.item.start.y}, {x: request.x1, y: request.item.start.y}],
-        [{x: request.x1, y: request.item.start.y}, {x: request.x1, y: trackY}],
+        [{x: request.item.start.x, y: request.item.start.y}, {x: request.item.start.x, y: request.item.sourceDetourY ?? request.item.start.y}],
+        [{x: request.item.start.x, y: request.item.sourceDetourY ?? request.item.start.y}, {x: request.x1, y: request.item.sourceDetourY ?? request.item.start.y}],
+        [{x: request.x1, y: request.item.sourceDetourY ?? request.item.start.y}, {x: request.x1, y: trackY}],
         [{x: request.x1, y: trackY}, {x: request.x2, y: trackY}],
         [{x: request.x2, y: trackY}, {x: request.x2, y: request.item.end.y}],
         [{x: request.x2, y: request.item.end.y}, {x: request.item.end.x, y: request.item.end.y}],
@@ -578,7 +598,8 @@ function layoutCausal(pulse, options = {}) {
     const trackY = routeTracks.get(flow);
     const points = [
       start,
-      {x: sourceEscapeX, y: start.y},
+      {x: start.x, y: routed.find(item => item.flow === flow)?.sourceDetourY ?? start.y},
+      {x: sourceEscapeX, y: routed.find(item => item.flow === flow)?.sourceDetourY ?? start.y},
       {x: sourceEscapeX, y: trackY},
       {x: targetEscapeX, y: trackY},
       {x: targetEscapeX, y: end.y},
