@@ -154,12 +154,13 @@ function layoutCapabilityOverview(pulse) {
     // resemble several independent parallel Pulse connectors.
     const start={x:source.x+source.width,y:sy}, end={x:target.x,y:ty};
     const relationIndex=lane.get(relationKey(flow));
-    const channelSpan=Math.max(MIN_CHANNEL_SPACING, end.x-start.x-2*MIN_SIDE_CLEARANCE);
-    const channelStep=channelSpan/(orderedFlows.length+1);
-    const channelX=start.x+MIN_SIDE_CLEARANCE+(relationIndex+1)*channelStep;
-    const points = Math.abs(sy-ty) < 0.01
-      ? [start,end]
-      : [start,{x:channelX,y:sy},{x:channelX,y:ty},end];
+    // Every dependency owns a distinct vertical channel. Even when source and
+    // target ports happen to align, keep the channel bends so no horizontal
+    // connector can collapse onto another connector's horizontal segment.
+    const usableLeft=start.x+MIN_SIDE_CLEARANCE;
+    const usableRight=end.x-MIN_SIDE_CLEARANCE;
+    const channelX=usableLeft+(relationIndex+1)*(usableRight-usableLeft)/(orderedFlows.length+1);
+    const points=[start,{x:channelX,y:sy},{x:channelX,y:ty},end];
     return {...flow,points};
   });
 
