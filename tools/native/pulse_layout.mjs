@@ -226,8 +226,10 @@ function layoutCapabilityOverview(pulse) {
           Math.abs(r.y - endPoint.y) < MIN_LINE_SPACING
             && intervalsOverlap(x, endPoint.x, r.x1, r.x2))
         || routeHitsUnrelatedNode(candidatePoints(x), sourceId, flow.to);
-      while (channel < maxChannel && routeConflicts(channel)) channel += MIN_CHANNEL_SPACING;
-      if (channel > maxChannel) channel = Math.max(start.x + 1, maxChannel);
+      while (channel <= maxChannel && routeConflicts(channel)) channel += MIN_CHANNEL_SPACING;
+      if (channel > maxChannel) {
+        throw new Error(`No exclusive capability overview channel for ${sourceId} / ${flow.pulse} / ${flow.to}`);
+      }
       reservations.push({x: channel, y1: Math.min(start.y, endPoint.y), y2: Math.max(start.y, endPoint.y)});
       approachReservations.push({target: flow.to, y: endPoint.y, x1: channel, x2: endPoint.x});
       const points = candidatePoints(channel);
