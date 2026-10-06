@@ -634,6 +634,7 @@ function layoutCausal(pulse, options = {}) {
     verticalReservations.push({x: bendX, y1: item.start.y, y2: item.end.y});
   }
 
+  const overviewLineSpacing = options.projectionKind === 'overview' ? MIN_CHANNEL_SPACING : MIN_LINE_SPACING;
   const routeTracks = new Map();
   const targetApproaches = new Map();
   for (const item of routed.filter(item => !item.direct && item.minimalBendX === undefined)) {
@@ -756,7 +757,7 @@ function layoutCausal(pulse, options = {}) {
       if ([...nodes.values()].some(node => node.id !== request.item.sourceId && node.id !== request.item.flow.to
         && routeSegments.some(([start, end]) => segmentIntersectsBox(start, end, node)))) continue;
       const parallelConflicts = reservations.filter(other => intervalsOverlap(request.x1, request.x2, other.x1, other.x2)
-        && Math.abs(trackY - other.y) < MIN_LINE_SPACING).length;
+        && Math.abs(trackY - other.y) < overviewLineSpacing).length;
       const endpointCrossings = reservations.filter(other => {
         const crossesSource = request.x1 > Math.min(other.x1, other.x2)
           && request.x1 < Math.max(other.x1, other.x2)
@@ -774,12 +775,13 @@ function layoutCausal(pulse, options = {}) {
         && other.x < Math.max(request.x1, request.x2)).length;
       const overviewVerticalConflicts = options.projectionKind === 'overview'
         ? verticalReservations.filter(other =>
-          (Math.abs(other.x - request.x1) < MIN_LINE_SPACING
+          (Math.abs(other.x - request.x1) < MIN_CHANNEL_SPACING
             && intervalsOverlap(other.y1, other.y2, request.item.start.y, trackY))
-          || (Math.abs(other.x - request.x2) < MIN_LINE_SPACING
+          || (Math.abs(other.x - request.x2) < MIN_CHANNEL_SPACING
             && intervalsOverlap(other.y1, other.y2, trackY, request.item.end.y))).length
         : 0;
-      const score = overviewVerticalConflicts * 10000000 + endpointCrossings * 1000000
+      if (overviewVerticalConflicts > 0) continue;
+      const score = endpointCrossings * 1000000
         + trackCrossings * 10000 + parallelConflicts * 100 + Math.abs(trackY - request.baseY);
       if (best === null || score < best.score) best = {score, y: trackY};
       if (score === 0) break;
