@@ -789,7 +789,15 @@ function layoutCausal(pulse, options = {}) {
       if (score === 0) break;
     }
     if (best === null) {
-      throw new Error(`No clear track for Pulse Flow: ${request.item.flow.pulse}`);
+      const blockingVerticals = options.projectionKind === 'overview'
+        ? verticalReservations.filter(other =>
+          Math.abs(other.x - request.x1) < MIN_CHANNEL_SPACING
+          || Math.abs(other.x - request.x2) < MIN_CHANNEL_SPACING)
+        : [];
+      throw new Error(`No clear track for Pulse Flow: ${request.item.flow.pulse}; `
+        + `source=${request.item.sourceId} target=${request.item.flow.to} `
+        + `x1=${request.x1} x2=${request.x2} startY=${request.item.start.y} endY=${request.item.end.y} `
+        + `verticals=${JSON.stringify(blockingVerticals)}`);
     }
     const trackY = best.y;
     reservations.push({x1: request.x1, x2: request.x2, y: trackY});
