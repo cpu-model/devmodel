@@ -164,6 +164,18 @@ function layoutCapabilityOverview(pulse) {
   const overviewSourceId = flow => 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
   const reservations = [];
   const approachReservations = [];
+  const pairLaneIndex = new Map();
+  const pairLaneCount = new Map();
+  for (const flow of pulse.flows) {
+    const pair = `${overviewSourceId(flow)}\u0000${flow.to}`;
+    const lanes = pairLaneCount.get(pair) || [];
+    if (!lanes.includes(flow.pulse)) lanes.push(flow.pulse);
+    pairLaneCount.set(pair, lanes);
+  }
+  for (const [pair, lanes] of pairLaneCount) {
+    lanes.sort();
+    lanes.forEach((pulseId, index) => pairLaneIndex.set(`${pair}\u0000${pulseId}`, index));
+  }
   const flows = [...pulse.flows].sort((a, b) =>
     overviewSourceId(a).localeCompare(overviewSourceId(b))
       || a.to.localeCompare(b.to) || a.pulse.localeCompare(b.pulse))
@@ -182,7 +194,11 @@ function layoutCapabilityOverview(pulse) {
         : source.y + source.height * (pulseIndex + 1) / (sourcePulses.length + 1);
       const start = {x: source.x + source.width, y: startY};
       const symbolPoint = {x: start.x + PULSE_RADIUS + 4, y: start.y};
-      const baseEndY = target.y + target.height * (inIndex + 1) / (incomingGroups.length + 1);
+      const pair = `${sourceId}\u0000${flow.to}`;
+      const laneIndex = pairLaneIndex.get(`${pair}\u0000${flow.pulse}`) || 0;
+      const laneCount = pairLaneCount.get(pair)?.length || 1;
+      const pairOffset = (laneIndex - (laneCount - 1) / 2) * pulsePortSpacing;
+      const baseEndY = target.y + target.height * (inIndex + 1) / (incomingGroups.length + 1) + pairOffset;
       let endY = baseEndY;
       const reservedTargetYs = approachReservations.filter(r => r.target === flow.to).map(r => r.y);
       while (reservedTargetYs.some(y => Math.abs(y - endY) < pulsePortSpacing)) {
