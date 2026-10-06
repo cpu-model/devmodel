@@ -602,8 +602,13 @@ function layoutCausal(pulse, options = {}) {
       || !((items[index - 1].x === point.x && point.x === items[index + 1].x)
         || (items[index - 1].y === point.y && point.y === items[index + 1].y)));
   const orderSearchPairs = levels.reduce((sum, items) => sum + items.length * Math.max(0, items.length - 1) / 2, 0);
+  // Each order candidate recursively performs a complete layout and its geometry
+  // score compares flow pairs. Bound the estimated work, not merely node pairs:
+  // small projections with dense fan-in/fan-out can otherwise be much more
+  // expensive than larger sparse projections.
+  const orderSearchWork = orderSearchPairs * Math.max(1, pulse.flows.length ** 2);
   const willOptimizeOrders = options.optimizeTriggers !== false && !options.triggerOrder
-    && levels[0].length > 2 && orderSearchPairs <= 120;
+    && levels[0].length > 2 && orderSearchPairs <= 120 && orderSearchWork <= 12000;
 
   // Connections sharing a target side must preserve their vertical order.
   // If their initial routes cross, compact their ports and nest their target
