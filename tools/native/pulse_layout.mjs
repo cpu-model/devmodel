@@ -145,14 +145,14 @@ function layoutCapabilityOverview(pulse) {
     const ins=incoming.get(flow.to);
     const sy=source.y + source.height*(outs.indexOf(flow)+1)/(outs.length+1);
     const ty=target.y + target.height*(ins.indexOf(flow)+1)/(ins.length+1);
-    const laneOffset=(lane.get(relationKey(flow))+1)*MIN_CHANNEL_SPACING;
-    // Capability overview relations use a local orthogonal route. Keep the
-    // vertical segment inside the first open corridor after the source; do
-    // not detour through a global track above the diagram.
-    const corridorLeft = source.x + source.width;
-    const routeX = corridorLeft + MIN_SIDE_CLEARANCE + laneOffset;
+    // A collapsed Capability dependency is one visual relation. Route it
+    // through the midpoint between source and target columns so it cannot
+    // resemble several independent parallel Pulse connectors.
     const start={x:source.x+source.width,y:sy}, end={x:target.x,y:ty};
-    const points=[start,{x:routeX,y:sy},{x:routeX,y:ty},end];
+    const midX=(start.x+end.x)/2;
+    const points = Math.abs(sy-ty) < 0.01
+      ? [start,end]
+      : [start,{x:midX,y:sy},{x:midX,y:ty},end];
     return {...flow,points};
   });
 
