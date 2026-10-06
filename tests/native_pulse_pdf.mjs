@@ -87,6 +87,23 @@ const largeLayout = layoutPulse(largePulse);
 assert.ok(performance.now() - largeStart < 2000, 'Large Pulse projection avoids combinatorial order search');
 assert.equal(largeLayout.pages[0].flows.length, 16);
 
+const fanoutPulse = {
+  capabilities: [{id: 'fanout', name: 'Fanout'}], 'domain-information': [],
+  behaviors: [
+    {id: 'source', name: 'Source', capability: 'fanout'},
+    ...Array.from({length: 8}, (_, index) => ({id: `target${index}`, name: `Target ${index}`, capability: 'fanout'})),
+  ],
+  pulses: Array.from({length: 9}, (_, index) => ({id: `fp${index}`, display: String(index + 1), name: `FP${index}`})),
+  flows: [
+    {trigger: 'Start', pulse: 'fp0', to: 'source'},
+    ...Array.from({length: 8}, (_, index) => ({from: 'source', pulse: `fp${index + 1}`, to: `target${index}`})),
+  ],
+};
+const fanoutStart = performance.now();
+const fanoutLayout = layoutPulse(fanoutPulse);
+assert.ok(performance.now() - fanoutStart < 2000, 'Large fan-out avoids factorial/exponential port search');
+assert.equal(fanoutLayout.pages[1].flows.length, 9);
+
 const coverage = layoutPulse(coveragePulse).pages;
 assert.equal(coverage[0].flows.length, 2, 'Overview excludes same-Capability flow');
 assert.equal(coverage[1].flows.length, 3, 'Source detail covers trigger, internal, and outgoing cross-Capability flows');
