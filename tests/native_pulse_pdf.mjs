@@ -85,6 +85,32 @@ const coverageDetail = layoutPulse(coveragePulse).pages.find(page =>
 assert.ok(coverageDetail.nodes.some(node => node.kind === 'trigger' && node.name === 'Start'),
   'Capability detail preserves the concrete external trigger');
 
+
+// Capability overview collapses Behavior-level multiplicity into one source/Pulse/target relation.
+const projectionDedupPulse = {
+  capabilities: [{id: 'source-cap', name: 'Source'}, {id: 'target-cap', name: 'Target'}],
+  'domain-information': [],
+  behaviors: [
+    {id: 's1', name: 'S1', capability: 'source-cap'},
+    {id: 's2', name: 'S2', capability: 'source-cap'},
+    {id: 't1', name: 'T1', capability: 'target-cap'},
+    {id: 't2', name: 'T2', capability: 'target-cap'},
+  ],
+  pulses: [{id: 'shared', display: '1', name: 'Shared'}],
+  flows: [
+    {from: 's1', pulse: 'shared', to: 't1'},
+    {from: 's1', pulse: 'shared', to: 't2'},
+    {from: 's2', pulse: 'shared', to: 't1'},
+    {from: 's2', pulse: 'shared', to: 't2'},
+  ],
+};
+const projectionDedupOverview = layoutPulse(projectionDedupPulse).pages[0];
+assert.equal(projectionDedupOverview.flows.length, 1,
+  'Capability overview renders one line per source Capability, Pulse, and target Capability');
+assert.equal(projectionDedupOverview.flows[0].from, 'source-cap');
+assert.equal(projectionDedupOverview.flows[0].to, 'target-cap');
+assert.equal(projectionDedupOverview.flows[0].pulse, 'shared');
+
 const largePulse = {
   capabilities: [{id: 'large', name: 'Large'}], 'domain-information': [],
   behaviors: Array.from({length: 16}, (_, index) => ({id: `b${index}`, name: `B${index}`, capability: 'large'})),
