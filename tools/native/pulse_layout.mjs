@@ -166,7 +166,11 @@ function layoutCapabilityOverview(pulse) {
       const fanoutGroup = pulse.flows.filter(other =>
         overviewSourceId(other) === sourceId && other.pulse === flow.pulse);
       const fanoutTargets = [...new Set(fanoutGroup.map(other => other.to))];
-      const trunkX = start.x + Math.max(MIN_SIDE_CLEARANCE, PULSE_RADIUS * 2 + 20);
+      const earliestTargetX = Math.min(...fanoutGroup.map(other => nodeById.get(other.to).x));
+      const trunkX = Math.max(
+        start.x + Math.max(MIN_SIDE_CLEARANCE, PULSE_RADIUS * 2 + 20),
+        start.x + (earliestTargetX - start.x) * 0.55,
+      );
       let channel = fanoutTargets.length > 1
         ? trunkX
         : ('trigger' in flow ? PAGE.margin + TRIGGER.width + MIN_SIDE_CLEARANCE : start.x + MIN_SIDE_CLEARANCE);
