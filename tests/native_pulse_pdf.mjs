@@ -283,6 +283,14 @@ for (const flow of repeatedCapabilityOverview.flows) {
       `Overview Pulse ${flow.event.display} stays clear of unrelated node ${node.name}`);
   }
 }
+const debugN = repeatedCapabilityOverview.flows.find(flow => flow.event.display === 'N');
+const debugF = repeatedCapabilityOverview.flows.find(flow => flow.event.display === 'F');
+if (process.env.CPU_TRACE_PULSE === '1') console.error('OVERVIEW_N_F', JSON.stringify({
+  N: {from: debugN.from, to: debugN.to, points: debugN.points, symbol: debugN.symbol},
+  F: {from: debugF.from, to: debugF.to, points: debugF.points, symbol: debugF.symbol},
+  nodes: repeatedCapabilityOverview.nodes.filter(node => [debugN.from, debugF.from].includes(node.id)),
+}));
+
 const positiveOverlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max(b1, b2))
   - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 0.01;
 const collinearOverlap = (first, second) => first.points.slice(1).some((aEnd, aIndex) =>
