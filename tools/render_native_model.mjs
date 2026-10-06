@@ -46,7 +46,7 @@ const context = loadContextModel(options.source);
 const pulse = loadPulseModel(options.source);
 const ui = loadUiModel(options.source);
 const deployment = loadDeploymentModel(options.source);
-const pulseLayout = layoutPulse(pulse.pulse);
+const pulseLayout = layoutPulse(pulse.pulse, {tracePhases: process.env.CPU_TRACE_PULSE === '1', debugRouting: process.env.CPU_TRACE_PULSE === '1'});
 
 if (options.debugPulseLayout) {
   console.log('--- PULSE LAYOUT DEBUG ---');
