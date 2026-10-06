@@ -749,6 +749,34 @@ function layoutCausal(pulse, options = {}) {
     {x1: item.start.x, x2: item.sourceEscapeX, y: item.sourceDetourY ?? item.start.y},
     {x1: item.targetEscapeX, x2: item.end.x, y: item.end.y},
   ])];
+  if (options.projectionKind === 'overview') {
+    // Overview routes are allocated atomically: later relations must choose
+    // their escape channels against the completed vertical reservations of
+    // earlier relations, not against a stale pre-routing snapshot.
+    const pending = routed.filter(item => !item.direct && item.minimalBendX === undefined);
+    for (const item of pending) {
+      const minimumX = item.start.x + MIN_SIDE_CLEARANCE;
+      const maximumX = item.end.x - MIN_SIDE_CLEARANCE;
+      const sourceCandidates = [];
+      for (let x = Math.max(minimumX, Math.min(maximumX, item.midX)); x <= maximumX; x += MIN_CHANNEL_SPACING) sourceCandidates.push(x);
+      for (let x = Math.max(minimumX, Math.min(maximumX, item.midX)) - MIN_CHANNEL_SPACING; x >= minimumX; x -= MIN_CHANNEL_SPACING) sourceCandidates.push(x);
+      const clearVertical = (x, y1, y2) => verticalReservations.every(other =>
+        Math.abs(other.x - x) >= MIN_CHANNEL_SPACING || !intervalsOverlap(other.y1, other.y2, y1, y2));
+      const sourceX = sourceCandidates.find(x => clearVertical(x, item.start.y, item.end.y)
+        && [...nodes.values()].every(node => node.id === item.sourceId || node.id === item.flow.to
+          || !segmentIntersectsBox(item.start, {x, y: item.start.y}, node)));
+      if (sourceX !== undefined) item.sourceEscapeX = sourceX;
+      let targetX = item.end.x - MIN_SIDE_CLEARANCE;
+      while (targetX > minimumX && !clearVertical(targetX, item.start.y, item.end.y)) targetX -= MIN_CHANNEL_SPACING;
+      item.targetEscapeX = targetX;
+      // Reserve provisional full-height escapes now; track routing below may
+      // shorten them, but later routes must never select the same channel.
+      verticalReservations.push(
+        {x: item.sourceEscapeX, y1: item.start.y, y2: item.end.y},
+        {x: item.targetEscapeX, y1: item.start.y, y2: item.end.y},
+      );
+    }
+  }
   const requests = routed.filter(item => !item.direct && item.minimalBendX === undefined).map(item => ({
     item,
     baseY: ((item.sourceDetourY ?? item.start.y) + item.end.y) / 2,
