@@ -163,6 +163,7 @@ function layoutCapabilityOverview(pulse) {
   });
   const overviewSourceId = flow => 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
   const reservations = [];
+  const approachReservations = [];
   const flows = [...pulse.flows].sort((a, b) =>
     overviewSourceId(a).localeCompare(overviewSourceId(b))
       || a.to.localeCompare(b.to) || a.pulse.localeCompare(b.pulse))
@@ -187,13 +188,27 @@ function layoutCapabilityOverview(pulse) {
       let channel = 'trigger' in flow
         ? PAGE.margin + TRIGGER.width + MIN_SIDE_CLEARANCE
         : start.x + MIN_SIDE_CLEARANCE;
-      const maxChannel = endPoint.x - MIN_SIDE_CLEARANCE;
-      const candidatePoints = x => [start, {x, y: start.y}, {x, y: endPoint.y}, endPoint];
-      while (channel < maxChannel && (reservations.some(r => Math.abs(r.x - channel) < MIN_LINE_SPACING
-        && intervalsOverlap(start.y, endPoint.y, r.y1, r.y2))
-        || routeHitsUnrelatedNode(candidatePoints(channel), sourceId, flow.to))) channel += MIN_CHANNEL_SPACING;
+      const approachLength = Math.max(MIN_SIDE_CLEARANCE, MIN_CHANNEL_SPACING * 2);
+      const approachX = endPoint.x - approachLength;
+      const maxChannel = approachX - MIN_CHANNEL_SPACING;
+      const candidatePoints = x => [
+        start,
+        {x, y: start.y},
+        {x, y: endPoint.y},
+        {x: approachX, y: endPoint.y},
+        endPoint,
+      ];
+      const routeConflicts = x => reservations.some(r =>
+        Math.abs(r.x - x) < MIN_CHANNEL_SPACING
+          && intervalsOverlap(start.y, endPoint.y, r.y1, r.y2))
+        || approachReservations.some(r =>
+          Math.abs(r.y - endPoint.y) < MIN_LINE_SPACING
+            && intervalsOverlap(x, endPoint.x, r.x1, r.x2))
+        || routeHitsUnrelatedNode(candidatePoints(x), sourceId, flow.to);
+      while (channel < maxChannel && routeConflicts(channel)) channel += MIN_CHANNEL_SPACING;
       if (channel > maxChannel) channel = Math.max(start.x + 1, maxChannel);
-      reservations.push({x: channel, y1: start.y, y2: endPoint.y});
+      reservations.push({x: channel, y1: Math.min(start.y, endPoint.y), y2: Math.max(start.y, endPoint.y)});
+      approachReservations.push({y: endPoint.y, x1: channel, x2: endPoint.x});
       const points = candidatePoints(channel);
       return {
         ...flow, event: eventById.get(flow.pulse), points,
