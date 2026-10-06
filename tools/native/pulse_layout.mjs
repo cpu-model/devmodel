@@ -75,7 +75,7 @@ function layoutCapabilityOverview(pulse) {
   const outerRouting = 96;
   const columns = Math.max(2, Math.ceil(Math.sqrt(pulse.behaviors.length)));
   const rows = Math.ceil(pulse.behaviors.length / columns);
-  const nodes = pulse.behaviors.map((item, index) => ({
+  const capabilityNodes = pulse.behaviors.map((item, index) => ({
     ...item,
     kind: 'capability',
     x: PAGE.margin + outerRouting + (index % columns) * (nodeWidth + columnGap),
@@ -83,12 +83,23 @@ function layoutCapabilityOverview(pulse) {
     width: nodeWidth,
     height: nodeHeight,
   }));
+  const triggerNames = [...new Set(pulse.flows.filter(flow => 'trigger' in flow).map(flow => flow.trigger))];
+  const triggerNodes = triggerNames.map((name, index) => ({
+    id: `trigger:${name}`,
+    name: pulse.flows.find(flow => flow.trigger === name)?.triggerLabel || name,
+    kind: 'trigger',
+    x: PAGE.margin,
+    y: PAGE.margin + 140 + index * (TRIGGER.height + NODE_GAP),
+    width: TRIGGER.width,
+    height: TRIGGER.height,
+  }));
+  const nodes = [...capabilityNodes, ...triggerNodes];
   const nodeById = new Map(nodes.map(node => [node.id, node]));
   const reservations = [];
   const flows = [...pulse.flows].sort((a, b) =>
     a.from.localeCompare(b.from) || a.to.localeCompare(b.to) || a.pulse.localeCompare(b.pulse))
     .map((flow, index) => {
-      const source = nodeById.get(flow.from);
+      const source = nodeById.get('trigger' in flow ? `trigger:${flow.trigger}` : flow.from);
       const target = nodeById.get(flow.to);
       const horizontal = Math.abs((target.x + target.width / 2) - (source.x + source.width / 2))
         >= Math.abs((target.y + target.height / 2) - (source.y + source.height / 2));
