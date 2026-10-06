@@ -139,8 +139,10 @@ function layoutCapabilityOverview(pulse) {
       const siblingsIn = pulse.flows.filter(other => other.to === flow.to);
       const outIndex = siblingsOut.indexOf(flow);
       const inIndex = siblingsIn.indexOf(flow);
-      const baseStartY = source.y + source.height * (outIndex + 1) / (siblingsOut.length + 1);
-      const candidateStartYs = [
+      const baseStartY = 'trigger' in flow
+        ? source.y + source.height / 2
+        : source.y + source.height * (outIndex + 1) / (siblingsOut.length + 1);
+      const candidateStartYs = 'trigger' in flow ? [baseStartY] : [
         baseStartY,
         ...Array.from({length: 8}, (_, index) => {
           const step = Math.floor(index / 2) + 1;
