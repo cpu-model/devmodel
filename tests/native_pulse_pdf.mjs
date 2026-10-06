@@ -340,7 +340,10 @@ for (let left = 0; left < repeatedCapabilityOverview.flows.length; left += 1) {
     const first = repeatedCapabilityOverview.flows[left];
     const second = repeatedCapabilityOverview.flows[right];
     assert.ok(!collinearOverlap(first, second),
-      `Overview keeps Pulse ${first.event.display} and ${second.event.display} visually distinct`);
+      `Overview keeps Pulse ${first.event.display} and ${second.event.display} visually distinct: ${JSON.stringify({
+        first: {from: first.from, trigger: first.trigger, to: first.to, pulse: first.pulse, points: first.points},
+        second: {from: second.from, trigger: second.trigger, to: second.to, pulse: second.pulse, points: second.points},
+      })}`);
     const symbolDistance = Math.hypot(first.symbol.x - second.symbol.x, first.symbol.y - second.symbol.y);
     assert.ok(symbolDistance >= PULSE_RADIUS * 2,
       `Overview keeps Pulse symbols ${first.event.display} and ${second.event.display} separately visible: ${JSON.stringify({first: {from: first.from, trigger: first.trigger, to: first.to, symbol: first.symbol, points: first.points}, second: {from: second.from, trigger: second.trigger, to: second.to, symbol: second.symbol, points: second.points}})}`);
