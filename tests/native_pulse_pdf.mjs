@@ -40,12 +40,15 @@ assert.equal(layout.pages[0].kind, 'overview');
 assert.deepEqual(layout.pages.slice(1).map(page => page.title), ['CAPABILITY: Input handling', 'CAPABILITY: Result presentation']);
 assert.equal(layout.pages[0].domainNodes.length, 0, 'Overview excludes Domain Information');
 assert.deepEqual(layout.pages[0].nodes.filter(node => node.kind === 'capability').map(node => node.id), ['input-handling', 'result-presentation']);
-assert.equal(layout.pages[0].flows.length, 2, 'Overview covers trigger and cross-Capability flows');
+assert.equal(layout.pages[0].flows.length, 1, 'Overview collapses to directed cross-Capability dependencies');
+assert.equal(layout.pages[0].nodes.filter(node => node.kind === 'trigger').length, 0, 'Overview excludes external triggers');
+assert.equal(layout.pages[0].legend.length, 0, 'Overview excludes the Pulse legend');
+assert.ok(layout.pages[0].flows.every(flow => !flow.event && !flow.symbol), 'Overview dependency relations carry no Pulse identity');
 assert.equal(layout.pages[1].flows.length, 2, 'Source detail covers trigger and outgoing cross-Capability flow');
 assert.equal(layout.pages[2].flows.length, 1, 'Destination detail covers incoming cross-Capability flow');
 assert.match(layout.pages[1].nodes.find(node => node.kind === 'boundary').name, /^TO /);
 assert.match(layout.pages[2].nodes.find(node => node.kind === 'boundary').name, /^FROM /);
-assert.deepEqual(layout.pages.map(page => page.legend.map(item => item.display)), [['01', '02'], ['01', '02'], ['02']], 'Local legends preserve global display identities and declaration order');
+assert.deepEqual(layout.pages.map(page => page.legend.map(item => item.display)), [[], ['01', '02'], ['02']], 'Detail legends preserve global display identities while overview has no Pulse legend');
 
 const behaviorOccurrences = layout.pages.slice(1).flatMap(page => page.nodes.filter(node => node.kind === 'behavior'));
 for (const behavior of behaviorOccurrences) {
@@ -77,9 +80,9 @@ const coveragePulse = {
   flows: [{trigger: 'Start', pulse: 'p1', to: 'a1'}, {from: 'a1', pulse: 'p2', to: 'a2'}, {from: 'a2', pulse: 'p3', to: 'b1'}],
 };
 const coverageOverview = layoutPulse(coveragePulse).pages[0];
-assert.equal(coverageOverview.flows.length, 2, 'Capability overview keeps external trigger and cross-capability flow');
-assert.ok(coverageOverview.nodes.some(node => node.kind === 'trigger' && node.name === 'P1'),
-  'Capability overview renders external inflow using the Pulse event name');
+assert.equal(coverageOverview.flows.length, 1, 'Capability overview keeps only the cross-capability dependency');
+assert.equal(coverageOverview.nodes.filter(node => node.kind === 'trigger').length, 0,
+  'Capability overview excludes external trigger occurrences');
 const coverageDetail = layoutPulse(coveragePulse).pages.find(page =>
   page.nodes.some(node => node.kind === 'behavior' && node.id === 'a1'));
 assert.ok(coverageDetail.nodes.some(node => node.kind === 'trigger' && node.name === 'Start'),
