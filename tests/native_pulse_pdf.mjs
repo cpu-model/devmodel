@@ -76,6 +76,11 @@ const coveragePulse = {
   pulses: [{id: 'p1', display: '1', name: 'P1'}, {id: 'p2', display: '2', name: 'P2'}, {id: 'p3', display: '3', name: 'P3'}],
   flows: [{trigger: 'Start', pulse: 'p1', to: 'a1'}, {from: 'a1', pulse: 'p2', to: 'a2'}, {from: 'a2', pulse: 'p3', to: 'b1'}],
 };
+const coverageOverview = layoutPulse(coveragePulse).pages[0];
+assert.equal(coverageOverview.flows.length, 2, 'Capability overview keeps external trigger and cross-capability flow');
+assert.ok(coverageOverview.nodes.some(node => node.kind === 'trigger' && node.name === 'Start'),
+  'Capability overview renders external trigger as a node');
+
 const largePulse = {
   capabilities: [{id: 'large', name: 'Large'}], 'domain-information': [],
   behaviors: Array.from({length: 16}, (_, index) => ({id: `b${index}`, name: `B${index}`, capability: 'large'})),
