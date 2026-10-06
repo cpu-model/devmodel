@@ -70,6 +70,20 @@ const intervalsOverlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max
   - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 0.01;
 
 function layoutCapabilityOverview(pulse) {
+  const relationKey = flow => `${'trigger' in flow ? `trigger:${flow.trigger}` : `from:${flow.from}`}\u0000${flow.pulse}\u0000${flow.to}`;
+  const relationKeys = pulse.flows.map(relationKey);
+  if (new Set(relationKeys).size !== relationKeys.length) {
+    const duplicates = relationKeys.filter((key, index) => relationKeys.indexOf(key) !== index);
+    throw new Error(`Duplicate capability overview relations reached layout: ${[...new Set(duplicates)].join(', ')}`);
+  }
+  if (process.env.CPU_TRACE_OVERVIEW_RELATIONS === '1') {
+    console.error('[pulse-overview-relations]');
+    for (const flow of pulse.flows) console.error(JSON.stringify({
+      source: 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from,
+      pulse: flow.pulse,
+      target: flow.to,
+    }));
+  }
   const eventById = new Map(pulse.pulses.map(item => [item.id, item]));
   const nodeWidth = 190;
   const nodeHeight = 72;
