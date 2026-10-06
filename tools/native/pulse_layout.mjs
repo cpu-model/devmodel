@@ -103,10 +103,11 @@ function layoutCapabilityOverview(pulse) {
   const lane = new Map(orderedFlows.map((flow,index) => [relationKey(flow), index]));
   const laneCount = Math.max(1, orderedFlows.length);
   const nodeWidth = 190;
-  const portSpacing = MIN_CHANNEL_SPACING;
+  const connectorClearance = 12;
+  const portSpacing = Math.max(MIN_CHANNEL_SPACING, connectorClearance);
   const portMargin = Math.max(24, MIN_SIDE_CLEARANCE);
-  const rowGap = 96;
-  const corridorWidth = MIN_SIDE_CLEARANCE * 2 + laneCount * MIN_CHANNEL_SPACING;
+  const rowGap = Math.max(96, connectorClearance * (laneCount + 2));
+  const corridorWidth = MIN_SIDE_CLEARANCE * 2 + laneCount * connectorClearance * 2;
   const triggerGap = corridorWidth;
   const heightById = new Map(capabilities.map(cap => {
     const ports = Math.max(
@@ -150,7 +151,7 @@ function layoutCapabilityOverview(pulse) {
     return false;
   };
   const segmentsFor = points => points.slice(1).map((end,index)=>({start:points[index],end}));
-  const segmentTooClose = (a,b,clearance=12) => {
+  const segmentTooClose = (a,b,clearance=connectorClearance) => {
     const positiveOverlap=(a1,a2,b1,b2)=>Math.min(Math.max(a1,a2),Math.max(b1,b2))-Math.max(Math.min(a1,a2),Math.min(b1,b2))>0.01;
     const ah=Math.abs(a.start.y-a.end.y)<0.01,bh=Math.abs(b.start.y-b.end.y)<0.01;
     const av=Math.abs(a.start.x-a.end.x)<0.01,bv=Math.abs(b.start.x-b.end.x)<0.01;
@@ -174,7 +175,11 @@ function layoutCapabilityOverview(pulse) {
     const relationIndex=lane.get(relationKey(flow));
     const nominalX=usableLeft+(relationIndex+1)*(usableRight-usableLeft)/(orderedFlows.length+1);
     let points=null;
-    const offsets=[0,12,-12,24,-24,36,-36,48,-48,60,-60,72,-72,84,-84,96,-96];
+    const maxPortOffset=Math.max(source.height,target.height);
+    const maxChannelOffset=Math.max(connectorClearance,corridorWidth);
+    const offsets=[0];
+    for(let delta=connectorClearance;delta<=Math.max(maxPortOffset,maxChannelOffset);delta+=connectorClearance)
+      offsets.push(delta,-delta);
     outer: for(const so of offsets) for(const to of offsets) for(const xo of offsets) {
       const sy=nominalSy+so, ty=nominalTy+to, channelX=nominalX+xo;
       if(sy<source.y+portMargin||sy>source.y+source.height-portMargin) continue;
