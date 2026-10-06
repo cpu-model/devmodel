@@ -1451,23 +1451,12 @@ function capabilityOverviewRelations(pulse) {
   const behaviorById = new Map(pulse.behaviors.map(item => [item.id, item]));
   const relations = new Map();
   for (const flow of pulse.flows) {
-    const target = behaviorById.get(flow.to)?.capability;
-    if (!target) continue;
-    if ('trigger' in flow) {
-      const source = `external:${flow.pulse}`;
-      const key = `${source}\u0000${flow.pulse}\u0000${target}`;
-      if (!relations.has(key)) relations.set(key, {
-        trigger: source,
-        triggerLabel: pulse.pulses.find(item => item.id === flow.pulse)?.name || flow.trigger,
-        pulse: flow.pulse,
-        to: target,
-      });
-      continue;
-    }
+    if (!('from' in flow)) continue;
     const source = behaviorById.get(flow.from)?.capability;
-    if (!source || source === target) continue;
-    const key = `${source}\u0000${flow.pulse}\u0000${target}`;
-    if (!relations.has(key)) relations.set(key, {from: source, pulse: flow.pulse, to: target});
+    const target = behaviorById.get(flow.to)?.capability;
+    if (!source || !target || source === target) continue;
+    const key = `${source}\u0000${target}`;
+    if (!relations.has(key)) relations.set(key, {from: source, to: target});
   }
   return [...relations.values()];
 }
