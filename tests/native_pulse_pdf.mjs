@@ -314,7 +314,7 @@ const pdf = await PDFDocument.load(fs.readFileSync(output));
 const pulseContents = pdf.getPages().flatMap(page => page.node.Annots().asArray().map(reference => pdf.context.lookup(reference)))
   .filter(annotation => annotation.get(PDFName.of('Subtype'))?.toString() === '/Text')
   .map(annotation => annotation.get(PDFName.of('Contents')).decodeText());
-assert.equal(pulseContents.filter(text => text === 'The result ready event shall retain its identity.\n\nThe result ready event shall follow result establishment.').length, 3, 'Repeated Pulse occurrences preserve complete declared requirement order');
+assert.equal(pulseContents.filter(text => text === 'The result ready event shall retain its identity.\n\nThe result ready event shall follow result establishment.').length, 2, 'Repeated Pulse occurrences in Capability details preserve complete declared requirement order; overview dependency adds no Pulse occurrence');
 
 const systemPulse = {
   'domain-information': [{id: 'input', name: 'Input'}],
