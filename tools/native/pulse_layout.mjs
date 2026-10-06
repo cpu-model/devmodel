@@ -153,8 +153,8 @@ function layoutCapabilityOverview(pulse) {
       const points = [start, {x: channel, y: start.y}, {x: channel, y: endPoint.y}, endPoint];
       return {
         ...flow, event: eventById.get(flow.pulse), points,
-        symbol: {x: start.x + Math.min(18, Math.max(1, channel - start.x - 1)), y: start.y},
-        annotation: {x: start.x + Math.min(33, Math.max(2, channel - start.x - 2)), y: start.y + 5},
+        symbol: {x: channel, y: start.y + (endPoint.y - start.y) / 2},
+        annotation: {x: channel + 15, y: start.y + (endPoint.y - start.y) / 2 + 5},
       };
     });
   const graphWidth = (maxDepth + 1) * nodeWidth + maxDepth * columnGap;
