@@ -73,6 +73,7 @@ function layoutCapabilityOverview(pulse) {
   const eventById = new Map(pulse.pulses.map(item => [item.id, item]));
   const nodeWidth = 190;
   const nodeHeight = 72;
+  const pulsePortSpacing = PULSE_RADIUS * 2 + 4;
   const columnGap = 260;
   const rowGap = 120;
   const outerRouting = 108;
@@ -104,11 +105,13 @@ function layoutCapabilityOverview(pulse) {
   const graphHeight = maxRows * nodeHeight + Math.max(0, maxRows - 1) * rowGap;
   const capabilityNodes = levels.flatMap((items, d) => items.map(item => {
     const row = rowById.get(item.id);
+    const outgoingCount = pulse.flows.filter(flow => 'from' in flow && flow.from === item.id).length;
+    const requiredHeight = outgoingCount > 1 ? (outgoingCount + 1) * pulsePortSpacing : nodeHeight;
     return {
       ...item, kind: 'capability',
       x: PAGE.margin + TRIGGER.width + outerRouting + d * (nodeWidth + columnGap),
       y: PAGE.margin + 140 + row * (nodeHeight + rowGap),
-      width: nodeWidth, height: nodeHeight,
+      width: nodeWidth, height: Math.max(nodeHeight, requiredHeight),
     };
   }));
   const triggerNames = [...new Set(pulse.flows.filter(flow => 'trigger' in flow).map(flow => flow.trigger))];
