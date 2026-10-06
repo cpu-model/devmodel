@@ -772,8 +772,8 @@ function layoutCausal(pulse, options = {}) {
       // Reserve provisional full-height escapes now; track routing below may
       // shorten them, but later routes must never select the same channel.
       verticalReservations.push(
-        {x: item.sourceEscapeX, y1: item.start.y, y2: item.end.y},
-        {x: item.targetEscapeX, y1: item.start.y, y2: item.end.y},
+        {x: item.sourceEscapeX, y1: item.start.y, y2: item.end.y, owner: item.flow},
+        {x: item.targetEscapeX, y1: item.start.y, y2: item.end.y, owner: item.flow},
       );
     }
   }
@@ -816,11 +816,11 @@ function layoutCausal(pulse, options = {}) {
         && other.x > Math.min(request.x1, request.x2)
         && other.x < Math.max(request.x1, request.x2)).length;
       const overviewVerticalConflicts = options.projectionKind === 'overview'
-        ? verticalReservations.filter(other =>
-          (Math.abs(other.x - request.x1) < MIN_CHANNEL_SPACING
+        ? verticalReservations.filter(other => other.owner !== request.item.flow
+          && ((Math.abs(other.x - request.x1) < MIN_CHANNEL_SPACING
             && intervalsOverlap(other.y1, other.y2, request.item.start.y, trackY))
           || (Math.abs(other.x - request.x2) < MIN_CHANNEL_SPACING
-            && intervalsOverlap(other.y1, other.y2, trackY, request.item.end.y))).length
+            && intervalsOverlap(other.y1, other.y2, trackY, request.item.end.y)))).length
         : 0;
       if (overviewVerticalConflicts > 0) continue;
       const score = endpointCrossings * 1000000
