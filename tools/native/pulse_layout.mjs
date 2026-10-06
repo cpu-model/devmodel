@@ -725,6 +725,7 @@ function layoutCausal(pulse, options = {}) {
     }
   }
 
+  tracePhase('port-optimization-start');
   // Optimize every outgoing side as one group. A greedy flow-by-flow pass can
   // reject two mutually useful moves because the other port still occupies its
   // old position. Considering port permutations and straight candidates
@@ -871,6 +872,8 @@ function layoutCausal(pulse, options = {}) {
     });
   }
 
+  tracePhase('port-optimization-complete');
+  tracePhase('approach-optimization-start');
   // Put the final height change immediately after the last blocking element,
   // rather than next to the target. This keeps the target-side approach long
   // and straight even when the complete target axis is obstructed upstream.
@@ -905,6 +908,8 @@ function layoutCausal(pulse, options = {}) {
     }
   }
 
+  tracePhase('approach-optimization-complete');
+  tracePhase('overlap-resolver-start');
 
   // Resolve remaining collinear segments by moving internal vertical channels.
   // Overlap is a hard error and therefore dominates added length or bends.
@@ -985,6 +990,7 @@ function layoutCausal(pulse, options = {}) {
     }
   }
 
+  tracePhase('overlap-resolver-complete');
   tracePhase('base-routing-complete');
   const result = {
     page: {...PAGE, width: pageWidth, height: pageHeight}, nodes: [...nodes.values()], flows, legend: pulse.pulses,
