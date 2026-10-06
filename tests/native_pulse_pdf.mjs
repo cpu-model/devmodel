@@ -281,6 +281,19 @@ assert.equal(new Set(dependencyKeys).size, dependencyKeys.length,
   'Capability overview contains one connector per directed Capability dependency');
 assert.ok(repeatedCapabilityOverview.flows.every(flow => flow.pulse === undefined && flow.event === undefined && flow.symbol === undefined),
   'Capability overview dependency connectors have no Pulse identity');
+const positiveSegmentOverlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max(b1, b2)) - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 0.01;
+const connectorSegments = flow => flow.points.slice(1).map((end, index) => ({start: flow.points[index], end}));
+const collinearSegmentOverlap = (a, b) => {
+  const ah = Math.abs(a.start.y - a.end.y) < 0.01;
+  const bh = Math.abs(b.start.y - b.end.y) < 0.01;
+  const av = Math.abs(a.start.x - a.end.x) < 0.01;
+  const bv = Math.abs(b.start.x - b.end.x) < 0.01;
+  if (ah && bh && Math.abs(a.start.y - b.start.y) < 0.01)
+    return positiveSegmentOverlap(a.start.x, a.end.x, b.start.x, b.end.x);
+  if (av && bv && Math.abs(a.start.x - b.start.x) < 0.01)
+    return positiveSegmentOverlap(a.start.y, a.end.y, b.start.y, b.end.y);
+  return false;
+};
 const connectorTouchesUnrelatedNode = (flow, node) => {
   if (node.id === flow.from || node.id === flow.to) return false;
   return flow.points.slice(1).some((end, index) => {
@@ -301,6 +314,27 @@ for (const flow of repeatedCapabilityOverview.flows) {
     'Overview dependency enters its target Capability on the left side');
   for (const node of repeatedCapabilityOverview.nodes) assert.ok(!connectorTouchesUnrelatedNode(flow, node),
     `Overview dependency ${flow.from}->${flow.to} stays clear of unrelated node ${node.name}`);
+}
+
+for (let left = 0; left < repeatedCapabilityOverview.flows.length; left += 1) {
+  for (let right = left + 1; right < repeatedCapabilityOverview.flows.length; right += 1) {
+    const first = repeatedCapabilityOverview.flows[left];
+    const second = repeatedCapabilityOverview.flows[right];
+    for (const a of connectorSegments(first)) for (const b of connectorSegments(second))
+      assert.ok(!collinearSegmentOverlap(a, b),
+        `Overview connectors ${first.from}->${first.to} and ${second.from}->${second.to} must never share horizontal or vertical line segments`);
+  }
+}
+const cornerClearance = 24;
+for (const flow of repeatedCapabilityOverview.flows) {
+  const sourceNode = repeatedCapabilityOverview.nodes.find(node => node.id === flow.from);
+  const targetNode = repeatedCapabilityOverview.nodes.find(node => node.id === flow.to);
+  const sourceY = flow.points[0].y;
+  const targetY = flow.points.at(-1).y;
+  assert.ok(sourceY >= sourceNode.y + cornerClearance && sourceY <= sourceNode.y + sourceNode.height - cornerClearance,
+    `Overview dependency ${flow.from}->${flow.to} keeps source port clear of horizontal box edges`);
+  assert.ok(targetY >= targetNode.y + cornerClearance && targetY <= targetNode.y + targetNode.height - cornerClearance,
+    `Overview dependency ${flow.from}->${flow.to} keeps target port clear of horizontal box edges`);
 }
 
 const output = path.join(directory, 'pulse.pdf');
