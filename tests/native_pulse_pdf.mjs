@@ -272,85 +272,35 @@ const repeatedCapabilityFlowPulse = {
   ],
 };
 const repeatedCapabilityOverview = layoutPulse(repeatedCapabilityFlowPulse).pages[0];
-const segmentContains = (a, b, point) => (a.y === b.y && point.y === a.y
-  && point.x >= Math.min(a.x, b.x) && point.x <= Math.max(a.x, b.x))
-  || (a.x === b.x && point.x === a.x
-    && point.y >= Math.min(a.y, b.y) && point.y <= Math.max(a.y, b.y));
-for (const flow of repeatedCapabilityOverview.flows) {
-  assert.ok(flow.points.slice(1).some((point, index) => segmentContains(flow.points[index], point, flow.symbol)),
-    `Overview keeps Pulse ${flow.event.display} symbol on its own connector`);
-  const target = repeatedCapabilityOverview.nodes.find(node => node.id === flow.to);
-  const end = flow.points.at(-1);
-  assert.equal(end.x, target.x,
-    `Overview Pulse ${flow.event.display} enters its target on the left side`);
-  assert.ok(end.y > target.y && end.y < target.y + target.height,
-    `Overview Pulse ${flow.event.display} enters within the target side, not at a corner`);
-  if ('from' in flow) {
-    const source = repeatedCapabilityOverview.nodes.find(node => node.id === flow.from);
-    const start = flow.points[0];
-    assert.equal(start.x, source.x + source.width,
-      `Overview Pulse ${flow.event.display} leaves its source on the right side`);
-    assert.ok(start.y > source.y && start.y < source.y + source.height,
-      `Overview Pulse ${flow.event.display} leaves within the source side, not at a corner`);
-  }
-}
+assert.equal(repeatedCapabilityOverview.nodes.filter(node => node.kind === 'trigger').length, 0,
+  'Capability overview has no external-trigger nodes');
+assert.equal(repeatedCapabilityOverview.legend.length, 0,
+  'Capability overview has no Pulse legend');
+const dependencyKeys = repeatedCapabilityOverview.flows.map(flow => `${flow.from}->${flow.to}`);
+assert.equal(new Set(dependencyKeys).size, dependencyKeys.length,
+  'Capability overview contains one connector per directed Capability dependency');
+assert.ok(repeatedCapabilityOverview.flows.every(flow => flow.pulse === undefined && flow.event === undefined && flow.symbol === undefined),
+  'Capability overview dependency connectors have no Pulse identity');
 const connectorTouchesUnrelatedNode = (flow, node) => {
-  const sourceId = 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
-  if (node.id === sourceId || node.id === flow.to) return false;
+  if (node.id === flow.from || node.id === flow.to) return false;
   return flow.points.slice(1).some((end, index) => {
     const start = flow.points[index];
-    if (start.y === end.y) {
-      return start.y >= node.y && start.y <= node.y + node.height
-        && Math.max(Math.min(start.x, end.x), node.x) <= Math.min(Math.max(start.x, end.x), node.x + node.width);
-    }
-    if (start.x === end.x) {
-      return start.x >= node.x && start.x <= node.x + node.width
-        && Math.max(Math.min(start.y, end.y), node.y) <= Math.min(Math.max(start.y, end.y), node.y + node.height);
-    }
+    if (start.y === end.y) return start.y >= node.y && start.y <= node.y + node.height
+      && Math.max(Math.min(start.x, end.x), node.x) <= Math.min(Math.max(start.x, end.x), node.x + node.width);
+    if (start.x === end.x) return start.x >= node.x && start.x <= node.x + node.width
+      && Math.max(Math.min(start.y, end.y), node.y) <= Math.min(Math.max(start.y, end.y), node.y + node.height);
     return false;
   });
 };
 for (const flow of repeatedCapabilityOverview.flows) {
-  for (const node of repeatedCapabilityOverview.nodes) {
-    assert.ok(!connectorTouchesUnrelatedNode(flow, node),
-      `Overview Pulse ${flow.event.display} stays clear of unrelated node ${node.name}`);
-  }
-}
-const debugN = repeatedCapabilityOverview.flows.find(flow => flow.event.display === 'N');
-const debugF = repeatedCapabilityOverview.flows.find(flow => flow.event.display === 'F');
-if (process.env.CPU_TRACE_PULSE === '1') console.error('OVERVIEW_N_F', JSON.stringify({
-  N: {from: debugN.from, to: debugN.to, points: debugN.points, symbol: debugN.symbol},
-  F: {from: debugF.from, to: debugF.to, points: debugF.points, symbol: debugF.symbol},
-  nodes: repeatedCapabilityOverview.nodes.filter(node => [debugN.from, debugF.from].includes(node.id)),
-}));
-
-const positiveOverlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max(b1, b2))
-  - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 0.01;
-const collinearOverlap = (first, second) => first.points.slice(1).some((aEnd, aIndex) =>
-  second.points.slice(1).some((bEnd, bIndex) => {
-    const aStart = first.points[aIndex];
-    const bStart = second.points[bIndex];
-    if (aStart.y === aEnd.y && bStart.y === bEnd.y && aStart.y === bStart.y) {
-      return positiveOverlap(aStart.x, aEnd.x, bStart.x, bEnd.x);
-    }
-    if (aStart.x === aEnd.x && bStart.x === bEnd.x && aStart.x === bStart.x) {
-      return positiveOverlap(aStart.y, aEnd.y, bStart.y, bEnd.y);
-    }
-    return false;
-  }));
-for (let left = 0; left < repeatedCapabilityOverview.flows.length; left += 1) {
-  for (let right = left + 1; right < repeatedCapabilityOverview.flows.length; right += 1) {
-    const first = repeatedCapabilityOverview.flows[left];
-    const second = repeatedCapabilityOverview.flows[right];
-    assert.ok(!collinearOverlap(first, second),
-      `Overview keeps Pulse ${first.event.display} and ${second.event.display} visually distinct: ${JSON.stringify({
-        first: {from: first.from, trigger: first.trigger, to: first.to, pulse: first.pulse, points: first.points},
-        second: {from: second.from, trigger: second.trigger, to: second.to, pulse: second.pulse, points: second.points},
-      })}`);
-    const symbolDistance = Math.hypot(first.symbol.x - second.symbol.x, first.symbol.y - second.symbol.y);
-    assert.ok(symbolDistance >= PULSE_RADIUS * 2,
-      `Overview keeps Pulse symbols ${first.event.display} and ${second.event.display} separately visible: ${JSON.stringify({first: {from: first.from, trigger: first.trigger, to: first.to, symbol: first.symbol, points: first.points}, second: {from: second.from, trigger: second.trigger, to: second.to, symbol: second.symbol, points: second.points}})}`);
-  }
+  const sourceNode = repeatedCapabilityOverview.nodes.find(node => node.id === flow.from);
+  const targetNode = repeatedCapabilityOverview.nodes.find(node => node.id === flow.to);
+  assert.equal(flow.points[0].x, sourceNode.x + sourceNode.width,
+    'Overview dependency leaves its source Capability on the right side');
+  assert.equal(flow.points.at(-1).x, targetNode.x,
+    'Overview dependency enters its target Capability on the left side');
+  for (const node of repeatedCapabilityOverview.nodes) assert.ok(!connectorTouchesUnrelatedNode(flow, node),
+    `Overview dependency ${flow.from}->${flow.to} stays clear of unrelated node ${node.name}`);
 }
 
 const output = path.join(directory, 'pulse.pdf');
