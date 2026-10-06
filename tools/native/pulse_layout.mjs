@@ -474,6 +474,14 @@ function layoutCausal(pulse, options = {}) {
         item.sourceEscapeNeedsDetour = true;
       }
     }
+    if (item.sourceEscapeX === undefined) {
+      const leftEdge = Math.min(...[...nodes.values()].map(node => node.x));
+      const outsideX = leftEdge - MIN_SIDE_CLEARANCE;
+      const clear = [...nodes.values()].every(node =>
+        node.id === item.sourceId || node.id === item.flow.to
+        || !segmentIntersectsBox(item.start, {x: outsideX, y: item.start.y}, node));
+      if (clear) item.sourceEscapeX = outsideX;
+    }
     if (options.debugRouting) sourceEscapeDiagnostics.push({
       pulse: item.flow.pulse, sourceId: item.sourceId, targetId: item.flow.to,
       start: {...item.start}, end: {...item.end}, midX: item.midX,
