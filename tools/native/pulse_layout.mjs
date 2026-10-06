@@ -145,19 +145,14 @@ function layoutCapabilityOverview(pulse) {
     const ins=incoming.get(flow.to);
     const sy=source.y + source.height*(outs.indexOf(flow)+1)/(outs.length+1);
     const ty=target.y + target.height*(ins.indexOf(flow)+1)/(ins.length+1);
-    const sourceDepth=depth.get(flow.from)||0;
-    const targetDepth=depth.get(flow.to)||0;
     const laneOffset=(lane.get(relationKey(flow))+1)*MIN_CHANNEL_SPACING;
-    // The lane is deterministic inside the first corridor crossed by the
-    // relation. Long relations remain in the open corridor band above nodes,
-    // then approach the target through the target's own left corridor.
-    const firstCorridorLeft = source.x + source.width;
-    const x1=firstCorridorLeft + MIN_SIDE_CLEARANCE + laneOffset;
-    const targetCorridorLeft=target.x-corridorWidth;
-    const x2=targetCorridorLeft + MIN_SIDE_CLEARANCE + laneOffset;
-    const trackY=top - MIN_SIDE_CLEARANCE - laneOffset;
+    // Capability overview relations use a local orthogonal route. Keep the
+    // vertical segment inside the first open corridor after the source; do
+    // not detour through a global track above the diagram.
+    const corridorLeft = source.x + source.width;
+    const routeX = corridorLeft + MIN_SIDE_CLEARANCE + laneOffset;
     const start={x:source.x+source.width,y:sy}, end={x:target.x,y:ty};
-    const points=[start,{x:x1,y:sy},{x:x1,y:trackY},{x:x2,y:trackY},{x:x2,y:ty},end];
+    const points=[start,{x:routeX,y:sy},{x:routeX,y:ty},end];
     return {...flow,points};
   });
 
