@@ -102,7 +102,7 @@ function layoutCapabilityOverview(pulse) {
   const graphHeight = maxRows * nodeHeight + Math.max(0, maxRows - 1) * rowGap;
   const capabilityNodes = levels.flatMap((items, d) => items.map((item, row) => ({
     ...item, kind: 'capability',
-    x: PAGE.margin + outerRouting + d * (nodeWidth + columnGap),
+    x: PAGE.margin + TRIGGER.width + outerRouting + d * (nodeWidth + columnGap),
     y: PAGE.margin + 140 + graphHeight - nodeHeight - row * (nodeHeight + rowGap),
     width: nodeWidth, height: nodeHeight,
   })));
@@ -149,7 +149,7 @@ function layoutCapabilityOverview(pulse) {
   const graphWidth = (maxDepth + 1) * nodeWidth + maxDepth * columnGap;
   const legendColumns = 3;
   const legendHeight = Math.ceil(pulse.pulses.length / legendColumns) * LEGEND_ROW + 42;
-  const pageWidth = PAGE.margin * 2 + outerRouting + graphWidth;
+  const pageWidth = PAGE.margin * 2 + TRIGGER.width + outerRouting + graphWidth;
   return {
     page: {...PAGE, width: pageWidth,
       height: PAGE.margin * 2 + outerRouting + graphHeight + legendHeight + 160},
