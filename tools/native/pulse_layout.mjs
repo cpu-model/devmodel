@@ -73,82 +73,89 @@ function layoutCapabilityOverview(pulse) {
   const eventById = new Map(pulse.pulses.map(item => [item.id, item]));
   const nodeWidth = 190;
   const nodeHeight = 72;
-  const columnGap = 250;
-  const rowGap = 120;
-  const outerRouting = 96;
-  const columns = Math.max(2, Math.ceil(Math.sqrt(pulse.behaviors.length)));
-  const rows = Math.ceil(pulse.behaviors.length / columns);
-  const capabilityNodes = pulse.behaviors.map((item, index) => ({
-    ...item,
-    kind: 'capability',
-    x: PAGE.margin + outerRouting + (index % columns) * (nodeWidth + columnGap),
-    y: PAGE.margin + 140 + (rows - 1 - Math.floor(index / columns)) * (nodeHeight + rowGap),
-    width: nodeWidth,
-    height: nodeHeight,
-  }));
+  const columnGap = 260;
+  const rowGap = 86;
+  const outerRouting = 108;
+  const capabilities = pulse.behaviors;
+  const capabilityIds = new Set(capabilities.map(item => item.id));
+  const incomingCapability = new Map(capabilities.map(item => [item.id, []]));
+  for (const flow of pulse.flows) {
+    if ('from' in flow && capabilityIds.has(flow.from) && capabilityIds.has(flow.to)) {
+      incomingCapability.get(flow.to).push(flow.from);
+    }
+  }
+  const depth = new Map(capabilities.map(item => [item.id, 0]));
+  for (let pass = 0; pass < capabilities.length; pass += 1) {
+    let changed = false;
+    for (const flow of pulse.flows.filter(flow => 'from' in flow)) {
+      const candidate = (depth.get(flow.from) ?? 0) + 1;
+      if (candidate > (depth.get(flow.to) ?? 0) && candidate <= capabilities.length) {
+        depth.set(flow.to, candidate); changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+  const maxDepth = Math.max(0, ...depth.values());
+  const levels = Array.from({length: maxDepth + 1}, (_, d) =>
+    capabilities.filter(item => depth.get(item.id) === d).sort((a, b) => a.name.localeCompare(b.name)));
+  const maxRows = Math.max(1, ...levels.map(items => items.length));
+  const graphHeight = maxRows * nodeHeight + Math.max(0, maxRows - 1) * rowGap;
+  const capabilityNodes = levels.flatMap((items, d) => items.map((item, row) => ({
+    ...item, kind: 'capability',
+    x: PAGE.margin + outerRouting + d * (nodeWidth + columnGap),
+    y: PAGE.margin + 140 + graphHeight - nodeHeight - row * (nodeHeight + rowGap),
+    width: nodeWidth, height: nodeHeight,
+  })));
   const triggerNames = [...new Set(pulse.flows.filter(flow => 'trigger' in flow).map(flow => flow.trigger))];
   const triggerNodes = triggerNames.map((name, index) => ({
     id: `trigger:${name}`,
     name: pulse.flows.find(flow => flow.trigger === name)?.triggerLabel || name,
     kind: 'trigger',
     x: PAGE.margin,
-    y: PAGE.margin + 140 + index * (TRIGGER.height + NODE_GAP),
-    width: TRIGGER.width,
-    height: TRIGGER.height,
+    y: PAGE.margin + 140 + graphHeight - TRIGGER.height - index * (TRIGGER.height + NODE_GAP),
+    width: TRIGGER.width, height: TRIGGER.height,
   }));
   const nodes = [...capabilityNodes, ...triggerNodes];
   const nodeById = new Map(nodes.map(node => [node.id, node]));
-  const reservations = [];
   const overviewSourceId = flow => 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
+  const reservations = [];
   const flows = [...pulse.flows].sort((a, b) =>
     overviewSourceId(a).localeCompare(overviewSourceId(b))
       || a.to.localeCompare(b.to) || a.pulse.localeCompare(b.pulse))
-    .map((flow, index) => {
+    .map(flow => {
       const source = nodeById.get(overviewSourceId(flow));
       const target = nodeById.get(flow.to);
-      const horizontal = Math.abs((target.x + target.width / 2) - (source.x + source.width / 2))
-        >= Math.abs((target.y + target.height / 2) - (source.y + source.height / 2));
-      let points;
-      if (horizontal) {
-        const rightward = target.x >= source.x;
-        const start = {x: rightward ? source.x + source.width : source.x, y: source.y + source.height / 2};
-        const end = {x: rightward ? target.x : target.x + target.width, y: target.y + target.height / 2};
-        let channel = (start.x + end.x) / 2;
-        while (reservations.some(r => r.axis === 'v' && Math.abs(r.value - channel) < MIN_LINE_SPACING
-          && intervalsOverlap(start.y, end.y, r.a, r.b))) channel += (rightward ? 1 : -1) * MIN_CHANNEL_SPACING;
-        points = [start, {x: channel, y: start.y}, {x: channel, y: end.y}, end];
-        reservations.push({axis: 'v', value: channel, a: start.y, b: end.y});
-      } else {
-        const upward = target.y >= source.y;
-        const start = {x: source.x + source.width / 2, y: upward ? source.y + source.height : source.y};
-        const end = {x: target.x + target.width / 2, y: upward ? target.y : target.y + target.height};
-        let channel = (start.y + end.y) / 2;
-        while (reservations.some(r => r.axis === 'h' && Math.abs(r.value - channel) < MIN_LINE_SPACING
-          && intervalsOverlap(start.x, end.x, r.a, r.b))) channel += (upward ? 1 : -1) * MIN_CHANNEL_SPACING;
-        points = [start, {x: start.x, y: channel}, {x: end.x, y: channel}, end];
-        reservations.push({axis: 'h', value: channel, a: start.x, b: end.x});
-      }
-      const start = points[0];
+      const siblingsOut = pulse.flows.filter(other => overviewSourceId(other) === overviewSourceId(flow));
+      const siblingsIn = pulse.flows.filter(other => other.to === flow.to);
+      const outIndex = siblingsOut.indexOf(flow);
+      const inIndex = siblingsIn.indexOf(flow);
+      const start = {x: source.x + source.width,
+        y: source.y + source.height * (outIndex + 1) / (siblingsOut.length + 1)};
+      const endPoint = {x: target.x,
+        y: target.y + target.height * (inIndex + 1) / (siblingsIn.length + 1)};
+      let channel = start.x + MIN_SIDE_CLEARANCE;
+      const maxChannel = endPoint.x - MIN_SIDE_CLEARANCE;
+      while (channel < maxChannel && reservations.some(r => Math.abs(r.x - channel) < MIN_LINE_SPACING
+        && intervalsOverlap(start.y, endPoint.y, r.y1, r.y2))) channel += MIN_CHANNEL_SPACING;
+      if (channel > maxChannel) channel = (start.x + endPoint.x) / 2;
+      reservations.push({x: channel, y1: start.y, y2: endPoint.y});
+      const points = [start, {x: channel, y: start.y}, {x: channel, y: endPoint.y}, endPoint];
       return {
-        ...flow,
-        event: eventById.get(flow.pulse),
-        points,
-        symbol: {x: start.x + (points[1].x === start.x ? 0 : (points[1].x > start.x ? 18 : -18)),
-          y: start.y + (points[1].y === start.y ? 0 : (points[1].y > start.y ? 18 : -18))},
-        annotation: {x: start.x + 8, y: start.y + 8},
+        ...flow, event: eventById.get(flow.pulse), points,
+        symbol: {x: start.x + 18, y: start.y},
+        annotation: {x: start.x + 33, y: start.y + 5},
       };
     });
-  const graphWidth = columns * nodeWidth + Math.max(0, columns - 1) * columnGap;
-  const graphHeight = rows * nodeHeight + Math.max(0, rows - 1) * rowGap;
+  const graphWidth = (maxDepth + 1) * nodeWidth + maxDepth * columnGap;
   const legendColumns = 3;
   const legendHeight = Math.ceil(pulse.pulses.length / legendColumns) * LEGEND_ROW + 42;
+  const pageWidth = PAGE.margin * 2 + outerRouting + graphWidth;
   return {
-    page: {...PAGE, width: PAGE.margin * 2 + outerRouting * 2 + graphWidth,
-      height: PAGE.margin * 2 + outerRouting * 2 + graphHeight + legendHeight + 80},
+    page: {...PAGE, width: pageWidth,
+      height: PAGE.margin * 2 + outerRouting + graphHeight + legendHeight + 160},
     nodes, flows, legend: pulse.pulses,
     legendArea: {x: PAGE.margin, y: PAGE.margin,
-      width: PAGE.margin * 2 + outerRouting * 2 + graphWidth - PAGE.margin * 2,
-      height: legendHeight, columns: legendColumns},
+      width: pageWidth - PAGE.margin * 2, height: legendHeight, columns: legendColumns},
   };
 }
 
