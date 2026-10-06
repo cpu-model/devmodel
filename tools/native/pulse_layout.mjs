@@ -139,40 +139,45 @@ function layoutCapabilityOverview(pulse) {
   for (const a of outgoing.values()) a.sort((x,y)=>lane.get(relationKey(x))-lane.get(relationKey(y)));
   for (const a of incoming.values()) a.sort((x,y)=>lane.get(relationKey(x))-lane.get(relationKey(y)));
 
-  const usedHorizontalY = [];
-  const usedVerticalX = [];
-  const uniqueCoordinate = (candidate, used, minimum, maximum) => {
-    const step = 1;
-    const available = value => value >= minimum && value <= maximum
-      && used.every(existing => Math.abs(existing - value) >= 0.5);
-    if (available(candidate)) { used.push(candidate); return candidate; }
-    for (let offset = step; offset <= maximum - minimum; offset += step) {
-      if (available(candidate + offset)) { used.push(candidate + offset); return candidate + offset; }
-      if (available(candidate - offset)) { used.push(candidate - offset); return candidate - offset; }
-    }
-    throw new Error('Unable to allocate exclusive Capability overview coordinate');
+  const routedSegments = [];
+  const segmentOverlap = (a, b) => {
+    const positiveOverlap = (a1, a2, b1, b2) =>
+      Math.min(Math.max(a1,a2),Math.max(b1,b2))-Math.max(Math.min(a1,a2),Math.min(b1,b2)) > 0.01;
+    const ah=Math.abs(a.start.y-a.end.y)<0.01, bh=Math.abs(b.start.y-b.end.y)<0.01;
+    const av=Math.abs(a.start.x-a.end.x)<0.01, bv=Math.abs(b.start.x-b.end.x)<0.01;
+    if(ah&&bh&&Math.abs(a.start.y-b.start.y)<0.01) return positiveOverlap(a.start.x,a.end.x,b.start.x,b.end.x);
+    if(av&&bv&&Math.abs(a.start.x-b.start.x)<0.01) return positiveOverlap(a.start.y,a.end.y,b.start.y,b.end.y);
+    return false;
   };
-  const flows=orderedFlows.map(flow=>{
+  const segmentsFor = points => points.slice(1).map((end,index)=>({start:points[index],end}));
+  const conflicts = points => segmentsFor(points).some(segment => routedSegments.some(existing => segmentOverlap(segment,existing)));
+  const flows=[];
+  for (const flow of orderedFlows) {
     const source=nodeById.get(sourceId(flow)), target=nodeById.get(flow.to);
     if(!source||!target) throw new Error(`Missing overview node for ${relationKey(flow)}`);
-    const outs=outgoing.get(sourceId(flow));
-    const ins=incoming.get(flow.to);
-    const nominalPortY = (node, index, count) => count === 1
-      ? node.y + node.height / 2
-      : node.y + portMargin + index * (node.height - 2 * portMargin) / (count - 1);
-    const sy=uniqueCoordinate(nominalPortY(source, outs.indexOf(flow), outs.length), usedHorizontalY,
-      source.y + portMargin, source.y + source.height - portMargin);
-    const ty=uniqueCoordinate(nominalPortY(target, ins.indexOf(flow), ins.length), usedHorizontalY,
-      target.y + portMargin, target.y + target.height - portMargin);
-    const start={x:source.x+source.width,y:sy}, end={x:target.x,y:ty};
+    const outs=outgoing.get(sourceId(flow)), ins=incoming.get(flow.to);
+    const nominalPortY = (node,index,count) => count===1 ? node.y+node.height/2
+      : node.y+portMargin+index*(node.height-2*portMargin)/(count-1);
+    const nominalSy=nominalPortY(source,outs.indexOf(flow),outs.length);
+    const nominalTy=nominalPortY(target,ins.indexOf(flow),ins.length);
+    const startX=source.x+source.width, endX=target.x;
+    const usableLeft=startX+MIN_SIDE_CLEARANCE, usableRight=endX-MIN_SIDE_CLEARANCE;
     const relationIndex=lane.get(relationKey(flow));
-    const usableLeft=start.x+MIN_SIDE_CLEARANCE;
-    const usableRight=end.x-MIN_SIDE_CLEARANCE;
-    const nominalChannelX=usableLeft+(relationIndex+1)*(usableRight-usableLeft)/(orderedFlows.length+1);
-    const channelX=uniqueCoordinate(nominalChannelX, usedVerticalX, usableLeft, usableRight);
-    const points=[start,{x:channelX,y:sy},{x:channelX,y:ty},end];
-    return {...flow,points};
-  });
+    const nominalX=usableLeft+(relationIndex+1)*(usableRight-usableLeft)/(orderedFlows.length+1);
+    let points=null;
+    const offsets=[0,1,-1,2,-2,3,-3,4,-4,5,-5,6,-6,8,-8,10,-10,12,-12,16,-16,20,-20];
+    outer: for(const so of offsets) for(const to of offsets) for(const xo of offsets) {
+      const sy=nominalSy+so, ty=nominalTy+to, channelX=nominalX+xo;
+      if(sy<source.y+portMargin||sy>source.y+source.height-portMargin) continue;
+      if(ty<target.y+portMargin||ty>target.y+target.height-portMargin) continue;
+      if(channelX<usableLeft||channelX>usableRight) continue;
+      const candidate=[{x:startX,y:sy},{x:channelX,y:sy},{x:channelX,y:ty},{x:endX,y:ty}];
+      if(!conflicts(candidate)){points=candidate;break outer;}
+    }
+    if(!points) throw new Error(`Unable to route non-overlapping Capability dependency ${relationKey(flow)}`);
+    routedSegments.push(...segmentsFor(points));
+    flows.push({...flow,points});
+  }
 
   const minY=Math.min(...flows.flatMap(f=>f.points.map(p=>p.y)),top);
   if(minY<PAGE.margin) {
