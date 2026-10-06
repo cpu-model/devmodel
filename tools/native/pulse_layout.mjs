@@ -67,6 +67,10 @@ function segmentIntersectsBox(start, end, box, padding = 10) {
 }
 
 function layoutCausal(pulse, options = {}) {
+  const trace = options.tracePhases === true;
+  const traceLabel = options.traceLabel || 'pulse';
+  const tracePhase = phase => { if (trace) console.error(`[pulse-layout] ${traceLabel}: ${phase}`); };
+  tracePhase(`start behaviors=${pulse.behaviors.length} flows=${pulse.flows.length}`);
   const nodeGap = options.nodeGap ?? NODE_GAP;
   const eventById = new Map(pulse.pulses.map(item => [item.id, item]));
   // Layout ordering needs occurrence identity, not only semantic equality:
@@ -971,11 +975,13 @@ function layoutCausal(pulse, options = {}) {
     }
   }
 
+  tracePhase('base-routing-complete');
   const result = {
     page: {...PAGE, width: pageWidth, height: pageHeight}, nodes: [...nodes.values()], flows, legend: pulse.pulses,
     legendArea: {x: PAGE.margin, y: PAGE.margin, width: pageWidth - PAGE.margin * 2, height: legendHeight, columns: legendColumns},
   };
   if (willOptimizeOrders) {
+    tracePhase('order-optimization-start');
     const geometryScore = layout => {
       let crossings = 0;
       let overlaps = 0;
@@ -1131,10 +1137,13 @@ function layoutCausal(pulse, options = {}) {
       finalOrders = passOrders;
       finalScore = passScore;
     }
+    tracePhase('order-optimization-complete');
     if (options.debugRouting) finalLayout.debug = {sourceEscapes: sourceEscapeDiagnostics};
+    tracePhase('complete');
     return finalLayout;
   }
   if (options.debugRouting) result.debug = {sourceEscapes: sourceEscapeDiagnostics};
+  tracePhase('complete');
   return result;
 }
 
@@ -1151,7 +1160,9 @@ function causalPage(pulse, projection, title, kind, options = {}) {
     informationOut: (behavior['information-out'] || []).map(id => informationById.get(id)).filter(Boolean),
   }));
   const pagePulse = {behaviors, pulses: pulse.pulses, flows: projection.flows};
-  const layout = layoutCausal(pagePulse, options);
+  if (options.tracePhases === true) console.error(`[pulse-layout] page-start: ${title}`);
+  const layout = layoutCausal(pagePulse, {...options, traceLabel: title});
+  if (options.tracePhases === true) console.error(`[pulse-layout] page-complete: ${title}`);
   layout.title = title;
   layout.kind = kind;
   layout.legend = usedLegend(pulse.pulses, projection.flows);
