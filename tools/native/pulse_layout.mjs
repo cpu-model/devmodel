@@ -596,10 +596,18 @@ function layoutCausal(pulse, options = {}) {
       };
     }
     const trackY = routeTracks.get(flow);
-    const points = [
+    const sourceDetourY = routed.find(item => item.flow === flow)?.sourceDetourY;
+    const points = sourceDetourY === undefined ? [
       start,
-      {x: start.x, y: routed.find(item => item.flow === flow)?.sourceDetourY ?? start.y},
-      {x: sourceEscapeX, y: routed.find(item => item.flow === flow)?.sourceDetourY ?? start.y},
+      {x: sourceEscapeX, y: start.y},
+      {x: sourceEscapeX, y: trackY},
+      {x: targetEscapeX, y: trackY},
+      {x: targetEscapeX, y: end.y},
+      end,
+    ] : [
+      start,
+      {x: start.x, y: sourceDetourY},
+      {x: sourceEscapeX, y: sourceDetourY},
       {x: sourceEscapeX, y: trackY},
       {x: targetEscapeX, y: trackY},
       {x: targetEscapeX, y: end.y},
