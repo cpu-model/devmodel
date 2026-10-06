@@ -294,6 +294,17 @@ const collinearSegmentOverlap = (a, b) => {
     return positiveSegmentOverlap(a.start.y, a.end.y, b.start.y, b.end.y);
   return false;
 };
+const parallelSegmentTooClose = (a, b, clearance = 12) => {
+  const ah = Math.abs(a.start.y - a.end.y) < 0.01;
+  const bh = Math.abs(b.start.y - b.end.y) < 0.01;
+  const av = Math.abs(a.start.x - a.end.x) < 0.01;
+  const bv = Math.abs(b.start.x - b.end.x) < 0.01;
+  if (ah && bh && Math.abs(a.start.y - b.start.y) < clearance)
+    return positiveSegmentOverlap(a.start.x, a.end.x, b.start.x, b.end.x);
+  if (av && bv && Math.abs(a.start.x - b.start.x) < clearance)
+    return positiveSegmentOverlap(a.start.y, a.end.y, b.start.y, b.end.y);
+  return false;
+};
 const connectorTouchesUnrelatedNode = (flow, node) => {
   if (node.id === flow.from || node.id === flow.to) return false;
   return flow.points.slice(1).some((end, index) => {
@@ -323,6 +334,8 @@ for (let left = 0; left < repeatedCapabilityOverview.flows.length; left += 1) {
     for (const a of connectorSegments(first)) for (const b of connectorSegments(second))
       assert.ok(!collinearSegmentOverlap(a, b),
         `Overview connectors ${first.from}->${first.to} and ${second.from}->${second.to} must never share horizontal or vertical line segments`);
+      assert.ok(!parallelSegmentTooClose(a, b),
+        `Overview connectors ${first.from}->${first.to} and ${second.from}->${second.to} keep visible separation between parallel segments`);
   }
 }
 const cornerClearance = 24;
