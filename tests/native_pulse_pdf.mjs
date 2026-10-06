@@ -78,8 +78,12 @@ const coveragePulse = {
 };
 const coverageOverview = layoutPulse(coveragePulse).pages[0];
 assert.equal(coverageOverview.flows.length, 2, 'Capability overview keeps external trigger and cross-capability flow');
-assert.ok(coverageOverview.nodes.some(node => node.kind === 'trigger' && node.name === 'Start'),
-  'Capability overview renders external trigger as a node');
+assert.ok(coverageOverview.nodes.some(node => node.kind === 'trigger' && node.name === 'P1'),
+  'Capability overview renders external inflow using the Pulse event name');
+const coverageDetail = layoutPulse(coveragePulse).pages.find(page =>
+  page.nodes.some(node => node.kind === 'behavior' && node.id === 'a1'));
+assert.ok(coverageDetail.nodes.some(node => node.kind === 'trigger' && node.name === 'Start'),
+  'Capability detail preserves the concrete external trigger');
 
 const largePulse = {
   capabilities: [{id: 'large', name: 'Large'}], 'domain-information': [],
