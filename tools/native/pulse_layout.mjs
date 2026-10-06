@@ -754,14 +754,15 @@ function layoutCausal(pulse, options = {}) {
     // their escape channels against the completed vertical reservations of
     // earlier relations, not against a stale pre-routing snapshot.
     const pending = routed.filter(item => !item.direct && item.minimalBendX === undefined);
+    const usedOverviewXs = verticalReservations.map(item => item.x);
     for (const item of pending) {
       const minimumX = item.start.x + MIN_SIDE_CLEARANCE;
       const maximumX = item.end.x - MIN_SIDE_CLEARANCE;
       const sourceCandidates = [];
       for (let x = Math.max(minimumX, Math.min(maximumX, item.midX)); x <= maximumX; x += MIN_CHANNEL_SPACING) sourceCandidates.push(x);
       for (let x = Math.max(minimumX, Math.min(maximumX, item.midX)) - MIN_CHANNEL_SPACING; x >= minimumX; x -= MIN_CHANNEL_SPACING) sourceCandidates.push(x);
-      const clearVertical = x => verticalReservations.every(other =>
-        Math.abs(other.x - x) >= MIN_CHANNEL_SPACING);
+      const clearVertical = x => usedOverviewXs.every(otherX =>
+        Math.abs(otherX - x) >= MIN_CHANNEL_SPACING);
       const sourceX = sourceCandidates.find(x => clearVertical(x)
         && [...nodes.values()].every(node => node.id === item.sourceId || node.id === item.flow.to
           || !segmentIntersectsBox(item.start, {x, y: item.start.y}, node)));
@@ -769,6 +770,7 @@ function layoutCausal(pulse, options = {}) {
       let targetX = item.end.x - MIN_SIDE_CLEARANCE;
       while (targetX > minimumX && !clearVertical(targetX)) targetX -= MIN_CHANNEL_SPACING;
       item.targetEscapeX = targetX;
+      usedOverviewXs.push(item.sourceEscapeX, item.targetEscapeX);
       // Reserve provisional full-height escapes now; track routing below may
       // shorten them, but later routes must never select the same channel.
       verticalReservations.push(
