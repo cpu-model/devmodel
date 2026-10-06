@@ -499,6 +499,18 @@ function layoutCausal(pulse, options = {}) {
       if (detourY !== undefined) {
         item.sourceEscapeX = leftX;
         item.sourceDetourY = detourY;
+      } else if (options.debugRouting) {
+        console.error('[pulse-layout] detour-failed', JSON.stringify({
+          pulse: item.flow.pulse,
+          sourceId: item.sourceId,
+          targetId: item.flow.to,
+          source: item.source,
+          start: item.start,
+          leftX,
+          blockers: otherNodes.map(node => ({
+            id: node.id, x: node.x, y: node.y, width: node.width, height: node.height,
+          })),
+        }));
       }
     }
     if (options.debugRouting) sourceEscapeDiagnostics.push({
