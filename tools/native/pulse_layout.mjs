@@ -609,6 +609,11 @@ function layoutCausal(pulse, options = {}) {
   const orderSearchWork = orderSearchPairs * Math.max(1, pulse.flows.length ** 2);
   const willOptimizeOrders = options.optimizeTriggers !== false && !options.triggerOrder
     && levels[0].length > 2 && orderSearchPairs <= 120 && orderSearchWork <= 12000;
+  // Global port and overlap refinements repeatedly score flow pairs. On dense
+  // projections the deterministic base routes are preferable to unbounded
+  // presentation-only refinement.
+  const refinementWork = pulse.flows.length ** 2 * Math.max(1, nodes.size);
+  const willRefineDenseGeometry = options.optimizePorts !== false && refinementWork <= 8000;
 
   // Connections sharing a target side must preserve their vertical order.
   // If their initial routes cross, compact their ports and nest their target
@@ -747,7 +752,7 @@ function layoutCausal(pulse, options = {}) {
     const bends = candidateFlows.reduce((sum, flow) => sum + Math.max(0, flow.points.length - 2), 0);
     return overlaps * 100000000 + crossings * 1000000 + bends * 10000;
   };
-  for (const [sourceId] of options.optimizePorts === false || willOptimizeOrders ? [] : outgoing) {
+  for (const [sourceId] of !willRefineDenseGeometry || willOptimizeOrders ? [] : outgoing) {
     if (sourceId.startsWith('trigger:')) continue;
     const source = nodes.get(sourceId);
     const group = flows.filter(flow => flow.from === sourceId);
@@ -877,7 +882,7 @@ function layoutCausal(pulse, options = {}) {
   // Put the final height change immediately after the last blocking element,
   // rather than next to the target. This keeps the target-side approach long
   // and straight even when the complete target axis is obstructed upstream.
-  for (const flow of options.optimizePorts === false || willOptimizeOrders
+  for (const flow of !willRefineDenseGeometry || willOptimizeOrders
     ? [] : flows.filter(item => item.points.length >= 6)) {
     const end = flow.points.at(-1);
     const verticalTop = flow.points.at(-3);
@@ -913,7 +918,7 @@ function layoutCausal(pulse, options = {}) {
 
   // Resolve remaining collinear segments by moving internal vertical channels.
   // Overlap is a hard error and therefore dominates added length or bends.
-  if (options.optimizePorts !== false && !willOptimizeOrders) {
+  if (willRefineDenseGeometry && !willOptimizeOrders) {
     const overlapLength = candidateFlows => {
       let total = 0;
       for (let left = 0; left < candidateFlows.length; left += 1) {
