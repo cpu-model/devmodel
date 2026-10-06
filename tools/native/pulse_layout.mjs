@@ -88,10 +88,18 @@ function layoutCapabilityOverview(pulse) {
   const nodeWidth = 190;
   const nodeHeight = 72;
   const pulsePortSpacing = PULSE_RADIUS * 2 + 4;
-  const columnGap = 260;
   const rowGap = 120;
   const outerRouting = 108;
   const capabilities = pulse.behaviors;
+  const routeDensity = new Map();
+  for (const flow of pulse.flows) {
+    const sourceKey = 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
+    const key = `${sourceKey}\u0000${flow.to}`;
+    routeDensity.set(key, (routeDensity.get(key) || 0) + 1);
+  }
+  const maxParallelRoutes = Math.max(1, ...routeDensity.values());
+  const columnGap = Math.max(260,
+    MIN_SIDE_CLEARANCE * 2 + (maxParallelRoutes + 2) * MIN_CHANNEL_SPACING);
   const capabilityIds = new Set(capabilities.map(item => item.id));
   const incomingCapability = new Map(capabilities.map(item => [item.id, []]));
   for (const flow of pulse.flows) {
