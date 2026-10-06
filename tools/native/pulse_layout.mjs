@@ -150,7 +150,16 @@ function layoutCapabilityOverview(pulse) {
     return false;
   };
   const segmentsFor = points => points.slice(1).map((end,index)=>({start:points[index],end}));
-  const conflicts = points => segmentsFor(points).some(segment => routedSegments.some(existing => segmentOverlap(segment,existing)));
+  const segmentTooClose = (a,b,clearance=12) => {
+    const positiveOverlap=(a1,a2,b1,b2)=>Math.min(Math.max(a1,a2),Math.max(b1,b2))-Math.max(Math.min(a1,a2),Math.min(b1,b2))>0.01;
+    const ah=Math.abs(a.start.y-a.end.y)<0.01,bh=Math.abs(b.start.y-b.end.y)<0.01;
+    const av=Math.abs(a.start.x-a.end.x)<0.01,bv=Math.abs(b.start.x-b.end.x)<0.01;
+    if(ah&&bh&&Math.abs(a.start.y-b.start.y)<clearance) return positiveOverlap(a.start.x,a.end.x,b.start.x,b.end.x);
+    if(av&&bv&&Math.abs(a.start.x-b.start.x)<clearance) return positiveOverlap(a.start.y,a.end.y,b.start.y,b.end.y);
+    return false;
+  };
+  const conflicts = points => segmentsFor(points).some(segment =>
+    routedSegments.some(existing => segmentOverlap(segment,existing)||segmentTooClose(segment,existing)));
   const flows=[];
   for (const flow of orderedFlows) {
     const source=nodeById.get(sourceId(flow)), target=nodeById.get(flow.to);
@@ -165,7 +174,7 @@ function layoutCapabilityOverview(pulse) {
     const relationIndex=lane.get(relationKey(flow));
     const nominalX=usableLeft+(relationIndex+1)*(usableRight-usableLeft)/(orderedFlows.length+1);
     let points=null;
-    const offsets=[0,1,-1,2,-2,3,-3,4,-4,5,-5,6,-6,8,-8,10,-10,12,-12,16,-16,20,-20];
+    const offsets=[0,12,-12,24,-24,36,-36,48,-48,60,-60,72,-72,84,-84,96,-96];
     outer: for(const so of offsets) for(const to of offsets) for(const xo of offsets) {
       const sy=nominalSy+so, ty=nominalTy+to, channelX=nominalX+xo;
       if(sy<source.y+portMargin||sy>source.y+source.height-portMargin) continue;
