@@ -350,4 +350,28 @@ assert.equal(stress.nodes.filter(node => node.kind === 'behavior')
   .flatMap(node => [...node.informationIn, ...node.informationOut]).length, 12,
   'Stress layout preserves all Domain Information occurrences inside Behaviors');
 assert.ok(stress.flows.every(flow => flow.points.slice(1).every((point, index) => point.x === flow.points[index].x || point.y === flow.points[index].y)), 'Stress routes remain orthogonal');
+const denseOverviewPulse = {
+  capabilities: Array.from({length: 8}, (_, index) => ({id: `cap-${index}`, name: `Capability ${index}`})),
+  'domain-information': [],
+  behaviors: Array.from({length: 8}, (_, index) => ({id: `dense-${index}`, name: `Dense ${index}`, capability: `cap-${index}`})),
+  pulses: Array.from({length: 36}, (_, index) => ({id: `dense-pulse-${index}`, display: String(index + 1), name: `Dense Pulse ${index + 1}`})),
+  flows: [],
+};
+let densePulseIndex = 0;
+for (let source = 0; source < 8 && densePulseIndex < 36; source += 1) {
+  for (let target = source + 1; target < 8 && densePulseIndex < 36; target += 1) {
+    denseOverviewPulse.flows.push({from: `dense-${source}`, pulse: `dense-pulse-${densePulseIndex}`, to: `dense-${target}`});
+    densePulseIndex += 1;
+  }
+}
+while (densePulseIndex < 36) {
+  denseOverviewPulse.flows.push({trigger: `Dense trigger ${densePulseIndex}`, pulse: `dense-pulse-${densePulseIndex}`, to: `dense-${densePulseIndex % 8}`});
+  densePulseIndex += 1;
+}
+const denseStarted = performance.now();
+const denseOverview = layoutPulse(denseOverviewPulse).pages[0];
+const denseElapsed = performance.now() - denseStarted;
+assert.equal(denseOverview.flows.length, 36, 'Dense overview preserves all flows');
+assert.ok(denseElapsed < 2000, `Dense 8-node/36-flow overview remains bounded (took ${denseElapsed.toFixed(0)} ms)`);
+
 console.log('CPU v2 Pulse projection, layout, PDF, annotation, and stress checks passed');
