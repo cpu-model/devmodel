@@ -76,6 +76,17 @@ const coveragePulse = {
   pulses: [{id: 'p1', display: '1', name: 'P1'}, {id: 'p2', display: '2', name: 'P2'}, {id: 'p3', display: '3', name: 'P3'}],
   flows: [{trigger: 'Start', pulse: 'p1', to: 'a1'}, {from: 'a1', pulse: 'p2', to: 'a2'}, {from: 'a2', pulse: 'p3', to: 'b1'}],
 };
+const largePulse = {
+  capabilities: [{id: 'large', name: 'Large'}], 'domain-information': [],
+  behaviors: Array.from({length: 16}, (_, index) => ({id: `b${index}`, name: `B${index}`, capability: 'large'})),
+  pulses: Array.from({length: 16}, (_, index) => ({id: `p${index}`, display: String(index + 1), name: `P${index}`})),
+  flows: Array.from({length: 16}, (_, index) => ({trigger: `T${index}`, pulse: `p${index}`, to: `b${index}`})),
+};
+const largeStart = performance.now();
+const largeLayout = layoutPulse(largePulse);
+assert.ok(performance.now() - largeStart < 2000, 'Large Pulse projection avoids combinatorial order search');
+assert.equal(largeLayout.pages[0].flows.length, 16);
+
 const coverage = layoutPulse(coveragePulse).pages;
 assert.equal(coverage[0].flows.length, 2, 'Overview excludes same-Capability flow');
 assert.equal(coverage[1].flows.length, 3, 'Source detail covers trigger, internal, and outgoing cross-Capability flows');
