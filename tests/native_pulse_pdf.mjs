@@ -369,7 +369,7 @@ while (densePulseIndex < 36) {
   densePulseIndex += 1;
 }
 const denseStarted = performance.now();
-const denseOverview = layoutPulse(denseOverviewPulse).pages[0];
+const denseOverview = layoutPulse(denseOverviewPulse, {tracePhases: true}).pages[0];
 const denseElapsed = performance.now() - denseStarted;
 assert.equal(denseOverview.flows.length, 36, 'Dense overview preserves all flows');
 assert.ok(denseElapsed < 2000, `Dense 8-node/36-flow overview remains bounded (took ${denseElapsed.toFixed(0)} ms)`);
