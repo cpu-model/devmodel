@@ -162,16 +162,24 @@ function layoutCapabilityOverview(pulse) {
       const symbolPoint = {x: start.x + PULSE_RADIUS + 4, y: start.y};
       const endPoint = {x: target.x,
         y: target.y + target.height * (inIndex + 1) / (incomingGroups.length + 1)};
-      let channel = 'trigger' in flow
-        ? PAGE.margin + TRIGGER.width + MIN_SIDE_CLEARANCE
-        : start.x + MIN_SIDE_CLEARANCE;
-      const maxChannel = endPoint.x - MIN_SIDE_CLEARANCE;
       const sourceId = overviewSourceId(flow);
-      const candidatePoints = x => [start, {x, y: start.y}, {x, y: endPoint.y}, endPoint];
-      while (channel < maxChannel && (reservations.some(r => Math.abs(r.x - channel) < MIN_LINE_SPACING
-        && intervalsOverlap(start.y, endPoint.y, r.y1, r.y2))
-        || routeHitsUnrelatedNode(candidatePoints(channel), sourceId, flow.to))) channel += MIN_CHANNEL_SPACING;
-      if (channel > maxChannel) channel = Math.max(start.x + 1, maxChannel);
+      const fanoutGroup = pulse.flows.filter(other =>
+        overviewSourceId(other) === sourceId && other.pulse === flow.pulse);
+      const fanoutTargets = [...new Set(fanoutGroup.map(other => other.to))];
+      const trunkX = start.x + Math.max(MIN_SIDE_CLEARANCE, PULSE_RADIUS * 2 + 20);
+      let channel = fanoutTargets.length > 1
+        ? trunkX
+        : ('trigger' in flow ? PAGE.margin + TRIGGER.width + MIN_SIDE_CLEARANCE : start.x + MIN_SIDE_CLEARANCE);
+      const maxChannel = endPoint.x - MIN_SIDE_CLEARANCE;
+      const candidatePoints = x => fanoutTargets.length > 1
+        ? [start, {x: trunkX, y: start.y}, {x: trunkX, y: endPoint.y}, endPoint]
+        : [start, {x, y: start.y}, {x, y: endPoint.y}, endPoint];
+      if (fanoutTargets.length <= 1) {
+        while (channel < maxChannel && (reservations.some(r => Math.abs(r.x - channel) < MIN_LINE_SPACING
+          && intervalsOverlap(start.y, endPoint.y, r.y1, r.y2))
+          || routeHitsUnrelatedNode(candidatePoints(channel), sourceId, flow.to))) channel += MIN_CHANNEL_SPACING;
+        if (channel > maxChannel) channel = Math.max(start.x + 1, maxChannel);
+      }
       reservations.push({x: channel, y1: start.y, y2: endPoint.y});
       const points = candidatePoints(channel);
       return {
