@@ -107,14 +107,18 @@ function layoutCapabilityOverview(pulse) {
     width: nodeWidth, height: nodeHeight,
   })));
   const triggerNames = [...new Set(pulse.flows.filter(flow => 'trigger' in flow).map(flow => flow.trigger))];
-  const triggerNodes = triggerNames.map((name, index) => ({
-    id: `trigger:${name}`,
-    name: pulse.flows.find(flow => flow.trigger === name)?.triggerLabel || name,
-    kind: 'trigger',
-    x: PAGE.margin,
-    y: PAGE.margin + 140 + graphHeight - TRIGGER.height - index * (TRIGGER.height + NODE_GAP),
-    width: TRIGGER.width, height: TRIGGER.height,
-  }));
+  const triggerNodes = triggerNames.map(name => {
+    const triggerFlow = pulse.flows.find(flow => flow.trigger === name);
+    const target = capabilityNodes.find(node => node.id === triggerFlow.to);
+    return {
+      id: `trigger:${name}`,
+      name: triggerFlow?.triggerLabel || name,
+      kind: 'trigger',
+      x: PAGE.margin,
+      y: target ? target.y + (target.height - TRIGGER.height) / 2 : PAGE.margin + 140,
+      width: TRIGGER.width, height: TRIGGER.height,
+    };
+  });
   const nodes = [...capabilityNodes, ...triggerNodes];
   const nodeById = new Map(nodes.map(node => [node.id, node]));
   const overviewSourceId = flow => 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
