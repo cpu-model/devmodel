@@ -1410,22 +1410,36 @@ function causalPage(pulse, projection, title, kind, options = {}) {
   return layout;
 }
 
+function capabilityOverviewRelations(pulse) {
+  const behaviorById = new Map(pulse.behaviors.map(item => [item.id, item]));
+  const relations = new Map();
+  for (const flow of pulse.flows) {
+    const target = behaviorById.get(flow.to)?.capability;
+    if (!target) continue;
+    if ('trigger' in flow) {
+      const source = `external:${flow.pulse}`;
+      const key = `${source}\u0000${flow.pulse}\u0000${target}`;
+      if (!relations.has(key)) relations.set(key, {
+        trigger: source,
+        triggerLabel: pulse.pulses.find(item => item.id === flow.pulse)?.name || flow.trigger,
+        pulse: flow.pulse,
+        to: target,
+      });
+      continue;
+    }
+    const source = behaviorById.get(flow.from)?.capability;
+    if (!source || source === target) continue;
+    const key = `${source}\u0000${flow.pulse}\u0000${target}`;
+    if (!relations.has(key)) relations.set(key, {from: source, pulse: flow.pulse, to: target});
+  }
+  return [...relations.values()];
+}
+
 function capabilityProjections(pulse) {
   const behaviorById = new Map(pulse.behaviors.map(item => [item.id, item]));
-  const overviewFlows = pulse.flows.filter(flow => 'trigger' in flow
-    || behaviorById.get(flow.from).capability !== behaviorById.get(flow.to).capability);
-  const projectedOverviewFlows = overviewFlows.map(flow => 'trigger' in flow
-    ? {trigger: flow.trigger, pulse: flow.pulse, to: behaviorById.get(flow.to).capability}
-    : {from: behaviorById.get(flow.from).capability, pulse: flow.pulse, to: behaviorById.get(flow.to).capability});
-  const overviewFlowKey = flow => 'trigger' in flow
-    ? `external:\u0000${flow.pulse}\u0000${flow.to}`
-    : `from:${flow.from}\u0000${flow.pulse}\u0000${flow.to}`;
-  const deduplicatedOverviewFlows = [...new Map(projectedOverviewFlows.map(flow => [overviewFlowKey(flow), flow])).values()]
-    .map(flow => 'trigger' in flow ? {...flow, trigger: `external:${flow.pulse}:${flow.to}`,
-      triggerLabel: pulse.pulses.find(item => item.id === flow.pulse)?.name || flow.trigger} : flow);
   const overview = {
     behaviors: pulse.capabilities.map(item => ({...item})),
-    flows: deduplicatedOverviewFlows,
+    flows: capabilityOverviewRelations(pulse),
     capabilityIds: pulse.capabilities.map(item => item.id), boundaryIds: [],
   };
   const details = pulse.capabilities.map(capability => {
