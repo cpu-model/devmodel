@@ -96,10 +96,12 @@ function layoutCapabilityOverview(pulse) {
   const nodes = [...capabilityNodes, ...triggerNodes];
   const nodeById = new Map(nodes.map(node => [node.id, node]));
   const reservations = [];
+  const overviewSourceId = flow => 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
   const flows = [...pulse.flows].sort((a, b) =>
-    a.from.localeCompare(b.from) || a.to.localeCompare(b.to) || a.pulse.localeCompare(b.pulse))
+    overviewSourceId(a).localeCompare(overviewSourceId(b))
+      || a.to.localeCompare(b.to) || a.pulse.localeCompare(b.pulse))
     .map((flow, index) => {
-      const source = nodeById.get('trigger' in flow ? `trigger:${flow.trigger}` : flow.from);
+      const source = nodeById.get(overviewSourceId(flow));
       const target = nodeById.get(flow.to);
       const horizontal = Math.abs((target.x + target.width / 2) - (source.x + source.width / 2))
         >= Math.abs((target.y + target.height / 2) - (source.y + source.height / 2));
