@@ -177,15 +177,15 @@ Display identity remains globally stable and is never renumbered per diagram. Th
 
 Without Capabilities, `pulse.pdf` contains one integrated system Pulse diagram. With Capabilities it contains, in order, a Capability overview and one integrated detail diagram per Capability in declaration order.
 
-The overview contains Capability nodes, cross-Capability Flow occurrences, external-trigger Pulses entering Capability boundaries, and its local legend. It excludes Domain Information, internal flows, invented Capability dependencies, and full trigger text beyond the external trigger occurrence.
+The overview contains Capability nodes and one directed relationship for each distinct source-Capability → target-Capability pair for which at least one Flow crosses that Capability boundary. It is a functional dependency overview, not a Pulse projection: individual Pulse identities, external trigger occurrences, Domain Information, internal flows, and a Pulse legend are excluded. Multiple cross-Capability Flows between the same ordered Capability pair collapse to the same overview relationship. The relationship is derived only from actual cross-Capability Flows; the renderer must not invent Capability dependencies.
 
 Flow coverage is exact and deterministic:
 
-- trigger source: overview and receiving Capability detail;
+- trigger source: receiving Capability detail only;
 - same-Capability source and destination: that Capability detail only;
-- different source and destination Capabilities: overview, source detail, and destination detail.
+- different source and destination Capabilities: one collapsed source-Capability → target-Capability relationship in the overview, plus the source detail and destination detail with the original Pulse identity preserved.
 
-Cross-Capability details use graphical `FROM <Capability>` and `TO <Capability>` boundary references. They are presentation context, not semantic or requirement-addressable elements. Different Pulses between the same Capabilities remain distinct; real fan-out preserves Pulse identity; internal flows never become overview self-loops.
+Cross-Capability details use graphical `FROM <Capability>` and `TO <Capability>` boundary references. They are presentation context, not semantic or requirement-addressable elements. Different Pulses between the same Capabilities remain distinct in the detail projections but collapse to one directed relationship in the Capability overview; real fan-out preserves Pulse identity in details; internal flows never become overview self-loops.
 
 ### 4.7 Domain Information notation
 
