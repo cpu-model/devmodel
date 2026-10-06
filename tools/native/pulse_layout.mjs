@@ -1429,7 +1429,9 @@ function causalPage(pulse, projection, title, kind, options = {}) {
   }));
   const pagePulse = {behaviors, pulses: pulse.pulses, flows: projection.flows};
   if (options.tracePhases === true) console.error(`[pulse-layout] page-start: ${title}`);
-  const layout = kind === 'overview'\n    ? layoutCapabilityOverview(pagePulse)\n    : layoutCausal(pagePulse, {...options, traceLabel: title, projectionKind: kind});
+  const layout = kind === 'overview'
+    ? layoutCapabilityOverview(pagePulse)
+    : layoutCausal(pagePulse, {...options, traceLabel: title, projectionKind: kind});
   if (options.tracePhases === true) console.error(`[pulse-layout] page-complete: ${title}`);
   layout.title = title;
   layout.kind = kind;
