@@ -70,50 +70,25 @@ const intervalsOverlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max
   - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 0.01;
 
 function layoutCapabilityOverview(pulse) {
-  const relationKey = flow => `${'trigger' in flow ? `trigger:${flow.trigger}` : `from:${flow.from}`}\u0000${flow.pulse}\u0000${flow.to}`;
-  const relationKeys = pulse.flows.map(relationKey);
-  if (new Set(relationKeys).size !== relationKeys.length) {
-    const duplicates = relationKeys.filter((key, index) => relationKeys.indexOf(key) !== index);
-    throw new Error(`Duplicate capability overview relations reached layout: ${[...new Set(duplicates)].join(', ')}`);
-  }
+  const sourceId = flow => 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
+  const relationKey = flow => `${sourceId(flow)}\u0000${flow.pulse}\u0000${flow.to}`;
+  const keys = pulse.flows.map(relationKey);
+  if (new Set(keys).size !== keys.length) throw new Error('Duplicate capability overview relations reached layout');
   if (process.env.CPU_TRACE_OVERVIEW_RELATIONS === '1') {
     console.error('[pulse-overview-relations]');
-    for (const flow of pulse.flows) console.error(JSON.stringify({
-      source: 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from,
-      pulse: flow.pulse,
-      target: flow.to,
-    }));
+    for (const flow of pulse.flows) console.error(JSON.stringify({source: sourceId(flow), pulse: flow.pulse, target: flow.to}));
   }
+
   const eventById = new Map(pulse.pulses.map(item => [item.id, item]));
-  const nodeWidth = 190;
-  const nodeHeight = 72;
-  const pulsePortSpacing = PULSE_RADIUS * 2 + 4;
-  const rowGap = 120;
-  const outerRouting = 108;
-  const capabilities = pulse.behaviors;
-  const routeDensity = new Map();
-  for (const flow of pulse.flows) {
-    const sourceKey = 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
-    const key = `${sourceKey}\u0000${flow.to}`;
-    routeDensity.set(key, (routeDensity.get(key) || 0) + 1);
-  }
-  const maxParallelRoutes = Math.max(1, ...routeDensity.values());
-  const channelBankWidth = MIN_SIDE_CLEARANCE * 2
-    + (pulse.flows.length + 2) * MIN_CHANNEL_SPACING;
-  const columnGap = Math.max(260, channelBankWidth);
-  const capabilityIds = new Set(capabilities.map(item => item.id));
-  const incomingCapability = new Map(capabilities.map(item => [item.id, []]));
-  for (const flow of pulse.flows) {
-    if ('from' in flow && capabilityIds.has(flow.from) && capabilityIds.has(flow.to)) {
-      incomingCapability.get(flow.to).push(flow.from);
-    }
-  }
+  const capabilities = [...pulse.behaviors];
+  const capIds = new Set(capabilities.map(item => item.id));
   const depth = new Map(capabilities.map(item => [item.id, 0]));
   for (let pass = 0; pass < capabilities.length; pass += 1) {
     let changed = false;
-    for (const flow of pulse.flows.filter(flow => 'from' in flow)) {
-      const candidate = (depth.get(flow.from) ?? 0) + 1;
-      if (candidate > (depth.get(flow.to) ?? 0) && candidate <= capabilities.length) {
+    for (const flow of pulse.flows) {
+      if (!('from' in flow) || !capIds.has(flow.from) || !capIds.has(flow.to)) continue;
+      const candidate = (depth.get(flow.from) || 0) + 1;
+      if (candidate > depth.get(flow.to) && candidate <= capabilities.length) {
         depth.set(flow.to, candidate); changed = true;
       }
     }
@@ -121,151 +96,97 @@ function layoutCapabilityOverview(pulse) {
   }
   const maxDepth = Math.max(0, ...depth.values());
   const levels = Array.from({length: maxDepth + 1}, (_, d) =>
-    capabilities.filter(item => depth.get(item.id) === d).sort((a, b) => a.name.localeCompare(b.name)));
-  const orderedCapabilities = levels.flat();
-  const overviewSourceIdForSizing = flow => 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
-  const heightById = new Map(orderedCapabilities.map(item => {
-    const outgoingCount = new Set(pulse.flows.filter(flow => 'from' in flow && flow.from === item.id)
-      .map(flow => flow.pulse)).size;
-    const incomingCount = new Set(pulse.flows.filter(flow => flow.to === item.id)
-      .map(flow => `${overviewSourceIdForSizing(flow)}\u0000${flow.pulse}`)).size;
-    const portCount = Math.max(outgoingCount, incomingCount);
-    const requiredHeight = portCount > 1 ? (portCount + 1) * pulsePortSpacing : nodeHeight;
-    return [item.id, Math.max(nodeHeight, requiredHeight)];
+    capabilities.filter(item => depth.get(item.id) === d).sort((a,b) => a.name.localeCompare(b.name)));
+
+  const orderedFlows = [...pulse.flows].sort((a,b) =>
+    (depth.get(a.to)||0) - (depth.get(b.to)||0)
+    || sourceId(a).localeCompare(sourceId(b)) || a.to.localeCompare(b.to) || a.pulse.localeCompare(b.pulse));
+  const lane = new Map(orderedFlows.map((flow,index) => [relationKey(flow), index]));
+  const laneCount = Math.max(1, orderedFlows.length);
+  const nodeWidth = 190;
+  const portSpacing = MIN_CHANNEL_SPACING;
+  const rowGap = 96;
+  const corridorWidth = MIN_SIDE_CLEARANCE * 2 + laneCount * MIN_CHANNEL_SPACING;
+  const triggerGap = corridorWidth;
+  const heightById = new Map(capabilities.map(cap => {
+    const ports = Math.max(
+      pulse.flows.filter(f => 'from' in f && f.from === cap.id).length,
+      pulse.flows.filter(f => f.to === cap.id).length, 1);
+    return [cap.id, Math.max(72, (ports + 1) * portSpacing)];
   }));
-  const yById = new Map();
-  let yCursor = PAGE.margin + 140;
-  for (const item of orderedCapabilities) {
-    yById.set(item.id, yCursor);
-    yCursor += heightById.get(item.id) + rowGap;
-  }
-  const graphHeight = Math.max(nodeHeight, yCursor - (PAGE.margin + 140) - rowGap);
-  const capabilityNodes = levels.flatMap((items, d) => items.map(item => ({
-      ...item, kind: 'capability',
-      x: PAGE.margin + TRIGGER.width + outerRouting + channelBankWidth
-        + d * (nodeWidth + columnGap),
-      y: yById.get(item.id),
-      width: nodeWidth, height: heightById.get(item.id),
-  })));
-  const triggerNames = [...new Set(pulse.flows.filter(flow => 'trigger' in flow).map(flow => flow.trigger))];
-  const triggerNodes = triggerNames.map(name => {
-    const triggerFlow = pulse.flows.find(flow => flow.trigger === name);
-    const target = capabilityNodes.find(node => node.id === triggerFlow.to);
-    return {
-      id: `trigger:${name}`,
-      name: triggerFlow?.triggerLabel || name,
-      kind: 'trigger',
-      x: PAGE.margin,
-      y: target ? target.y + (target.height - TRIGGER.height) / 2 : PAGE.margin + 140,
-      width: TRIGGER.width, height: TRIGGER.height,
-    };
-  });
-  const nodes = [...capabilityNodes, ...triggerNodes];
-  const nodeById = new Map(nodes.map(node => [node.id, node]));
-  const routeHitsUnrelatedNode = (points, sourceId, targetId) => nodes.some(node => {
-    if (node.id === sourceId) return false;
-    for (let index = 1; index < points.length; index += 1) {
-      const isFinalTargetSegment = node.id === targetId && index === points.length - 1;
-      if (isFinalTargetSegment) continue;
-      if (segmentIntersectsBox(points[index - 1], points[index], node, 8)) return true;
+  const levelHeight = Math.max(...capabilities.map(cap => heightById.get(cap.id)), 72);
+  const top = PAGE.margin + 120;
+  const capabilityNodes = [];
+  for (let d=0; d<levels.length; d+=1) {
+    let y=top;
+    for (const cap of levels[d]) {
+      capabilityNodes.push({...cap, kind:'capability',
+        x: PAGE.margin + TRIGGER.width + triggerGap + d * (nodeWidth + corridorWidth),
+        y, width:nodeWidth, height:heightById.get(cap.id)});
+      y += heightById.get(cap.id) + rowGap;
     }
-    return false;
+  }
+  const nodeById = new Map(capabilityNodes.map(n=>[n.id,n]));
+  const triggers = [...new Set(pulse.flows.filter(f=>'trigger' in f).map(f=>f.trigger))].sort();
+  const triggerNodes = triggers.map((id,index) => ({
+    id:`trigger:${id}`,
+    name:pulse.flows.find(f=>f.trigger===id)?.triggerLabel || id,
+    kind:'trigger', x:PAGE.margin, y:top + index*(TRIGGER.height+rowGap),
+    width:TRIGGER.width, height:TRIGGER.height,
+  }));
+  for (const n of triggerNodes) nodeById.set(n.id,n);
+  const nodes=[...capabilityNodes,...triggerNodes];
+
+  const outgoing = new Map(), incoming = new Map();
+  for (const flow of orderedFlows) {
+    const s=sourceId(flow);
+    if(!outgoing.has(s)) outgoing.set(s,[]);
+    if(!incoming.has(flow.to)) incoming.set(flow.to,[]);
+    outgoing.get(s).push(flow); incoming.get(flow.to).push(flow);
+  }
+  for (const a of outgoing.values()) a.sort((x,y)=>lane.get(relationKey(x))-lane.get(relationKey(y)));
+  for (const a of incoming.values()) a.sort((x,y)=>lane.get(relationKey(x))-lane.get(relationKey(y)));
+
+  const flows=orderedFlows.map(flow=>{
+    const source=nodeById.get(sourceId(flow)), target=nodeById.get(flow.to);
+    if(!source||!target) throw new Error(`Missing overview node for ${relationKey(flow)}`);
+    const outs=outgoing.get(sourceId(flow));
+    const ins=incoming.get(flow.to);
+    const sy=source.y + source.height*(outs.indexOf(flow)+1)/(outs.length+1);
+    const ty=target.y + target.height*(ins.indexOf(flow)+1)/(ins.length+1);
+    const sourceDepth='trigger' in flow ? -1 : (depth.get(flow.from)||0);
+    const targetDepth=depth.get(flow.to)||0;
+    const laneOffset=(lane.get(relationKey(flow))+1)*MIN_CHANNEL_SPACING;
+    // The lane is deterministic inside the first corridor crossed by the
+    // relation. Long relations remain in the open corridor band above nodes,
+    // then approach the target through the target's own left corridor.
+    const firstCorridorLeft = sourceDepth < 0
+      ? PAGE.margin + TRIGGER.width
+      : source.x + source.width;
+    const x1=firstCorridorLeft + MIN_SIDE_CLEARANCE + laneOffset;
+    const targetCorridorLeft=target.x-corridorWidth;
+    const x2=targetCorridorLeft + MIN_SIDE_CLEARANCE + laneOffset;
+    const trackY=top - MIN_SIDE_CLEARANCE - laneOffset;
+    const start={x:source.x+source.width,y:sy}, end={x:target.x,y:ty};
+    const points=[start,{x:x1,y:sy},{x:x1,y:trackY},{x:x2,y:trackY},{x:x2,y:ty},end];
+    return {...flow,event:eventById.get(flow.pulse),points,
+      symbol:{x:start.x+PULSE_RADIUS+4,y:start.y},
+      symbolGroup:`${sourceId(flow)}\u0000${flow.pulse}`,
+      annotation:{x:start.x+PULSE_RADIUS*2+10,y:start.y+5}};
   });
-  const overviewSourceId = flow => 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
-  const reservations = [];
-  const approachReservations = [];
-  const pairLaneIndex = new Map();
-  const pairLaneCount = new Map();
-  for (const flow of pulse.flows) {
-    const pair = `${overviewSourceId(flow)}\u0000${flow.to}`;
-    const lanes = pairLaneCount.get(pair) || [];
-    if (!lanes.includes(flow.pulse)) lanes.push(flow.pulse);
-    pairLaneCount.set(pair, lanes);
+
+  const minY=Math.min(...flows.flatMap(f=>f.points.map(p=>p.y)),top);
+  if(minY<PAGE.margin) {
+    const shift=PAGE.margin-minY;
+    for(const node of nodes) node.y+=shift;
+    for(const flow of flows){for(const p of flow.points)p.y+=shift; flow.symbol.y+=shift; flow.annotation.y+=shift;}
   }
-  for (const [pair, lanes] of pairLaneCount) {
-    lanes.sort();
-    lanes.forEach((pulseId, index) => pairLaneIndex.set(`${pair}\u0000${pulseId}`, index));
-  }
-  const flows = [...pulse.flows].sort((a, b) =>
-    overviewSourceId(a).localeCompare(overviewSourceId(b))
-      || a.to.localeCompare(b.to) || a.pulse.localeCompare(b.pulse))
-    .map(flow => {
-      const source = nodeById.get(overviewSourceId(flow));
-      const target = nodeById.get(flow.to);
-      const sourceFlows = pulse.flows.filter(other => overviewSourceId(other) === overviewSourceId(flow));
-      const sourcePulses = [...new Set(sourceFlows.map(other => other.pulse))].sort();
-      const pulseIndex = sourcePulses.indexOf(flow.pulse);
-      const incomingGroups = [...new Set(pulse.flows.filter(other => other.to === flow.to)
-        .map(other => `${overviewSourceId(other)}\u0000${other.pulse}`))].sort();
-      const incomingGroup = `${overviewSourceId(flow)}\u0000${flow.pulse}`;
-      const inIndex = incomingGroups.indexOf(incomingGroup);
-      const sourceId = overviewSourceId(flow);
-      const startY = 'trigger' in flow
-        ? source.y + source.height / 2
-        : source.y + source.height * (pulseIndex + 1) / (sourcePulses.length + 1);
-      const start = {x: source.x + source.width, y: startY};
-      const symbolPoint = {x: start.x + PULSE_RADIUS + 4, y: start.y};
-      const baseEndY = target.y + target.height * (inIndex + 1) / (incomingGroups.length + 1);
-      let endY = baseEndY;
-      const reservedTargetYs = approachReservations.filter(r => r.target === flow.to).map(r => r.y);
-      while (reservedTargetYs.some(y => Math.abs(y - endY) < pulsePortSpacing)) {
-        endY += pulsePortSpacing;
-      }
-      if (endY >= target.y + target.height) {
-        endY = baseEndY;
-        while (reservedTargetYs.some(y => Math.abs(y - endY) < pulsePortSpacing)) endY -= pulsePortSpacing;
-      }
-      const endPoint = {x: target.x, y: endY};
-      let channel = 'trigger' in flow
-        ? PAGE.margin + TRIGGER.width + MIN_SIDE_CLEARANCE
-        : start.x + MIN_SIDE_CLEARANCE;
-      const approachLength = Math.max(MIN_SIDE_CLEARANCE, MIN_CHANNEL_SPACING * 2);
-      const approachX = endPoint.x - approachLength;
-      const maxChannel = approachX - MIN_CHANNEL_SPACING;
-      const candidatePoints = x => [
-        start,
-        {x, y: start.y},
-        {x, y: endPoint.y},
-        {x: approachX, y: endPoint.y},
-        endPoint,
-      ];
-      const routeConflicts = x => reservations.some(r =>
-        Math.abs(r.x - x) < MIN_CHANNEL_SPACING
-          && intervalsOverlap(start.y, endPoint.y, r.y1, r.y2))
-        || approachReservations.some(r =>
-          Math.abs(r.y - endPoint.y) < MIN_LINE_SPACING
-            && intervalsOverlap(x, endPoint.x, r.x1, r.x2))
-        || routeHitsUnrelatedNode(candidatePoints(x), sourceId, flow.to);
-      while (channel <= maxChannel && routeConflicts(channel)) channel += MIN_CHANNEL_SPACING;
-      if (channel > maxChannel) {
-        throw new Error(`No exclusive capability overview channel for ${sourceId} / ${flow.pulse} / ${flow.to}`);
-      }
-      reservations.push({x: channel, y1: Math.min(start.y, endPoint.y), y2: Math.max(start.y, endPoint.y)});
-      approachReservations.push({target: flow.to, y: endPoint.y, x1: channel, x2: endPoint.x});
-      const points = candidatePoints(channel);
-      return {
-        ...flow, event: eventById.get(flow.pulse), points,
-        symbol: symbolPoint,
-        symbolGroup: `${overviewSourceId(flow)}\u0000${flow.pulse}`,
-        annotation: {x: start.x + PULSE_RADIUS * 2 + 10, y: start.y + 5},
-      };
-    });
-  const contentBottom = Math.max(
-    ...nodes.map(node => node.y + node.height),
-    ...flows.flatMap(flow => flow.points.map(point => point.y)),
-    PAGE.margin + 140 + graphHeight,
-  );
-  const graphWidth = (maxDepth + 1) * nodeWidth + maxDepth * columnGap;
-  const legendColumns = 3;
-  const legendHeight = Math.ceil(pulse.pulses.length / legendColumns) * LEGEND_ROW + 42;
-  const pageWidth = PAGE.margin * 2 + TRIGGER.width + outerRouting + channelBankWidth + graphWidth;
-  return {
-    page: {...PAGE, width: pageWidth,
-      height: contentBottom + 72 + legendHeight + PAGE.margin},
-    nodes, flows, legend: pulse.pulses,
-    legendArea: {x: PAGE.margin, y: contentBottom + 72,
-      width: pageWidth - PAGE.margin * 2, height: legendHeight, columns: legendColumns},
-  };
+  const bottom=Math.max(...nodes.map(n=>n.y+n.height),...flows.flatMap(f=>f.points.map(p=>p.y)));
+  const right=Math.max(...nodes.map(n=>n.x+n.width),...flows.flatMap(f=>f.points.map(p=>p.x)));
+  const legendColumns=3, legendHeight=Math.ceil(pulse.pulses.length/legendColumns)*LEGEND_ROW+42;
+  return {page:{...PAGE,width:right+PAGE.margin,height:bottom+72+legendHeight+PAGE.margin},
+    nodes,flows,legend:pulse.pulses,
+    legendArea:{x:PAGE.margin,y:bottom+72,width:right-PAGE.margin,height:legendHeight,columns:legendColumns}};
 }
 
 function layoutCausal(pulse, options = {}) {
@@ -1508,7 +1429,7 @@ function causalPage(pulse, projection, title, kind, options = {}) {
   }));
   const pagePulse = {behaviors, pulses: pulse.pulses, flows: projection.flows};
   if (options.tracePhases === true) console.error(`[pulse-layout] page-start: ${title}`);
-  const layout = layoutCausal(pagePulse, {...options, traceLabel: title, projectionKind: kind});
+  const layout = kind === 'overview'\n    ? layoutCapabilityOverview(pagePulse)\n    : layoutCausal(pagePulse, {...options, traceLabel: title, projectionKind: kind});
   if (options.tracePhases === true) console.error(`[pulse-layout] page-complete: ${title}`);
   layout.title = title;
   layout.kind = kind;
