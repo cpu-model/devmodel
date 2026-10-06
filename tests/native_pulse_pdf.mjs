@@ -331,11 +331,12 @@ for (let left = 0; left < repeatedCapabilityOverview.flows.length; left += 1) {
   for (let right = left + 1; right < repeatedCapabilityOverview.flows.length; right += 1) {
     const first = repeatedCapabilityOverview.flows[left];
     const second = repeatedCapabilityOverview.flows[right];
-    for (const a of connectorSegments(first)) for (const b of connectorSegments(second))
+    for (const a of connectorSegments(first)) for (const b of connectorSegments(second)) {
       assert.ok(!collinearSegmentOverlap(a, b),
         `Overview connectors ${first.from}->${first.to} and ${second.from}->${second.to} must never share horizontal or vertical line segments`);
       assert.ok(!parallelSegmentTooClose(a, b),
         `Overview connectors ${first.from}->${first.to} and ${second.from}->${second.to} keep visible separation between parallel segments`);
+    }
   }
 }
 const cornerClearance = 24;
