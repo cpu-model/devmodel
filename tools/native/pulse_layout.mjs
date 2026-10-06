@@ -760,14 +760,14 @@ function layoutCausal(pulse, options = {}) {
       const sourceCandidates = [];
       for (let x = Math.max(minimumX, Math.min(maximumX, item.midX)); x <= maximumX; x += MIN_CHANNEL_SPACING) sourceCandidates.push(x);
       for (let x = Math.max(minimumX, Math.min(maximumX, item.midX)) - MIN_CHANNEL_SPACING; x >= minimumX; x -= MIN_CHANNEL_SPACING) sourceCandidates.push(x);
-      const clearVertical = (x, y1, y2) => verticalReservations.every(other =>
-        Math.abs(other.x - x) >= MIN_CHANNEL_SPACING || !intervalsOverlap(other.y1, other.y2, y1, y2));
-      const sourceX = sourceCandidates.find(x => clearVertical(x, item.start.y, item.end.y)
+      const clearVertical = x => verticalReservations.every(other =>
+        Math.abs(other.x - x) >= MIN_CHANNEL_SPACING);
+      const sourceX = sourceCandidates.find(x => clearVertical(x)
         && [...nodes.values()].every(node => node.id === item.sourceId || node.id === item.flow.to
           || !segmentIntersectsBox(item.start, {x, y: item.start.y}, node)));
       if (sourceX !== undefined) item.sourceEscapeX = sourceX;
       let targetX = item.end.x - MIN_SIDE_CLEARANCE;
-      while (targetX > minimumX && !clearVertical(targetX, item.start.y, item.end.y)) targetX -= MIN_CHANNEL_SPACING;
+      while (targetX > minimumX && !clearVertical(targetX)) targetX -= MIN_CHANNEL_SPACING;
       item.targetEscapeX = targetX;
       // Reserve provisional full-height escapes now; track routing below may
       // shorten them, but later routes must never select the same channel.
