@@ -133,11 +133,13 @@ function layoutCapabilityOverview(pulse) {
         y: source.y + source.height * (outIndex + 1) / (siblingsOut.length + 1)};
       const endPoint = {x: target.x,
         y: target.y + target.height * (inIndex + 1) / (siblingsIn.length + 1)};
-      let channel = start.x + MIN_SIDE_CLEARANCE;
+      let channel = 'trigger' in flow
+        ? PAGE.margin + TRIGGER.width + MIN_SIDE_CLEARANCE
+        : start.x + MIN_SIDE_CLEARANCE;
       const maxChannel = endPoint.x - MIN_SIDE_CLEARANCE;
       while (channel < maxChannel && reservations.some(r => Math.abs(r.x - channel) < MIN_LINE_SPACING
         && intervalsOverlap(start.y, endPoint.y, r.y1, r.y2))) channel += MIN_CHANNEL_SPACING;
-      if (channel > maxChannel) channel = (start.x + endPoint.x) / 2;
+      if (channel > maxChannel) channel = Math.max(start.x + 1, maxChannel);
       reservations.push({x: channel, y1: start.y, y2: endPoint.y});
       const points = [start, {x: channel, y: start.y}, {x: channel, y: endPoint.y}, endPoint];
       return {
