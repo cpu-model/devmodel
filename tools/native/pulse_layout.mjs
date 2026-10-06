@@ -100,9 +100,14 @@ function layoutCapabilityOverview(pulse) {
   const levels = Array.from({length: maxDepth + 1}, (_, d) =>
     capabilities.filter(item => depth.get(item.id) === d).sort((a, b) => a.name.localeCompare(b.name)));
   const orderedCapabilities = levels.flat();
+  const overviewSourceIdForSizing = flow => 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
   const heightById = new Map(orderedCapabilities.map(item => {
-    const outgoingCount = new Set(pulse.flows.filter(flow => 'from' in flow && flow.from === item.id).map(flow => flow.pulse)).size;
-    const requiredHeight = outgoingCount > 1 ? (outgoingCount + 1) * pulsePortSpacing : nodeHeight;
+    const outgoingCount = new Set(pulse.flows.filter(flow => 'from' in flow && flow.from === item.id)
+      .map(flow => flow.pulse)).size;
+    const incomingCount = new Set(pulse.flows.filter(flow => flow.to === item.id)
+      .map(flow => `${overviewSourceIdForSizing(flow)}\u0000${flow.pulse}`)).size;
+    const portCount = Math.max(outgoingCount, incomingCount);
+    const requiredHeight = portCount > 1 ? (portCount + 1) * pulsePortSpacing : nodeHeight;
     return [item.id, Math.max(nodeHeight, requiredHeight)];
   }));
   const yById = new Map();
