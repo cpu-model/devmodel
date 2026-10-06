@@ -163,8 +163,9 @@ function layoutCausal(pulse, options = {}) {
   const columnGaps = Array.from({length: maxDepth}, (_, level) => gapForLevel(level));
   const pageWidth = PAGE.margin * 2 + TRIGGER.width + maxDepth * BEHAVIOR.width
     + columnGaps.reduce((sum, gap) => sum + gap, 0);
-  const pageHeight = Math.max(595, PAGE.margin + 44 + graphHeight + 54 + legendHeight + PAGE.margin);
-  const graphTop = pageHeight - 78;
+  const overviewTopRoutingMargin = options.projectionKind === 'overview' ? MIN_CHANNEL_SPACING * 2 : 0;
+  const pageHeight = Math.max(595, PAGE.margin + 44 + overviewTopRoutingMargin + graphHeight + 54 + legendHeight + PAGE.margin);
+  const graphTop = pageHeight - 78 - overviewTopRoutingMargin;
   const graphBottom = graphTop - graphHeight;
   const nodes = new Map();
 
@@ -571,8 +572,15 @@ function layoutCausal(pulse, options = {}) {
         && trackY < Math.max(other.y1, other.y2)
         && other.x > Math.min(request.x1, request.x2)
         && other.x < Math.max(request.x1, request.x2)).length;
-      const score = endpointCrossings * 1000000 + trackCrossings * 10000 + parallelConflicts * 100
-        + Math.abs(trackY - request.baseY);
+      const overviewVerticalConflicts = options.projectionKind === 'overview'
+        ? verticalReservations.filter(other =>
+          (Math.abs(other.x - request.x1) < MIN_LINE_SPACING
+            && intervalsOverlap(other.y1, other.y2, request.item.start.y, trackY))
+          || (Math.abs(other.x - request.x2) < MIN_LINE_SPACING
+            && intervalsOverlap(other.y1, other.y2, trackY, request.item.end.y))).length
+        : 0;
+      const score = overviewVerticalConflicts * 10000000 + endpointCrossings * 1000000
+        + trackCrossings * 10000 + parallelConflicts * 100 + Math.abs(trackY - request.baseY);
       if (best === null || score < best.score) best = {score, y: trackY};
       if (score === 0) break;
     }
@@ -977,47 +985,6 @@ function layoutCausal(pulse, options = {}) {
   }
 
   tracePhase('approach-optimization-complete');
-
-  // Capability overview is intentionally dense. Keep its long internal vertical
-  // channels distinct deterministically instead of relying on the expensive
-  // global overlap resolver, which is bounded off for dense projections.
-  if (options.projectionKind === 'overview') {
-    const usedOverviewChannels = [];
-    const orderedFlows = [...flows].sort((a, b) =>
-      a.points[0].y - b.points[0].y || a.points.at(-1).y - b.points.at(-1).y
-      || a.pulse.localeCompare(b.pulse));
-    for (const flow of orderedFlows) {
-      if (flow.points.length < 4) continue;
-      const sourceId = 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
-      const targetId = flow.to;
-      for (let index = 1; index < flow.points.length; index += 1) {
-        if (flow.points[index - 1].x !== flow.points[index].x) continue;
-        const y1 = flow.points[index - 1].y;
-        const y2 = flow.points[index].y;
-        let x = flow.points[index].x;
-        const minX = nodes.get(sourceId).x + nodes.get(sourceId).width + MIN_SIDE_CLEARANCE;
-        const maxX = nodes.get(targetId).x - MIN_SIDE_CLEARANCE;
-        if (minX > maxX) continue;
-        while (usedOverviewChannels.some(channel => Math.abs(channel.x - x) < MIN_LINE_SPACING
-          && intervalsOverlap(y1, y2, channel.y1, channel.y2))) {
-          x += MIN_CHANNEL_SPACING;
-          if (x > maxX) x = minX;
-          if (usedOverviewChannels.some(channel => channel.x === x
-            && intervalsOverlap(y1, y2, channel.y1, channel.y2))) break;
-        }
-        const candidate = flow.points.map(point => ({...point}));
-        candidate[index - 1].x = x;
-        candidate[index].x = x;
-        const clear = [...nodes.values()].every(node => node.id === sourceId || node.id === targetId
-          || !segmentIntersectsBox(candidate[index - 1], candidate[index], node, MIN_SIDE_CLEARANCE));
-        if (clear) {
-          flow.points = simplify(candidate);
-          usedOverviewChannels.push({x, y1, y2});
-        }
-        break;
-      }
-    }
-  }
 
   tracePhase('overlap-resolver-start');
 
