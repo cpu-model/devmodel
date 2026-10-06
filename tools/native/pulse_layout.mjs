@@ -100,20 +100,24 @@ function layoutCapabilityOverview(pulse) {
   const levels = Array.from({length: maxDepth + 1}, (_, d) =>
     capabilities.filter(item => depth.get(item.id) === d).sort((a, b) => a.name.localeCompare(b.name)));
   const orderedCapabilities = levels.flat();
-  const rowById = new Map(orderedCapabilities.map((item, row) => [item.id, row]));
-  const maxRows = Math.max(1, orderedCapabilities.length);
-  const graphHeight = maxRows * nodeHeight + Math.max(0, maxRows - 1) * rowGap;
-  const capabilityNodes = levels.flatMap((items, d) => items.map(item => {
-    const row = rowById.get(item.id);
+  const heightById = new Map(orderedCapabilities.map(item => {
     const outgoingCount = new Set(pulse.flows.filter(flow => 'from' in flow && flow.from === item.id).map(flow => flow.pulse)).size;
     const requiredHeight = outgoingCount > 1 ? (outgoingCount + 1) * pulsePortSpacing : nodeHeight;
-    return {
+    return [item.id, Math.max(nodeHeight, requiredHeight)];
+  }));
+  const yById = new Map();
+  let yCursor = PAGE.margin + 140;
+  for (const item of orderedCapabilities) {
+    yById.set(item.id, yCursor);
+    yCursor += heightById.get(item.id) + rowGap;
+  }
+  const graphHeight = Math.max(nodeHeight, yCursor - (PAGE.margin + 140) - rowGap);
+  const capabilityNodes = levels.flatMap((items, d) => items.map(item => ({
       ...item, kind: 'capability',
       x: PAGE.margin + TRIGGER.width + outerRouting + d * (nodeWidth + columnGap),
-      y: PAGE.margin + 140 + row * (nodeHeight + rowGap),
-      width: nodeWidth, height: Math.max(nodeHeight, requiredHeight),
-    };
-  }));
+      y: yById.get(item.id),
+      width: nodeWidth, height: heightById.get(item.id),
+  })));
   const triggerNames = [...new Set(pulse.flows.filter(flow => 'trigger' in flow).map(flow => flow.trigger))];
   const triggerNodes = triggerNames.map(name => {
     const triggerFlow = pulse.flows.find(flow => flow.trigger === name);
