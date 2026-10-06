@@ -104,6 +104,7 @@ function layoutCapabilityOverview(pulse) {
   const laneCount = Math.max(1, orderedFlows.length);
   const nodeWidth = 190;
   const portSpacing = MIN_CHANNEL_SPACING;
+  const portMargin = Math.max(24, MIN_SIDE_CLEARANCE);
   const rowGap = 96;
   const corridorWidth = MIN_SIDE_CLEARANCE * 2 + laneCount * MIN_CHANNEL_SPACING;
   const triggerGap = corridorWidth;
@@ -111,7 +112,7 @@ function layoutCapabilityOverview(pulse) {
     const ports = Math.max(
       pulse.flows.filter(f => 'from' in f && f.from === cap.id).length,
       pulse.flows.filter(f => f.to === cap.id).length, 1);
-    return [cap.id, Math.max(72, (ports + 1) * portSpacing)];
+    return [cap.id, Math.max(72, portMargin * 2 + Math.max(0, ports - 1) * portSpacing)];
   }));
   const levelHeight = Math.max(...capabilities.map(cap => heightById.get(cap.id)), 72);
   const top = PAGE.margin + 120;
@@ -143,16 +144,22 @@ function layoutCapabilityOverview(pulse) {
     if(!source||!target) throw new Error(`Missing overview node for ${relationKey(flow)}`);
     const outs=outgoing.get(sourceId(flow));
     const ins=incoming.get(flow.to);
-    const sy=source.y + source.height*(outs.indexOf(flow)+1)/(outs.length+1);
-    const ty=target.y + target.height*(ins.indexOf(flow)+1)/(ins.length+1);
+    const portY = (node, index, count) => count === 1
+      ? node.y + node.height / 2
+      : node.y + portMargin + index * (node.height - 2 * portMargin) / (count - 1);
+    const sy=portY(source, outs.indexOf(flow), outs.length);
+    const ty=portY(target, ins.indexOf(flow), ins.length);
     // A collapsed Capability dependency is one visual relation. Route it
     // through the midpoint between source and target columns so it cannot
     // resemble several independent parallel Pulse connectors.
     const start={x:source.x+source.width,y:sy}, end={x:target.x,y:ty};
-    const midX=(start.x+end.x)/2;
+    const relationIndex=lane.get(relationKey(flow));
+    const channelSpan=Math.max(MIN_CHANNEL_SPACING, end.x-start.x-2*MIN_SIDE_CLEARANCE);
+    const channelStep=channelSpan/(orderedFlows.length+1);
+    const channelX=start.x+MIN_SIDE_CLEARANCE+(relationIndex+1)*channelStep;
     const points = Math.abs(sy-ty) < 0.01
       ? [start,end]
-      : [start,{x:midX,y:sy},{x:midX,y:ty},end];
+      : [start,{x:channelX,y:sy},{x:channelX,y:ty},end];
     return {...flow,points};
   });
 
