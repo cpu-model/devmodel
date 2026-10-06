@@ -66,25 +66,36 @@ function drawPage(document, layout, requirements, font, bold) {
       const target = `pulse.behavior.${node.id}`;
       if (requirements[target]) addTextAnnotation(document, annots, {rect: [node.x + 4, middle.y + middle.height - 18, node.x + 18, middle.y + middle.height - 4], title: node.name, contents: requirements[target]});
     } else if (node.kind === 'trigger') {
-      page.drawSvgPath(`M ${node.width / 2} 0 L ${node.width} ${node.height / 2} L ${node.width / 2} ${node.height} L 0 ${node.height / 2} Z`, {x: node.x, y: node.y + node.height, color: palette.fill, borderColor: palette.line, borderWidth: 1.6});
-      const lines = wrappedLines(font, node.name, 9, node.width * 0.58); const startY = node.y + node.height / 2 + ((lines.length - 1) * 11) / 2 - 3;
-      lines.forEach((text, index) => page.drawText(text, {x: node.x + (node.width - font.widthOfTextAtSize(text, 9)) / 2, y: startY - index * 11, size: 9, font, color: palette.ink}));
+      page.drawRectangle({x: node.x, y: node.y, width: node.width, height: node.height, color: palette.fill, borderColor: palette.line, borderWidth: 1.4});
+      const diamondSize = Math.min(22, node.height - 16);
+      const diamondX = node.x + 14;
+      const diamondY = node.y + node.height / 2;
+      page.drawSvgPath(`M 0 ${diamondSize / 2} L ${diamondSize / 2} 0 L ${diamondSize} ${diamondSize / 2} L ${diamondSize / 2} ${diamondSize} Z`, {x: diamondX, y: diamondY + diamondSize / 2, color: palette.fill, borderColor: palette.line, borderWidth: 1.6});
+      const textBox = {x: diamondX + diamondSize + 10, y: node.y, width: node.width - diamondSize - 42, height: node.height};
+      const lines = wrappedLines(font, node.name, 9, textBox.width); const startY = node.y + node.height / 2 + ((lines.length - 1) * 11) / 2 - 3;
+      lines.forEach((text, index) => page.drawText(text, {x: textBox.x, y: startY - index * 11, size: 9, font, color: palette.ink}));
     } else {
       page.drawRectangle({x: node.x, y: node.y, width: node.width, height: node.height, color: palette.fill, borderColor: node.kind === 'capability' ? palette.accent : palette.line, borderWidth: node.kind === 'capability' ? 2.4 : 1.4});
       centered(page, node.kind === 'capability' ? bold : font, node.name, node, 10);
     }
   }
   for (const flow of layout.flows) arrow(page, flow.points.at(-2), flow.points.at(-1));
-  for (const flow of layout.flows) {
+  const drawnSymbols = new Set();
+  for (const flow of layout.flows.filter(flow => flow.event && flow.symbol)) {
+    const symbolKey = flow.symbolGroup || `${flow.symbol.x}:${flow.symbol.y}:${flow.event.id}`;
+    if (drawnSymbols.has(symbolKey)) continue;
+    drawnSymbols.add(symbolKey);
     page.drawCircle({x: flow.symbol.x, y: flow.symbol.y, size: 14, color: palette.white, borderColor: palette.accent, borderWidth: 2});
     const displayWidth = bold.widthOfTextAtSize(flow.event.display, 9);
     page.drawText(flow.event.display, {x: flow.symbol.x - displayWidth / 2, y: flow.symbol.y - 3.2, size: 9, font: bold, color: palette.accent});
     const target = `pulse.pulse.${flow.event.id}`;
     if (requirements[target]) addTextAnnotation(document, annots, {rect: [flow.annotation.x, flow.annotation.y, flow.annotation.x + 14, flow.annotation.y + 14], title: flow.event.name, contents: requirements[target]});
   }
-  const rows = Math.max(1, Math.ceil(layout.legend.length / layout.legendArea.columns)); const columnWidth = layout.legendArea.width / layout.legendArea.columns;
-  page.drawText('PULSES', {x: layout.legendArea.x, y: layout.legendArea.y + layout.legendArea.height - 18, size: 10, font: bold, color: palette.accent});
-  layout.legend.forEach((event, index) => { const column = Math.floor(index / rows); const row = index % rows; const x = layout.legendArea.x + column * columnWidth; const y = layout.legendArea.y + layout.legendArea.height - 40 - row * 18; page.drawText(event.display, {x, y, size: 9, font: bold, color: palette.accent}); page.drawText(event.name, {x: x + 28, y, size: 8.3, font, color: palette.ink}); });
+  if (layout.legend?.length && layout.legendArea) {
+    const rows = Math.max(1, Math.ceil(layout.legend.length / layout.legendArea.columns)); const columnWidth = layout.legendArea.width / layout.legendArea.columns;
+    page.drawText('PULSES', {x: layout.legendArea.x, y: layout.legendArea.y + layout.legendArea.height - 18, size: 10, font: bold, color: palette.accent});
+    layout.legend.forEach((event, index) => { const column = Math.floor(index / rows); const row = index % rows; const x = layout.legendArea.x + column * columnWidth; const y = layout.legendArea.y + layout.legendArea.height - 40 - row * 18; page.drawText(event.display, {x, y, size: 9, font: bold, color: palette.accent}); page.drawText(event.name, {x: x + 28, y, size: 8.3, font, color: palette.ink}); });
+  }
 }
 
 export async function renderPulsePdf({layout, requirements, output}) {

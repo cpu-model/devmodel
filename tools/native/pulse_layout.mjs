@@ -66,7 +66,149 @@ function segmentIntersectsBox(start, end, box, padding = 10) {
   return high >= 0 && low <= 1;
 }
 
+const intervalsOverlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max(b1, b2))
+  - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 0.01;
+
+function layoutCapabilityOverview(pulse) {
+  const sourceId = flow => flow.from;
+  const relationKey = flow => `${sourceId(flow)}\u0000${flow.to}`;
+  const keys = pulse.flows.map(relationKey);
+  if (new Set(keys).size !== keys.length) throw new Error('Duplicate capability overview relations reached layout');
+  if (process.env.CPU_TRACE_OVERVIEW_RELATIONS === '1') {
+    console.error('[pulse-overview-relations]');
+    for (const flow of pulse.flows) console.error(JSON.stringify({source: sourceId(flow), target: flow.to}));
+  }
+
+  const capabilities = [...pulse.behaviors];
+  const capIds = new Set(capabilities.map(item => item.id));
+  const depth = new Map(capabilities.map(item => [item.id, 0]));
+  for (let pass = 0; pass < capabilities.length; pass += 1) {
+    let changed = false;
+    for (const flow of pulse.flows) {
+      if (!('from' in flow) || !capIds.has(flow.from) || !capIds.has(flow.to)) continue;
+      const candidate = (depth.get(flow.from) || 0) + 1;
+      if (candidate > depth.get(flow.to) && candidate <= capabilities.length) {
+        depth.set(flow.to, candidate); changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+  const maxDepth = Math.max(0, ...depth.values());
+  const levels = Array.from({length: maxDepth + 1}, (_, d) =>
+    capabilities.filter(item => depth.get(item.id) === d).sort((a,b) => a.name.localeCompare(b.name)));
+
+  const orderedFlows = [...pulse.flows].sort((a,b) =>
+    (depth.get(a.to)||0) - (depth.get(b.to)||0)
+    || sourceId(a).localeCompare(sourceId(b)) || a.to.localeCompare(b.to) || a.pulse.localeCompare(b.pulse));
+  const lane = new Map(orderedFlows.map((flow,index) => [relationKey(flow), index]));
+  const laneCount = Math.max(1, orderedFlows.length);
+  const nodeWidth = 190;
+  const connectorClearance = 12;
+  const portSpacing = Math.max(MIN_CHANNEL_SPACING, connectorClearance);
+  const portMargin = Math.max(24, MIN_SIDE_CLEARANCE);
+  const rowGap = Math.max(96, connectorClearance * (laneCount + 2));
+  const corridorWidth = MIN_SIDE_CLEARANCE * 2 + laneCount * connectorClearance * 2;
+  const triggerGap = corridorWidth;
+  const heightById = new Map(capabilities.map(cap => {
+    const ports = Math.max(
+      pulse.flows.filter(f => 'from' in f && f.from === cap.id).length,
+      pulse.flows.filter(f => f.to === cap.id).length, 1);
+    return [cap.id, Math.max(72, portMargin * 2 + Math.max(0, ports - 1) * portSpacing)];
+  }));
+  const levelHeight = Math.max(...capabilities.map(cap => heightById.get(cap.id)), 72);
+  const top = PAGE.margin + 120;
+  const capabilityNodes = [];
+  for (let d=0; d<levels.length; d+=1) {
+    let y=top;
+    for (const cap of levels[d]) {
+      capabilityNodes.push({...cap, kind:'capability',
+        x: PAGE.margin + TRIGGER.width + triggerGap + d * (nodeWidth + corridorWidth),
+        y, width:nodeWidth, height:heightById.get(cap.id)});
+      y += heightById.get(cap.id) + rowGap;
+    }
+  }
+  const nodeById = new Map(capabilityNodes.map(n=>[n.id,n]));
+  const nodes=[...capabilityNodes];
+
+  const outgoing = new Map(), incoming = new Map();
+  for (const flow of orderedFlows) {
+    const s=sourceId(flow);
+    if(!outgoing.has(s)) outgoing.set(s,[]);
+    if(!incoming.has(flow.to)) incoming.set(flow.to,[]);
+    outgoing.get(s).push(flow); incoming.get(flow.to).push(flow);
+  }
+  for (const a of outgoing.values()) a.sort((x,y)=>lane.get(relationKey(x))-lane.get(relationKey(y)));
+  for (const a of incoming.values()) a.sort((x,y)=>lane.get(relationKey(x))-lane.get(relationKey(y)));
+
+  const routedSegments = [];
+  const segmentOverlap = (a, b) => {
+    const positiveOverlap = (a1, a2, b1, b2) =>
+      Math.min(Math.max(a1,a2),Math.max(b1,b2))-Math.max(Math.min(a1,a2),Math.min(b1,b2)) > 0.01;
+    const ah=Math.abs(a.start.y-a.end.y)<0.01, bh=Math.abs(b.start.y-b.end.y)<0.01;
+    const av=Math.abs(a.start.x-a.end.x)<0.01, bv=Math.abs(b.start.x-b.end.x)<0.01;
+    if(ah&&bh&&Math.abs(a.start.y-b.start.y)<0.01) return positiveOverlap(a.start.x,a.end.x,b.start.x,b.end.x);
+    if(av&&bv&&Math.abs(a.start.x-b.start.x)<0.01) return positiveOverlap(a.start.y,a.end.y,b.start.y,b.end.y);
+    return false;
+  };
+  const segmentsFor = points => points.slice(1).map((end,index)=>({start:points[index],end}));
+  const segmentTooClose = (a,b,clearance=connectorClearance) => {
+    const positiveOverlap=(a1,a2,b1,b2)=>Math.min(Math.max(a1,a2),Math.max(b1,b2))-Math.max(Math.min(a1,a2),Math.min(b1,b2))>0.01;
+    const ah=Math.abs(a.start.y-a.end.y)<0.01,bh=Math.abs(b.start.y-b.end.y)<0.01;
+    const av=Math.abs(a.start.x-a.end.x)<0.01,bv=Math.abs(b.start.x-b.end.x)<0.01;
+    if(ah&&bh&&Math.abs(a.start.y-b.start.y)<clearance) return positiveOverlap(a.start.x,a.end.x,b.start.x,b.end.x);
+    if(av&&bv&&Math.abs(a.start.x-b.start.x)<clearance) return positiveOverlap(a.start.y,a.end.y,b.start.y,b.end.y);
+    return false;
+  };
+  const conflicts = points => segmentsFor(points).some(segment =>
+    routedSegments.some(existing => segmentOverlap(segment,existing)||segmentTooClose(segment,existing)));
+  const flows=[];
+  for (const flow of orderedFlows) {
+    const source=nodeById.get(sourceId(flow)), target=nodeById.get(flow.to);
+    if(!source||!target) throw new Error(`Missing overview node for ${relationKey(flow)}`);
+    const outs=outgoing.get(sourceId(flow)), ins=incoming.get(flow.to);
+    const nominalPortY = (node,index,count) => count===1 ? node.y+node.height/2
+      : node.y+portMargin+index*(node.height-2*portMargin)/(count-1);
+    const nominalSy=nominalPortY(source,outs.indexOf(flow),outs.length);
+    const nominalTy=nominalPortY(target,ins.indexOf(flow),ins.length);
+    const startX=source.x+source.width, endX=target.x;
+    const usableLeft=startX+MIN_SIDE_CLEARANCE, usableRight=endX-MIN_SIDE_CLEARANCE;
+    const relationIndex=lane.get(relationKey(flow));
+    const nominalX=usableLeft+(relationIndex+1)*(usableRight-usableLeft)/(orderedFlows.length+1);
+    let points=null;
+    const maxPortOffset=Math.max(source.height,target.height);
+    const maxChannelOffset=Math.max(connectorClearance,corridorWidth);
+    const offsets=[0];
+    for(let delta=connectorClearance;delta<=Math.max(maxPortOffset,maxChannelOffset);delta+=connectorClearance)
+      offsets.push(delta,-delta);
+    outer: for(const so of offsets) for(const to of offsets) for(const xo of offsets) {
+      const sy=nominalSy+so, ty=nominalTy+to, channelX=nominalX+xo;
+      if(sy<source.y+portMargin||sy>source.y+source.height-portMargin) continue;
+      if(ty<target.y+portMargin||ty>target.y+target.height-portMargin) continue;
+      if(channelX<usableLeft||channelX>usableRight) continue;
+      const candidate=[{x:startX,y:sy},{x:channelX,y:sy},{x:channelX,y:ty},{x:endX,y:ty}];
+      if(!conflicts(candidate)){points=candidate;break outer;}
+    }
+    if(!points) throw new Error(`Unable to route non-overlapping Capability dependency ${relationKey(flow)}`);
+    routedSegments.push(...segmentsFor(points));
+    flows.push({...flow,points});
+  }
+
+  const minY=Math.min(...flows.flatMap(f=>f.points.map(p=>p.y)),top);
+  if(minY<PAGE.margin) {
+    const shift=PAGE.margin-minY;
+    for(const node of nodes) node.y+=shift;
+    for(const flow of flows) for(const p of flow.points) p.y+=shift;
+  }
+  const bottom=Math.max(...nodes.map(n=>n.y+n.height),...flows.flatMap(f=>f.points.map(p=>p.y)));
+  const right=Math.max(...nodes.map(n=>n.x+n.width),...flows.flatMap(f=>f.points.map(p=>p.x)));
+  return {page:{...PAGE,width:right+PAGE.margin,height:bottom+PAGE.margin+72}, nodes,flows,legend:[]};
+}
+
 function layoutCausal(pulse, options = {}) {
+  const trace = options.tracePhases === true;
+  const traceLabel = options.traceLabel || 'pulse';
+  const tracePhase = phase => { if (trace) console.error(`[pulse-layout] ${traceLabel}: ${phase}`); };
+  tracePhase(`start behaviors=${pulse.behaviors.length} flows=${pulse.flows.length}`);
   const nodeGap = options.nodeGap ?? NODE_GAP;
   const eventById = new Map(pulse.pulses.map(item => [item.id, item]));
   // Layout ordering needs occurrence identity, not only semantic equality:
@@ -128,13 +270,13 @@ function layoutCausal(pulse, options = {}) {
     const informationHeight = (inputs + outputs) * 16 + (inputs ? 10 : 0) + (outputs ? 10 : 0);
     return BEHAVIOR.height + informationHeight;
   };
-  const nodeHeight = id => {
-    const portCount = Math.max(incoming.get(id)?.length || 0, outgoing.get(id)?.length || 0);
-    return Math.max(intrinsicBehaviorHeight(id), PORT_PADDING * 2 + Math.max(0, portCount - 1) * MIN_PORT_SPACING);
-  };
+  const portCountFor = id => Math.max(incoming.get(id)?.length || 0, outgoing.get(id)?.length || 0);
+  const portHeight = id => PORT_PADDING * 2 + Math.max(0, portCountFor(id) - 1) * MIN_PORT_SPACING;
+  const nodeHeight = id => Math.max(intrinsicBehaviorHeight(id), portHeight(id));
+  const triggerHeight = id => Math.max(TRIGGER.height, portHeight(id));
   const levelHeights = levels.map((items, level) => items.reduce((sum, item) => {
     const id = item.id;
-    return sum + (level === 0 ? TRIGGER.height : nodeHeight(id));
+    return sum + (level === 0 ? triggerHeight(id) : nodeHeight(id));
   }, 0) + Math.max(0, items.length - 1) * nodeGap);
   const graphHeight = Math.max(...levelHeights);
   const legendColumns = 3;
@@ -159,8 +301,11 @@ function layoutCausal(pulse, options = {}) {
   const columnGaps = Array.from({length: maxDepth}, (_, level) => gapForLevel(level));
   const pageWidth = PAGE.margin * 2 + TRIGGER.width + maxDepth * BEHAVIOR.width
     + columnGaps.reduce((sum, gap) => sum + gap, 0);
-  const pageHeight = Math.max(595, PAGE.margin + 44 + graphHeight + 54 + legendHeight + PAGE.margin);
-  const graphTop = pageHeight - 78;
+  const overviewTopRoutingMargin = options.projectionKind === 'overview'
+    ? Math.max(MIN_CHANNEL_SPACING * 2, pulse.flows.length * MIN_CHANNEL_SPACING)
+    : 0;
+  const pageHeight = Math.max(595, PAGE.margin + 44 + overviewTopRoutingMargin + graphHeight + 54 + legendHeight + PAGE.margin);
+  const graphTop = pageHeight - 78 - overviewTopRoutingMargin;
   const graphBottom = graphTop - graphHeight;
   const nodes = new Map();
 
@@ -174,7 +319,7 @@ function layoutCausal(pulse, options = {}) {
     let top = graphTop - (graphHeight - usedHeight) / 2;
     items.forEach((item, index) => {
       const id = item.id;
-      const height = level === 0 ? TRIGGER.height : nodeHeight(id);
+      const height = level === 0 ? triggerHeight(id) : nodeHeight(id);
       nodes.set(id, {
         ...item, id, kind: level === 0 ? 'trigger' : 'behavior',
         x, y: top - height, width, height,
@@ -406,8 +551,6 @@ function layoutCausal(pulse, options = {}) {
   const minimalReservations = routed.filter(item => item.direct)
     .map(item => ({x1: item.start.x, x2: item.end.x, y: item.start.y}));
   const verticalReservations = [];
-  const intervalsOverlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max(b1, b2))
-    - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 0.01;
   const horizontalRouteIsClear = (x1, x2, y, item) => [...nodes.values()].every(node =>
     node.id === item.sourceId || node.id === item.flow.to
       || !segmentIntersectsBox({x: x1, y}, {x: x2, y}, node));
@@ -429,6 +572,7 @@ function layoutCausal(pulse, options = {}) {
     verticalReservations.push({x: bendX, y1: item.start.y, y2: item.end.y});
   }
 
+  const overviewLineSpacing = options.projectionKind === 'overview' ? MIN_CHANNEL_SPACING : MIN_LINE_SPACING;
   const routeTracks = new Map();
   const targetApproaches = new Map();
   for (const item of routed.filter(item => !item.direct && item.minimalBendX === undefined)) {
@@ -437,7 +581,16 @@ function layoutCausal(pulse, options = {}) {
   }
   for (const group of targetApproaches.values()) {
     group.sort((a, b) => a.end.y - b.end.y || a.flow.pulse.localeCompare(b.flow.pulse));
-    group.forEach((item, index) => { item.targetEscapeX = item.end.x - MIN_SIDE_CLEARANCE - index * MIN_CHANNEL_SPACING; });
+    group.forEach((item, index) => {
+      let x = item.end.x - MIN_SIDE_CLEARANCE - index * MIN_CHANNEL_SPACING;
+      if (options.projectionKind === 'overview') {
+        while (verticalReservations.some(other => Math.abs(other.x - x) < MIN_CHANNEL_SPACING
+          && intervalsOverlap(other.y1, other.y2, item.start.y, item.end.y))) {
+          x -= MIN_CHANNEL_SPACING;
+        }
+      }
+      item.targetEscapeX = x;
+    });
   }
   const sourceEscapeDiagnostics = [];
   for (const item of routed.filter(item => !item.direct && item.minimalBendX === undefined)) {
@@ -455,7 +608,63 @@ function layoutCausal(pulse, options = {}) {
           || segmentIntersectsBox({x, y: item.start.y}, {x, y: item.end.y}, node)))
         .map(node => node.id),
     }));
-    item.sourceEscapeX = evaluatedCandidates.find(candidate => candidate.blockers.length === 0)?.x;
+    item.sourceEscapeX = evaluatedCandidates.find(candidate => candidate.blockers.length === 0
+      && (options.projectionKind !== 'overview' || verticalReservations.every(other =>
+        Math.abs(other.x - candidate.x) >= MIN_CHANNEL_SPACING
+        || !intervalsOverlap(other.y1, other.y2, item.start.y, item.end.y))))?.x;
+    if (item.sourceEscapeX === undefined) {
+      // A projected external trigger may span every straight source-escape
+      // candidate. Defer the vertical detour to track routing; only the short
+      // horizontal source leg must be clear here.
+      const horizontalCandidate = evaluatedCandidates.find(candidate => {
+        const x = candidate.x;
+        return ![...nodes.values()].some(node => node.id !== item.sourceId && node.id !== item.flow.to
+          && segmentIntersectsBox(item.start, {x, y: item.start.y}, node));
+      });
+      if (horizontalCandidate) {
+        item.sourceEscapeX = horizontalCandidate.x;
+        item.sourceEscapeNeedsDetour = true;
+      }
+    }
+    if (item.sourceEscapeX === undefined) {
+      const leftEdge = Math.min(...[...nodes.values()].map(node => node.x));
+      const outsideX = leftEdge - MIN_SIDE_CLEARANCE;
+      const clear = [...nodes.values()].every(node =>
+        node.id === item.sourceId || node.id === item.flow.to
+        || !segmentIntersectsBox(item.start, {x: outsideX, y: item.start.y}, node));
+      if (clear) item.sourceEscapeX = outsideX;
+    }
+    if (item.sourceEscapeX === undefined && item.source.kind === 'trigger') {
+      const otherNodes = [...nodes.values()].filter(node => node.id !== item.sourceId && node.id !== item.flow.to);
+      const leftX = Math.min(...[...nodes.values()].map(node => node.x)) - MIN_SIDE_CLEARANCE;
+      const ys = [];
+      for (let step = 1; step <= 40; step += 1) {
+        ys.push(item.start.y - step * MIN_LINE_SPACING, item.start.y + step * MIN_LINE_SPACING);
+      }
+      const detourY = ys.find(y => {
+        const segments = [
+          [item.start, {x: item.start.x, y}],
+          [{x: item.start.x, y}, {x: leftX, y}],
+        ];
+        return otherNodes.every(node => segments.every(([a, b]) => !segmentIntersectsBox(a, b, node)));
+      });
+      if (detourY !== undefined) {
+        item.sourceEscapeX = leftX;
+        item.sourceDetourY = detourY;
+      } else if (options.debugRouting) {
+        console.error('[pulse-layout] detour-failed', JSON.stringify({
+          pulse: item.flow.pulse,
+          sourceId: item.sourceId,
+          targetId: item.flow.to,
+          source: item.source,
+          start: item.start,
+          leftX,
+          blockers: otherNodes.map(node => ({
+            id: node.id, x: node.x, y: node.y, width: node.width, height: node.height,
+          })),
+        }));
+      }
+    }
     if (options.debugRouting) sourceEscapeDiagnostics.push({
       pulse: item.flow.pulse, sourceId: item.sourceId, targetId: item.flow.to,
       start: {...item.start}, end: {...item.end}, midX: item.midX,
@@ -465,15 +674,50 @@ function layoutCausal(pulse, options = {}) {
   const unroutable = routed.filter(item => !item.direct && item.minimalBendX === undefined
     && item.sourceEscapeX === undefined);
   if (unroutable.length) {
-    throw new Error(`No clear source escape channel for Pulse Flow: ${unroutable.map(item => item.flow.pulse).join(', ')}`);
+    const detail = options.debugRouting ? unroutable.map(item => {
+      const diagnostic = sourceEscapeDiagnostics.find(entry => entry.pulse === item.flow.pulse
+        && entry.sourceId === item.sourceId && entry.targetId === item.flow.to);
+      return `${item.sourceId} --${item.flow.pulse}--> ${item.flow.to} candidates=${JSON.stringify(diagnostic?.candidates || [])}`;
+    }).join('\n') : unroutable.map(item => item.flow.pulse).join(', ');
+    throw new Error(`No clear source escape channel for Pulse Flow: ${detail}`);
   }
   const reservations = [...minimalReservations, ...routed.filter(item => !item.direct && item.minimalBendX === undefined).flatMap(item => [
-    {x1: item.start.x, x2: item.sourceEscapeX, y: item.start.y},
+    {x1: item.start.x, x2: item.sourceEscapeX, y: item.sourceDetourY ?? item.start.y},
     {x1: item.targetEscapeX, x2: item.end.x, y: item.end.y},
   ])];
+  if (options.projectionKind === 'overview') {
+    // Overview routes are allocated atomically: later relations must choose
+    // their escape channels against the completed vertical reservations of
+    // earlier relations, not against a stale pre-routing snapshot.
+    const pending = routed.filter(item => !item.direct && item.minimalBendX === undefined);
+    const usedOverviewXs = verticalReservations.map(item => item.x);
+    for (const item of pending) {
+      const minimumX = item.start.x + MIN_SIDE_CLEARANCE;
+      const maximumX = item.end.x - MIN_SIDE_CLEARANCE;
+      const sourceCandidates = [];
+      for (let x = Math.max(minimumX, Math.min(maximumX, item.midX)); x <= maximumX; x += MIN_CHANNEL_SPACING) sourceCandidates.push(x);
+      for (let x = Math.max(minimumX, Math.min(maximumX, item.midX)) - MIN_CHANNEL_SPACING; x >= minimumX; x -= MIN_CHANNEL_SPACING) sourceCandidates.push(x);
+      const clearVertical = x => usedOverviewXs.every(otherX =>
+        Math.abs(otherX - x) >= MIN_CHANNEL_SPACING);
+      const sourceX = sourceCandidates.find(x => clearVertical(x)
+        && [...nodes.values()].every(node => node.id === item.sourceId || node.id === item.flow.to
+          || !segmentIntersectsBox(item.start, {x, y: item.start.y}, node)));
+      if (sourceX !== undefined) item.sourceEscapeX = sourceX;
+      let targetX = item.end.x - MIN_SIDE_CLEARANCE;
+      while (targetX > minimumX && !clearVertical(targetX)) targetX -= MIN_CHANNEL_SPACING;
+      item.targetEscapeX = targetX;
+      usedOverviewXs.push(item.sourceEscapeX, item.targetEscapeX);
+      // Reserve provisional full-height escapes now; track routing below may
+      // shorten them, but later routes must never select the same channel.
+      verticalReservations.push(
+        {x: item.sourceEscapeX, y1: item.start.y, y2: item.end.y, owner: item.flow},
+        {x: item.targetEscapeX, y1: item.start.y, y2: item.end.y, owner: item.flow},
+      );
+    }
+  }
   const requests = routed.filter(item => !item.direct && item.minimalBendX === undefined).map(item => ({
     item,
-    baseY: (item.start.y + item.end.y) / 2,
+    baseY: ((item.sourceDetourY ?? item.start.y) + item.end.y) / 2,
     x1: item.sourceEscapeX,
     x2: item.targetEscapeX,
   })).sort((a, b) => a.baseY - b.baseY || a.item.flow.pulse.localeCompare(b.item.flow.pulse));
@@ -483,8 +727,9 @@ function layoutCausal(pulse, options = {}) {
       const trackY = request.baseY + (step === 0 ? 0
         : (step % 2 ? 1 : -1) * Math.ceil(step / 2) * MIN_LINE_SPACING);
       const routeSegments = [
-        [{x: request.item.start.x, y: request.item.start.y}, {x: request.x1, y: request.item.start.y}],
-        [{x: request.x1, y: request.item.start.y}, {x: request.x1, y: trackY}],
+        [{x: request.item.start.x, y: request.item.start.y}, {x: request.item.start.x, y: request.item.sourceDetourY ?? request.item.start.y}],
+        [{x: request.item.start.x, y: request.item.sourceDetourY ?? request.item.start.y}, {x: request.x1, y: request.item.sourceDetourY ?? request.item.start.y}],
+        [{x: request.x1, y: request.item.sourceDetourY ?? request.item.start.y}, {x: request.x1, y: trackY}],
         [{x: request.x1, y: trackY}, {x: request.x2, y: trackY}],
         [{x: request.x2, y: trackY}, {x: request.x2, y: request.item.end.y}],
         [{x: request.x2, y: request.item.end.y}, {x: request.item.end.x, y: request.item.end.y}],
@@ -492,7 +737,7 @@ function layoutCausal(pulse, options = {}) {
       if ([...nodes.values()].some(node => node.id !== request.item.sourceId && node.id !== request.item.flow.to
         && routeSegments.some(([start, end]) => segmentIntersectsBox(start, end, node)))) continue;
       const parallelConflicts = reservations.filter(other => intervalsOverlap(request.x1, request.x2, other.x1, other.x2)
-        && Math.abs(trackY - other.y) < MIN_LINE_SPACING).length;
+        && Math.abs(trackY - other.y) < overviewLineSpacing).length;
       const endpointCrossings = reservations.filter(other => {
         const crossesSource = request.x1 > Math.min(other.x1, other.x2)
           && request.x1 < Math.max(other.x1, other.x2)
@@ -508,13 +753,29 @@ function layoutCausal(pulse, options = {}) {
         && trackY < Math.max(other.y1, other.y2)
         && other.x > Math.min(request.x1, request.x2)
         && other.x < Math.max(request.x1, request.x2)).length;
-      const score = endpointCrossings * 1000000 + trackCrossings * 10000 + parallelConflicts * 100
-        + Math.abs(trackY - request.baseY);
+      const overviewVerticalConflicts = options.projectionKind === 'overview'
+        ? verticalReservations.filter(other => other.owner !== request.item.flow
+          && ((Math.abs(other.x - request.x1) < MIN_CHANNEL_SPACING
+            && intervalsOverlap(other.y1, other.y2, request.item.start.y, trackY))
+          || (Math.abs(other.x - request.x2) < MIN_CHANNEL_SPACING
+            && intervalsOverlap(other.y1, other.y2, trackY, request.item.end.y)))).length
+        : 0;
+      if (overviewVerticalConflicts > 0) continue;
+      const score = endpointCrossings * 1000000
+        + trackCrossings * 10000 + parallelConflicts * 100 + Math.abs(trackY - request.baseY);
       if (best === null || score < best.score) best = {score, y: trackY};
       if (score === 0) break;
     }
     if (best === null) {
-      throw new Error(`No clear track for Pulse Flow: ${request.item.flow.pulse}`);
+      const blockingVerticals = options.projectionKind === 'overview'
+        ? verticalReservations.filter(other =>
+          Math.abs(other.x - request.x1) < MIN_CHANNEL_SPACING
+          || Math.abs(other.x - request.x2) < MIN_CHANNEL_SPACING)
+        : [];
+      throw new Error(`No clear track for Pulse Flow: ${request.item.flow.pulse}; `
+        + `source=${request.item.sourceId} target=${request.item.flow.to} `
+        + `x1=${request.x1} x2=${request.x2} startY=${request.item.start.y} endY=${request.item.end.y} `
+        + `verticals=${JSON.stringify(blockingVerticals)}`);
     }
     const trackY = best.y;
     reservations.push({x1: request.x1, x2: request.x2, y: trackY});
@@ -545,9 +806,18 @@ function layoutCausal(pulse, options = {}) {
       };
     }
     const trackY = routeTracks.get(flow);
-    const points = [
+    const sourceDetourY = routed.find(item => item.flow === flow)?.sourceDetourY;
+    const points = sourceDetourY === undefined ? [
       start,
       {x: sourceEscapeX, y: start.y},
+      {x: sourceEscapeX, y: trackY},
+      {x: targetEscapeX, y: trackY},
+      {x: targetEscapeX, y: end.y},
+      end,
+    ] : [
+      start,
+      {x: start.x, y: sourceDetourY},
+      {x: sourceEscapeX, y: sourceDetourY},
       {x: sourceEscapeX, y: trackY},
       {x: targetEscapeX, y: trackY},
       {x: targetEscapeX, y: end.y},
@@ -593,8 +863,18 @@ function layoutCausal(pulse, options = {}) {
       || !((items[index - 1].x === point.x && point.x === items[index + 1].x)
         || (items[index - 1].y === point.y && point.y === items[index + 1].y)));
   const orderSearchPairs = levels.reduce((sum, items) => sum + items.length * Math.max(0, items.length - 1) / 2, 0);
+  // Each order candidate recursively performs a complete layout and its geometry
+  // score compares flow pairs. Bound the estimated work, not merely node pairs:
+  // small projections with dense fan-in/fan-out can otherwise be much more
+  // expensive than larger sparse projections.
+  const orderSearchWork = orderSearchPairs * Math.max(1, pulse.flows.length ** 2);
   const willOptimizeOrders = options.optimizeTriggers !== false && !options.triggerOrder
-    && levels[0].length > 2 && orderSearchPairs <= 120;
+    && levels[0].length > 2 && orderSearchPairs <= 120 && orderSearchWork <= 12000;
+  // Global port and overlap refinements repeatedly score flow pairs. On dense
+  // projections the deterministic base routes are preferable to unbounded
+  // presentation-only refinement.
+  const refinementWork = pulse.flows.length ** 2 * Math.max(1, nodes.size);
+  const willRefineDenseGeometry = options.optimizePorts !== false && refinementWork <= 8000;
 
   // Connections sharing a target side must preserve their vertical order.
   // If their initial routes cross, compact their ports and nest their target
@@ -711,6 +991,7 @@ function layoutCausal(pulse, options = {}) {
     }
   }
 
+  tracePhase('port-optimization-start');
   // Optimize every outgoing side as one group. A greedy flow-by-flow pass can
   // reject two mutually useful moves because the other port still occupies its
   // old position. Considering port permutations and straight candidates
@@ -732,7 +1013,7 @@ function layoutCausal(pulse, options = {}) {
     const bends = candidateFlows.reduce((sum, flow) => sum + Math.max(0, flow.points.length - 2), 0);
     return overlaps * 100000000 + crossings * 1000000 + bends * 10000;
   };
-  for (const [sourceId] of options.optimizePorts === false || willOptimizeOrders ? [] : outgoing) {
+  for (const [sourceId] of !willRefineDenseGeometry || willOptimizeOrders ? [] : outgoing) {
     if (sourceId.startsWith('trigger:')) continue;
     const source = nodes.get(sourceId);
     const group = flows.filter(flow => flow.from === sourceId);
@@ -857,10 +1138,12 @@ function layoutCausal(pulse, options = {}) {
     });
   }
 
+  tracePhase('port-optimization-complete');
+  tracePhase('approach-optimization-start');
   // Put the final height change immediately after the last blocking element,
   // rather than next to the target. This keeps the target-side approach long
   // and straight even when the complete target axis is obstructed upstream.
-  for (const flow of options.optimizePorts === false || willOptimizeOrders
+  for (const flow of !willRefineDenseGeometry || willOptimizeOrders
     ? [] : flows.filter(item => item.points.length >= 6)) {
     const end = flow.points.at(-1);
     const verticalTop = flow.points.at(-3);
@@ -891,10 +1174,13 @@ function layoutCausal(pulse, options = {}) {
     }
   }
 
+  tracePhase('approach-optimization-complete');
+
+  tracePhase('overlap-resolver-start');
 
   // Resolve remaining collinear segments by moving internal vertical channels.
   // Overlap is a hard error and therefore dominates added length or bends.
-  if (options.optimizePorts !== false && !willOptimizeOrders) {
+  if (willRefineDenseGeometry && !willOptimizeOrders) {
     const overlapLength = candidateFlows => {
       let total = 0;
       for (let left = 0; left < candidateFlows.length; left += 1) {
@@ -971,11 +1257,14 @@ function layoutCausal(pulse, options = {}) {
     }
   }
 
+  tracePhase('overlap-resolver-complete');
+  tracePhase('base-routing-complete');
   const result = {
     page: {...PAGE, width: pageWidth, height: pageHeight}, nodes: [...nodes.values()], flows, legend: pulse.pulses,
     legendArea: {x: PAGE.margin, y: PAGE.margin, width: pageWidth - PAGE.margin * 2, height: legendHeight, columns: legendColumns},
   };
   if (willOptimizeOrders) {
+    tracePhase('order-optimization-start');
     const geometryScore = layout => {
       let crossings = 0;
       let overlaps = 0;
@@ -1131,10 +1420,13 @@ function layoutCausal(pulse, options = {}) {
       finalOrders = passOrders;
       finalScore = passScore;
     }
+    tracePhase('order-optimization-complete');
     if (options.debugRouting) finalLayout.debug = {sourceEscapes: sourceEscapeDiagnostics};
+    tracePhase('complete');
     return finalLayout;
   }
   if (options.debugRouting) result.debug = {sourceEscapes: sourceEscapeDiagnostics};
+  tracePhase('complete');
   return result;
 }
 
@@ -1151,7 +1443,11 @@ function causalPage(pulse, projection, title, kind, options = {}) {
     informationOut: (behavior['information-out'] || []).map(id => informationById.get(id)).filter(Boolean),
   }));
   const pagePulse = {behaviors, pulses: pulse.pulses, flows: projection.flows};
-  const layout = layoutCausal(pagePulse, options);
+  if (options.tracePhases === true) console.error(`[pulse-layout] page-start: ${title}`);
+  const layout = kind === 'overview'
+    ? layoutCapabilityOverview(pagePulse)
+    : layoutCausal(pagePulse, {...options, traceLabel: title, projectionKind: kind});
+  if (options.tracePhases === true) console.error(`[pulse-layout] page-complete: ${title}`);
   layout.title = title;
   layout.kind = kind;
   layout.legend = usedLegend(pulse.pulses, projection.flows);
@@ -1166,35 +1462,54 @@ function causalPage(pulse, projection, title, kind, options = {}) {
   return layout;
 }
 
+function capabilityOverviewRelations(pulse) {
+  const behaviorById = new Map(pulse.behaviors.map(item => [item.id, item]));
+  const relations = new Map();
+  for (const flow of pulse.flows) {
+    if (!('from' in flow)) continue;
+    const source = behaviorById.get(flow.from)?.capability;
+    const target = behaviorById.get(flow.to)?.capability;
+    if (!source || !target || source === target) continue;
+    const key = `${source}\u0000${target}`;
+    if (!relations.has(key)) relations.set(key, {from: source, to: target});
+  }
+  return [...relations.values()];
+}
+
 function capabilityProjections(pulse) {
   const behaviorById = new Map(pulse.behaviors.map(item => [item.id, item]));
-  const overviewFlows = pulse.flows.filter(flow => 'trigger' in flow
-    || behaviorById.get(flow.from).capability !== behaviorById.get(flow.to).capability);
   const overview = {
     behaviors: pulse.capabilities.map(item => ({...item})),
-    flows: overviewFlows.map(flow => 'trigger' in flow
-      ? {trigger: flow.trigger, pulse: flow.pulse, to: behaviorById.get(flow.to).capability}
-      : {...flow, from: behaviorById.get(flow.from).capability, to: behaviorById.get(flow.to).capability}),
+    flows: capabilityOverviewRelations(pulse),
     capabilityIds: pulse.capabilities.map(item => item.id), boundaryIds: [],
   };
   const details = pulse.capabilities.map(capability => {
     const behaviors = pulse.behaviors.filter(behavior => behavior.capability === capability.id);
     const boundary = new Map();
     const flows = [];
+    const projectedFlowKeys = new Set();
+    const addProjectedFlow = flow => {
+      const key = 'trigger' in flow
+        ? `trigger:${flow.trigger}\u0000${flow.pulse}\u0000${flow.to}`
+        : `from:${flow.from}\u0000${flow.pulse}\u0000${flow.to}`;
+      if (projectedFlowKeys.has(key)) return;
+      projectedFlowKeys.add(key);
+      flows.push(flow);
+    };
     for (const flow of pulse.flows) {
       const destinationCapability = behaviorById.get(flow.to).capability;
-      if ('trigger' in flow) { if (destinationCapability === capability.id) flows.push({...flow}); continue; }
+      if ('trigger' in flow) { if (destinationCapability === capability.id) addProjectedFlow({...flow}); continue; }
       const sourceCapability = behaviorById.get(flow.from).capability;
-      if (sourceCapability === capability.id && destinationCapability === capability.id) flows.push({...flow});
+      if (sourceCapability === capability.id && destinationCapability === capability.id) addProjectedFlow({...flow});
       else if (sourceCapability === capability.id) {
         const id = `boundary-to-${destinationCapability}`;
         boundary.set(id, {id, name: `TO ${pulse.capabilities.find(item => item.id === destinationCapability).name}`});
-        flows.push({...flow, to: id});
+        addProjectedFlow({...flow, to: id});
       } else if (destinationCapability === capability.id) {
         const label = `FROM ${pulse.capabilities.find(item => item.id === sourceCapability).name}`;
         const source = `${label} · ${flow.pulse}`;
         const id = `trigger:${source}`;
-        flows.push({trigger: source, triggerLabel: label, pulse: flow.pulse, to: flow.to});
+        addProjectedFlow({trigger: source, triggerLabel: label, pulse: flow.pulse, to: flow.to});
         boundary.set(id, null);
       }
     }

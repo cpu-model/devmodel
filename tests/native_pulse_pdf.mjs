@@ -40,12 +40,15 @@ assert.equal(layout.pages[0].kind, 'overview');
 assert.deepEqual(layout.pages.slice(1).map(page => page.title), ['CAPABILITY: Input handling', 'CAPABILITY: Result presentation']);
 assert.equal(layout.pages[0].domainNodes.length, 0, 'Overview excludes Domain Information');
 assert.deepEqual(layout.pages[0].nodes.filter(node => node.kind === 'capability').map(node => node.id), ['input-handling', 'result-presentation']);
-assert.equal(layout.pages[0].flows.length, 2, 'Overview covers trigger and cross-Capability flows');
+assert.equal(layout.pages[0].flows.length, 1, 'Overview collapses to directed cross-Capability dependencies');
+assert.equal(layout.pages[0].nodes.filter(node => node.kind === 'trigger').length, 0, 'Overview excludes external triggers');
+assert.equal(layout.pages[0].legend.length, 0, 'Overview excludes the Pulse legend');
+assert.ok(layout.pages[0].flows.every(flow => !flow.event && !flow.symbol), 'Overview dependency relations carry no Pulse identity');
 assert.equal(layout.pages[1].flows.length, 2, 'Source detail covers trigger and outgoing cross-Capability flow');
 assert.equal(layout.pages[2].flows.length, 1, 'Destination detail covers incoming cross-Capability flow');
 assert.match(layout.pages[1].nodes.find(node => node.kind === 'boundary').name, /^TO /);
 assert.match(layout.pages[2].nodes.find(node => node.kind === 'boundary').name, /^FROM /);
-assert.deepEqual(layout.pages.map(page => page.legend.map(item => item.display)), [['01', '02'], ['01', '02'], ['02']], 'Local legends preserve global display identities and declaration order');
+assert.deepEqual(layout.pages.map(page => page.legend.map(item => item.display)), [[], ['01', '02'], ['02']], 'Detail legends preserve global display identities while overview has no Pulse legend');
 
 const behaviorOccurrences = layout.pages.slice(1).flatMap(page => page.nodes.filter(node => node.kind === 'behavior'));
 for (const behavior of behaviorOccurrences) {
@@ -76,6 +79,41 @@ const coveragePulse = {
   pulses: [{id: 'p1', display: '1', name: 'P1'}, {id: 'p2', display: '2', name: 'P2'}, {id: 'p3', display: '3', name: 'P3'}],
   flows: [{trigger: 'Start', pulse: 'p1', to: 'a1'}, {from: 'a1', pulse: 'p2', to: 'a2'}, {from: 'a2', pulse: 'p3', to: 'b1'}],
 };
+const coverageOverview = layoutPulse(coveragePulse).pages[0];
+assert.equal(coverageOverview.flows.length, 1, 'Capability overview keeps only the cross-capability dependency');
+assert.equal(coverageOverview.nodes.filter(node => node.kind === 'trigger').length, 0,
+  'Capability overview excludes external trigger occurrences');
+const coverageDetail = layoutPulse(coveragePulse).pages.find(page =>
+  page.nodes.some(node => node.kind === 'behavior' && node.id === 'a1'));
+assert.ok(coverageDetail.nodes.some(node => node.kind === 'trigger' && node.name === 'Start'),
+  'Capability detail preserves the concrete external trigger');
+
+
+// Capability overview collapses Behavior-level multiplicity and Pulse identity into one directed Capability dependency.
+const projectionDedupPulse = {
+  capabilities: [{id: 'source-cap', name: 'Source'}, {id: 'target-cap', name: 'Target'}],
+  'domain-information': [],
+  behaviors: [
+    {id: 's1', name: 'S1', capability: 'source-cap'},
+    {id: 's2', name: 'S2', capability: 'source-cap'},
+    {id: 't1', name: 'T1', capability: 'target-cap'},
+    {id: 't2', name: 'T2', capability: 'target-cap'},
+  ],
+  pulses: [{id: 'shared', display: '1', name: 'Shared'}],
+  flows: [
+    {from: 's1', pulse: 'shared', to: 't1'},
+    {from: 's1', pulse: 'shared', to: 't2'},
+    {from: 's2', pulse: 'shared', to: 't1'},
+    {from: 's2', pulse: 'shared', to: 't2'},
+  ],
+};
+const projectionDedupOverview = layoutPulse(projectionDedupPulse).pages[0];
+assert.equal(projectionDedupOverview.flows.length, 1,
+  'Capability overview renders one line per directed source/target Capability pair');
+assert.equal(projectionDedupOverview.flows[0].from, 'source-cap');
+assert.equal(projectionDedupOverview.flows[0].to, 'target-cap');
+assert.equal(projectionDedupOverview.flows[0].pulse, undefined);
+
 const largePulse = {
   capabilities: [{id: 'large', name: 'Large'}], 'domain-information': [],
   behaviors: Array.from({length: 16}, (_, index) => ({id: `b${index}`, name: `B${index}`, capability: 'large'})),
@@ -85,7 +123,7 @@ const largePulse = {
 const largeStart = performance.now();
 const largeLayout = layoutPulse(largePulse);
 assert.ok(performance.now() - largeStart < 2000, 'Large Pulse projection avoids combinatorial order search');
-assert.equal(largeLayout.pages[0].flows.length, 16);
+assert.equal(largeLayout.pages[0].flows.length, 0, 'Single-Capability model has no overview dependencies');
 
 const fanoutPulse = {
   capabilities: [{id: 'fanout', name: 'Fanout'}], 'domain-information': [],
@@ -105,7 +143,7 @@ assert.ok(performance.now() - fanoutStart < 2000, 'Large fan-out avoids factoria
 assert.equal(fanoutLayout.pages[1].flows.length, 9);
 
 const coverage = layoutPulse(coveragePulse).pages;
-assert.equal(coverage[0].flows.length, 2, 'Overview excludes same-Capability flow');
+assert.equal(coverage[0].flows.length, 1, 'Overview excludes same-Capability and external-trigger flows');
 assert.equal(coverage[1].flows.length, 3, 'Source detail covers trigger, internal, and outgoing cross-Capability flows');
 assert.equal(coverage[2].flows.length, 1, 'Destination detail covers only incoming cross-Capability flow');
 
@@ -234,74 +272,83 @@ const repeatedCapabilityFlowPulse = {
   ],
 };
 const repeatedCapabilityOverview = layoutPulse(repeatedCapabilityFlowPulse).pages[0];
-const segmentContains = (a, b, point) => (a.y === b.y && point.y === a.y
-  && point.x >= Math.min(a.x, b.x) && point.x <= Math.max(a.x, b.x))
-  || (a.x === b.x && point.x === a.x
-    && point.y >= Math.min(a.y, b.y) && point.y <= Math.max(a.y, b.y));
-for (const flow of repeatedCapabilityOverview.flows) {
-  assert.ok(flow.points.slice(1).some((point, index) => segmentContains(flow.points[index], point, flow.symbol)),
-    `Overview keeps Pulse ${flow.event.display} symbol on its own connector`);
-  const target = repeatedCapabilityOverview.nodes.find(node => node.id === flow.to);
-  const end = flow.points.at(-1);
-  assert.equal(end.x, target.x,
-    `Overview Pulse ${flow.event.display} enters its target on the left side`);
-  assert.ok(end.y > target.y && end.y < target.y + target.height,
-    `Overview Pulse ${flow.event.display} enters within the target side, not at a corner`);
-  if ('from' in flow) {
-    const source = repeatedCapabilityOverview.nodes.find(node => node.id === flow.from);
-    const start = flow.points[0];
-    assert.equal(start.x, source.x + source.width,
-      `Overview Pulse ${flow.event.display} leaves its source on the right side`);
-    assert.ok(start.y > source.y && start.y < source.y + source.height,
-      `Overview Pulse ${flow.event.display} leaves within the source side, not at a corner`);
-  }
-}
+assert.equal(repeatedCapabilityOverview.nodes.filter(node => node.kind === 'trigger').length, 0,
+  'Capability overview has no external-trigger nodes');
+assert.equal(repeatedCapabilityOverview.legend.length, 0,
+  'Capability overview has no Pulse legend');
+const dependencyKeys = repeatedCapabilityOverview.flows.map(flow => `${flow.from}->${flow.to}`);
+assert.equal(new Set(dependencyKeys).size, dependencyKeys.length,
+  'Capability overview contains one connector per directed Capability dependency');
+assert.ok(repeatedCapabilityOverview.flows.every(flow => flow.pulse === undefined && flow.event === undefined && flow.symbol === undefined),
+  'Capability overview dependency connectors have no Pulse identity');
+const positiveSegmentOverlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max(b1, b2)) - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 0.01;
+const connectorSegments = flow => flow.points.slice(1).map((end, index) => ({start: flow.points[index], end}));
+const collinearSegmentOverlap = (a, b) => {
+  const ah = Math.abs(a.start.y - a.end.y) < 0.01;
+  const bh = Math.abs(b.start.y - b.end.y) < 0.01;
+  const av = Math.abs(a.start.x - a.end.x) < 0.01;
+  const bv = Math.abs(b.start.x - b.end.x) < 0.01;
+  if (ah && bh && Math.abs(a.start.y - b.start.y) < 0.01)
+    return positiveSegmentOverlap(a.start.x, a.end.x, b.start.x, b.end.x);
+  if (av && bv && Math.abs(a.start.x - b.start.x) < 0.01)
+    return positiveSegmentOverlap(a.start.y, a.end.y, b.start.y, b.end.y);
+  return false;
+};
+const parallelSegmentTooClose = (a, b, clearance = 12) => {
+  const ah = Math.abs(a.start.y - a.end.y) < 0.01;
+  const bh = Math.abs(b.start.y - b.end.y) < 0.01;
+  const av = Math.abs(a.start.x - a.end.x) < 0.01;
+  const bv = Math.abs(b.start.x - b.end.x) < 0.01;
+  if (ah && bh && Math.abs(a.start.y - b.start.y) < clearance)
+    return positiveSegmentOverlap(a.start.x, a.end.x, b.start.x, b.end.x);
+  if (av && bv && Math.abs(a.start.x - b.start.x) < clearance)
+    return positiveSegmentOverlap(a.start.y, a.end.y, b.start.y, b.end.y);
+  return false;
+};
 const connectorTouchesUnrelatedNode = (flow, node) => {
-  const sourceId = 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
-  if (node.id === sourceId || node.id === flow.to) return false;
+  if (node.id === flow.from || node.id === flow.to) return false;
   return flow.points.slice(1).some((end, index) => {
     const start = flow.points[index];
-    if (start.y === end.y) {
-      return start.y >= node.y && start.y <= node.y + node.height
-        && Math.max(Math.min(start.x, end.x), node.x) <= Math.min(Math.max(start.x, end.x), node.x + node.width);
-    }
-    if (start.x === end.x) {
-      return start.x >= node.x && start.x <= node.x + node.width
-        && Math.max(Math.min(start.y, end.y), node.y) <= Math.min(Math.max(start.y, end.y), node.y + node.height);
-    }
+    if (start.y === end.y) return start.y >= node.y && start.y <= node.y + node.height
+      && Math.max(Math.min(start.x, end.x), node.x) <= Math.min(Math.max(start.x, end.x), node.x + node.width);
+    if (start.x === end.x) return start.x >= node.x && start.x <= node.x + node.width
+      && Math.max(Math.min(start.y, end.y), node.y) <= Math.min(Math.max(start.y, end.y), node.y + node.height);
     return false;
   });
 };
 for (const flow of repeatedCapabilityOverview.flows) {
-  for (const node of repeatedCapabilityOverview.nodes) {
-    assert.ok(!connectorTouchesUnrelatedNode(flow, node),
-      `Overview Pulse ${flow.event.display} stays clear of unrelated node ${node.name}`);
-  }
+  const sourceNode = repeatedCapabilityOverview.nodes.find(node => node.id === flow.from);
+  const targetNode = repeatedCapabilityOverview.nodes.find(node => node.id === flow.to);
+  assert.equal(flow.points[0].x, sourceNode.x + sourceNode.width,
+    'Overview dependency leaves its source Capability on the right side');
+  assert.equal(flow.points.at(-1).x, targetNode.x,
+    'Overview dependency enters its target Capability on the left side');
+  for (const node of repeatedCapabilityOverview.nodes) assert.ok(!connectorTouchesUnrelatedNode(flow, node),
+    `Overview dependency ${flow.from}->${flow.to} stays clear of unrelated node ${node.name}`);
 }
-const positiveOverlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max(b1, b2))
-  - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 0.01;
-const collinearOverlap = (first, second) => first.points.slice(1).some((aEnd, aIndex) =>
-  second.points.slice(1).some((bEnd, bIndex) => {
-    const aStart = first.points[aIndex];
-    const bStart = second.points[bIndex];
-    if (aStart.y === aEnd.y && bStart.y === bEnd.y && aStart.y === bStart.y) {
-      return positiveOverlap(aStart.x, aEnd.x, bStart.x, bEnd.x);
-    }
-    if (aStart.x === aEnd.x && bStart.x === bEnd.x && aStart.x === bStart.x) {
-      return positiveOverlap(aStart.y, aEnd.y, bStart.y, bEnd.y);
-    }
-    return false;
-  }));
+
 for (let left = 0; left < repeatedCapabilityOverview.flows.length; left += 1) {
   for (let right = left + 1; right < repeatedCapabilityOverview.flows.length; right += 1) {
     const first = repeatedCapabilityOverview.flows[left];
     const second = repeatedCapabilityOverview.flows[right];
-    assert.ok(!collinearOverlap(first, second),
-      `Overview keeps Pulse ${first.event.display} and ${second.event.display} visually distinct`);
-    const symbolDistance = Math.hypot(first.symbol.x - second.symbol.x, first.symbol.y - second.symbol.y);
-    assert.ok(symbolDistance >= PULSE_RADIUS * 2,
-      `Overview keeps Pulse symbols ${first.event.display} and ${second.event.display} separately visible`);
+    for (const a of connectorSegments(first)) for (const b of connectorSegments(second)) {
+      assert.ok(!collinearSegmentOverlap(a, b),
+        `Overview connectors ${first.from}->${first.to} and ${second.from}->${second.to} must never share horizontal or vertical line segments`);
+      assert.ok(!parallelSegmentTooClose(a, b),
+        `Overview connectors ${first.from}->${first.to} and ${second.from}->${second.to} keep visible separation between parallel segments`);
+    }
   }
+}
+const cornerClearance = 24;
+for (const flow of repeatedCapabilityOverview.flows) {
+  const sourceNode = repeatedCapabilityOverview.nodes.find(node => node.id === flow.from);
+  const targetNode = repeatedCapabilityOverview.nodes.find(node => node.id === flow.to);
+  const sourceY = flow.points[0].y;
+  const targetY = flow.points.at(-1).y;
+  assert.ok(sourceY >= sourceNode.y + cornerClearance && sourceY <= sourceNode.y + sourceNode.height - cornerClearance,
+    `Overview dependency ${flow.from}->${flow.to} keeps source port clear of horizontal box edges`);
+  assert.ok(targetY >= targetNode.y + cornerClearance && targetY <= targetNode.y + targetNode.height - cornerClearance,
+    `Overview dependency ${flow.from}->${flow.to} keeps target port clear of horizontal box edges`);
 }
 
 const output = path.join(directory, 'pulse.pdf');
@@ -309,13 +356,13 @@ const result = spawnSync(process.execPath, [path.join(root, 'tools', 'render_pul
 assert.equal(result.status, 0, result.stderr);
 const source = fs.readFileSync(output, 'latin1');
 assert.equal((source.match(/\/Type \/Page\b/g) || []).length, 3);
-assert.equal((source.match(/\/Subtype \/Text/g) || []).length, 6, 'Every requirement-addressable occurrence is annotated');
+assert.equal((source.match(/\/Subtype \/Text/g) || []).length, 5, 'Every rendered requirement-addressable occurrence is annotated; collapsed overview dependencies add no Pulse annotation');
 assert.doesNotMatch(source, /<svg|\/Image\b/);
 const pdf = await PDFDocument.load(fs.readFileSync(output));
 const pulseContents = pdf.getPages().flatMap(page => page.node.Annots().asArray().map(reference => pdf.context.lookup(reference)))
   .filter(annotation => annotation.get(PDFName.of('Subtype'))?.toString() === '/Text')
   .map(annotation => annotation.get(PDFName.of('Contents')).decodeText());
-assert.equal(pulseContents.filter(text => text === 'The result ready event shall retain its identity.\n\nThe result ready event shall follow result establishment.').length, 3, 'Repeated Pulse occurrences preserve complete declared requirement order');
+assert.equal(pulseContents.filter(text => text === 'The result ready event shall retain its identity.\n\nThe result ready event shall follow result establishment.').length, 2, 'Repeated Pulse occurrences in Capability details preserve complete declared requirement order; overview dependency adds no Pulse occurrence');
 
 const systemPulse = {
   'domain-information': [{id: 'input', name: 'Input'}],
@@ -350,4 +397,28 @@ assert.equal(stress.nodes.filter(node => node.kind === 'behavior')
   .flatMap(node => [...node.informationIn, ...node.informationOut]).length, 12,
   'Stress layout preserves all Domain Information occurrences inside Behaviors');
 assert.ok(stress.flows.every(flow => flow.points.slice(1).every((point, index) => point.x === flow.points[index].x || point.y === flow.points[index].y)), 'Stress routes remain orthogonal');
+const denseOverviewPulse = {
+  capabilities: Array.from({length: 8}, (_, index) => ({id: `cap-${index}`, name: `Capability ${index}`})),
+  'domain-information': [],
+  behaviors: Array.from({length: 8}, (_, index) => ({id: `dense-${index}`, name: `Dense ${index}`, capability: `cap-${index}`})),
+  pulses: Array.from({length: 36}, (_, index) => ({id: `dense-pulse-${index}`, display: String(index + 1), name: `Dense Pulse ${index + 1}`})),
+  flows: [],
+};
+let densePulseIndex = 0;
+for (let source = 0; source < 8 && densePulseIndex < 36; source += 1) {
+  for (let target = source + 1; target < 8 && densePulseIndex < 36; target += 1) {
+    denseOverviewPulse.flows.push({from: `dense-${source}`, pulse: `dense-pulse-${densePulseIndex}`, to: `dense-${target}`});
+    densePulseIndex += 1;
+  }
+}
+while (densePulseIndex < 36) {
+  denseOverviewPulse.flows.push({trigger: `Dense trigger ${densePulseIndex}`, pulse: `dense-pulse-${densePulseIndex}`, to: `dense-${densePulseIndex % 8}`});
+  densePulseIndex += 1;
+}
+const denseLayout = layoutPulse(denseOverviewPulse, {tracePhases: true});
+const denseOverview = denseLayout.pages[0];
+const densePairs = new Set(denseOverviewPulse.flows.filter(flow => 'from' in flow).map(flow => { const from = denseOverviewPulse.behaviors.find(b => b.id === flow.from).capability; const to = denseOverviewPulse.behaviors.find(b => b.id === flow.to).capability; return from === to ? null : `${from}->${to}`; }).filter(Boolean));
+assert.equal(denseOverview.flows.length, densePairs.size, 'Dense overview collapses flows to unique directed Capability dependencies');
+assert.equal(denseLayout.pages.length, 9, 'Dense projection includes overview and capability detail pages');
+
 console.log('CPU v2 Pulse projection, layout, PDF, annotation, and stress checks passed');
