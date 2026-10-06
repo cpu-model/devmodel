@@ -66,9 +66,14 @@ function drawPage(document, layout, requirements, font, bold) {
       const target = `pulse.behavior.${node.id}`;
       if (requirements[target]) addTextAnnotation(document, annots, {rect: [node.x + 4, middle.y + middle.height - 18, node.x + 18, middle.y + middle.height - 4], title: node.name, contents: requirements[target]});
     } else if (node.kind === 'trigger') {
-      page.drawSvgPath(`M ${node.width / 2} 0 L ${node.width} ${node.height / 2} L ${node.width / 2} ${node.height} L 0 ${node.height / 2} Z`, {x: node.x, y: node.y + node.height, color: palette.fill, borderColor: palette.line, borderWidth: 1.6});
-      const lines = wrappedLines(font, node.name, 9, node.width * 0.58); const startY = node.y + node.height / 2 + ((lines.length - 1) * 11) / 2 - 3;
-      lines.forEach((text, index) => page.drawText(text, {x: node.x + (node.width - font.widthOfTextAtSize(text, 9)) / 2, y: startY - index * 11, size: 9, font, color: palette.ink}));
+      page.drawRectangle({x: node.x, y: node.y, width: node.width, height: node.height, color: palette.fill, borderColor: palette.line, borderWidth: 1.4});
+      const diamondSize = Math.min(22, node.height - 16);
+      const diamondX = node.x + 14;
+      const diamondY = node.y + node.height / 2;
+      page.drawSvgPath(`M 0 ${diamondSize / 2} L ${diamondSize / 2} 0 L ${diamondSize} ${diamondSize / 2} L ${diamondSize / 2} ${diamondSize} Z`, {x: diamondX, y: diamondY + diamondSize / 2, color: palette.fill, borderColor: palette.line, borderWidth: 1.6});
+      const textBox = {x: diamondX + diamondSize + 10, y: node.y, width: node.width - diamondSize - 42, height: node.height};
+      const lines = wrappedLines(font, node.name, 9, textBox.width); const startY = node.y + node.height / 2 + ((lines.length - 1) * 11) / 2 - 3;
+      lines.forEach((text, index) => page.drawText(text, {x: textBox.x, y: startY - index * 11, size: 9, font, color: palette.ink}));
     } else {
       page.drawRectangle({x: node.x, y: node.y, width: node.width, height: node.height, color: palette.fill, borderColor: node.kind === 'capability' ? palette.accent : palette.line, borderWidth: node.kind === 'capability' ? 2.4 : 1.4});
       centered(page, node.kind === 'capability' ? bold : font, node.name, node, 10);
