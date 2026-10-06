@@ -80,7 +80,11 @@ function drawPage(document, layout, requirements, font, bold) {
     }
   }
   for (const flow of layout.flows) arrow(page, flow.points.at(-2), flow.points.at(-1));
+  const drawnSymbols = new Set();
   for (const flow of layout.flows) {
+    const symbolKey = flow.symbolGroup || `${flow.symbol.x}:${flow.symbol.y}:${flow.event.id}`;
+    if (drawnSymbols.has(symbolKey)) continue;
+    drawnSymbols.add(symbolKey);
     page.drawCircle({x: flow.symbol.x, y: flow.symbol.y, size: 14, color: palette.white, borderColor: palette.accent, borderWidth: 2});
     const displayWidth = bold.widthOfTextAtSize(flow.event.display, 9);
     page.drawText(flow.event.display, {x: flow.symbol.x - displayWidth / 2, y: flow.symbol.y - 3.2, size: 9, font: bold, color: palette.accent});
