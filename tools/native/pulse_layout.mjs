@@ -105,7 +105,7 @@ function layoutCapabilityOverview(pulse) {
   const graphHeight = maxRows * nodeHeight + Math.max(0, maxRows - 1) * rowGap;
   const capabilityNodes = levels.flatMap((items, d) => items.map(item => {
     const row = rowById.get(item.id);
-    const outgoingCount = pulse.flows.filter(flow => 'from' in flow && flow.from === item.id).length;
+    const outgoingCount = new Set(pulse.flows.filter(flow => 'from' in flow && flow.from === item.id).map(flow => flow.pulse)).size;
     const requiredHeight = outgoingCount > 1 ? (outgoingCount + 1) * pulsePortSpacing : nodeHeight;
     return {
       ...item, kind: 'capability',
@@ -137,13 +137,14 @@ function layoutCapabilityOverview(pulse) {
     .map(flow => {
       const source = nodeById.get(overviewSourceId(flow));
       const target = nodeById.get(flow.to);
-      const siblingsOut = pulse.flows.filter(other => overviewSourceId(other) === overviewSourceId(flow));
+      const sourceFlows = pulse.flows.filter(other => overviewSourceId(other) === overviewSourceId(flow));
+      const sourcePulses = [...new Set(sourceFlows.map(other => other.pulse))].sort();
+      const pulseIndex = sourcePulses.indexOf(flow.pulse);
       const siblingsIn = pulse.flows.filter(other => other.to === flow.to);
-      const outIndex = siblingsOut.indexOf(flow);
       const inIndex = siblingsIn.indexOf(flow);
       const startY = 'trigger' in flow
         ? source.y + source.height / 2
-        : source.y + source.height * (outIndex + 1) / (siblingsOut.length + 1);
+        : source.y + source.height * (pulseIndex + 1) / (sourcePulses.length + 1);
       const start = {x: source.x + source.width, y: startY};
       const symbolPoint = {x: start.x + PULSE_RADIUS + 4, y: start.y};
       const endPoint = {x: target.x,
@@ -160,6 +161,7 @@ function layoutCapabilityOverview(pulse) {
       return {
         ...flow, event: eventById.get(flow.pulse), points,
         symbol: symbolPoint,
+        symbolGroup: `${overviewSourceId(flow)}\u0000${flow.pulse}`,
         annotation: {x: start.x + PULSE_RADIUS * 2 + 10, y: start.y + 5},
       };
     });
