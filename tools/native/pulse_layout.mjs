@@ -151,15 +151,17 @@ function layoutCapabilityOverview(pulse) {
       const sourceFlows = pulse.flows.filter(other => overviewSourceId(other) === overviewSourceId(flow));
       const sourcePulses = [...new Set(sourceFlows.map(other => other.pulse))].sort();
       const pulseIndex = sourcePulses.indexOf(flow.pulse);
-      const siblingsIn = pulse.flows.filter(other => other.to === flow.to);
-      const inIndex = siblingsIn.indexOf(flow);
+      const incomingGroups = [...new Set(pulse.flows.filter(other => other.to === flow.to)
+        .map(other => `${overviewSourceId(other)}\u0000${other.pulse}`))].sort();
+      const incomingGroup = `${overviewSourceId(flow)}\u0000${flow.pulse}`;
+      const inIndex = incomingGroups.indexOf(incomingGroup);
       const startY = 'trigger' in flow
         ? source.y + source.height / 2
         : source.y + source.height * (pulseIndex + 1) / (sourcePulses.length + 1);
       const start = {x: source.x + source.width, y: startY};
       const symbolPoint = {x: start.x + PULSE_RADIUS + 4, y: start.y};
       const endPoint = {x: target.x,
-        y: target.y + target.height * (inIndex + 1) / (siblingsIn.length + 1)};
+        y: target.y + target.height * (inIndex + 1) / (incomingGroups.length + 1)};
       let channel = 'trigger' in flow
         ? PAGE.margin + TRIGGER.width + MIN_SIDE_CLEARANCE
         : start.x + MIN_SIDE_CLEARANCE;
@@ -179,15 +181,20 @@ function layoutCapabilityOverview(pulse) {
         annotation: {x: start.x + PULSE_RADIUS * 2 + 10, y: start.y + 5},
       };
     });
+  const contentBottom = Math.max(
+    ...nodes.map(node => node.y + node.height),
+    ...flows.flatMap(flow => flow.points.map(point => point.y)),
+    PAGE.margin + 140 + graphHeight,
+  );
   const graphWidth = (maxDepth + 1) * nodeWidth + maxDepth * columnGap;
   const legendColumns = 3;
   const legendHeight = Math.ceil(pulse.pulses.length / legendColumns) * LEGEND_ROW + 42;
   const pageWidth = PAGE.margin * 2 + TRIGGER.width + outerRouting + graphWidth;
   return {
     page: {...PAGE, width: pageWidth,
-      height: PAGE.margin * 2 + outerRouting + graphHeight + legendHeight + 160},
+      height: contentBottom + 72 + legendHeight + PAGE.margin},
     nodes, flows, legend: pulse.pulses,
-    legendArea: {x: PAGE.margin, y: PAGE.margin,
+    legendArea: {x: PAGE.margin, y: contentBottom + 72,
       width: pageWidth - PAGE.margin * 2, height: legendHeight, columns: legendColumns},
   };
 }
