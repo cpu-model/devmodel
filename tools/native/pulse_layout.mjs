@@ -365,7 +365,9 @@ function layoutCausal(pulse, options = {}) {
   const columnGaps = Array.from({length: maxDepth}, (_, level) => gapForLevel(level));
   const pageWidth = PAGE.margin * 2 + TRIGGER.width + maxDepth * BEHAVIOR.width
     + columnGaps.reduce((sum, gap) => sum + gap, 0);
-  const overviewTopRoutingMargin = options.projectionKind === 'overview' ? MIN_CHANNEL_SPACING * 2 : 0;
+  const overviewTopRoutingMargin = options.projectionKind === 'overview'
+    ? Math.max(MIN_CHANNEL_SPACING * 2, pulse.flows.length * MIN_CHANNEL_SPACING)
+    : 0;
   const pageHeight = Math.max(595, PAGE.margin + 44 + overviewTopRoutingMargin + graphHeight + 54 + legendHeight + PAGE.margin);
   const graphTop = pageHeight - 78 - overviewTopRoutingMargin;
   const graphBottom = graphTop - graphHeight;
