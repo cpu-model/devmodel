@@ -1208,8 +1208,8 @@ export function layoutPulse(pulse, options = {}) {
     const page = causalPage(pulse, {behaviors: pulse.behaviors, flows: pulse.flows}, 'SYSTEM PULSE', 'system', options);
     return {...page, pages: [page]};
   }
-  const {overview, details} = capabilityProjections(pulse);
-  const pages = [causalPage(pulse, overview, 'PULSE CAPABILITY OVERVIEW', 'overview', options)];
+  const {details} = capabilityProjections(pulse);
+  const pages = [];
   for (const detail of details) pages.push(causalPage(pulse, detail, `CAPABILITY: ${detail.capability.name}`, 'capability-detail', options));
   return {pages};
 }
