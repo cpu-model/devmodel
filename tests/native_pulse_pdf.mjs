@@ -29,20 +29,21 @@ const debugRender = spawnSync(process.execPath, [
 ], {encoding: 'utf8'});
 assert.equal(debugRender.status, 0, debugRender.stderr);
 assert.match(debugRender.stdout, /--- PULSE LAYOUT DEBUG ---/);
-assert.match(debugRender.stdout, /"kind": "overview"/);
+assert.doesNotMatch(debugRender.stdout, /"kind": "overview"/);
+assert.match(debugRender.stdout, /"kind": "capability-detail"/);
 assert.match(debugRender.stdout, /--- END PULSE LAYOUT DEBUG ---/);
 
 const model = loadPulseModel(directory);
 const layout = layoutPulse(model.pulse);
 assert.deepEqual(layoutPulse(model.pulse), layout, 'Pulse projections and geometry are deterministic');
-assert.equal(layout.pages.length, 3, 'Overview plus one detail per declared Capability');
-assert.equal(layout.pages[0].kind, 'overview');
+assert.equal(layout.pages.length, 2, 'One detail page per declared Capability and no overview');
+assert.ok(layout.pages.every(page => page.kind === 'capability-detail'));
 assert.deepEqual(layout.pages.map(page => page.title), ['CAPABILITY: Input handling', 'CAPABILITY: Result presentation']);
 assert.equal(layout.pages[0].flows.length, 2, 'Source detail covers trigger and outgoing cross-Capability flow');
 assert.equal(layout.pages[1].flows.length, 1, 'Destination detail covers incoming cross-Capability flow');
-assert.match(layout.pages[1].nodes.find(node => node.kind === 'boundary').name, /^TO /);
-assert.match(layout.pages[2].nodes.find(node => node.kind === 'boundary').name, /^FROM /);
-assert.deepEqual(layout.pages.map(page => page.legend.map(item => item.display)), [['01', '02'], ['01', '02'], ['02']], 'Local legends preserve global display identities and declaration order');
+assert.match(layout.pages[0].nodes.find(node => node.kind === 'boundary').name, /^TO /);
+assert.match(layout.pages[1].nodes.find(node => node.kind === 'boundary').name, /^FROM /);
+assert.deepEqual(layout.pages.map(page => page.legend.map(item => item.display)), [['01', '02'], ['02']], 'Local legends preserve global display identities and declaration order');
 
 const behaviorOccurrences = layout.pages.flatMap(page => page.nodes.filter(node => node.kind === 'behavior'));
 for (const behavior of behaviorOccurrences) {
