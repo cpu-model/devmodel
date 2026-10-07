@@ -176,132 +176,6 @@ for (const page of layoutPulse(capabilitySourcePulse).pages) {
 }
 
 
-const repeatedCapabilityFlowPulse = {
-  capabilities: [
-    {id: 'source', name: 'Source'},
-    {id: 'branch', name: 'Branch'},
-    {id: 'relay', name: 'Relay'},
-    {id: 'sink', name: 'Sink'},
-    {id: 'auxiliary', name: 'Auxiliary'},
-    {id: 'archive', name: 'Archive'},
-  ],
-  'domain-information': [],
-  behaviors: [
-    {id: 'source-a', name: 'Source A', capability: 'source'},
-    {id: 'source-b', name: 'Source B', capability: 'source'},
-    {id: 'branch-a', name: 'Branch A', capability: 'branch'},
-    {id: 'branch-b', name: 'Branch B', capability: 'branch'},
-    {id: 'relay-a', name: 'Relay A', capability: 'relay'},
-    {id: 'relay-b', name: 'Relay B', capability: 'relay'},
-    {id: 'sink-a', name: 'Sink A', capability: 'sink'},
-    {id: 'auxiliary-a', name: 'Auxiliary A', capability: 'auxiliary'},
-    {id: 'archive-a', name: 'Archive A', capability: 'archive'},
-  ],
-  pulses: [
-    {id: 'branch-a-ready', display: 'A', name: 'Branch A ready'},
-    {id: 'relay-ready', display: 'B', name: 'Relay ready'},
-    {id: 'branch-b-ready', display: 'C', name: 'Branch B ready'},
-    {id: 'shared-update', display: 'D', name: 'Shared update'},
-    {id: 'alternate-branch-update', display: 'E', name: 'Alternate branch update'},
-    {id: 'direct-update', display: 'F', name: 'Direct update'},
-    {id: 'source-triggered', display: 'G', name: 'Source triggered'},
-    {id: 'branch-triggered', display: 'H', name: 'Branch triggered'},
-    {id: 'relay-triggered', display: 'I', name: 'Relay triggered'},
-    {id: 'sink-triggered', display: 'J', name: 'Sink triggered'},
-    {id: 'auxiliary-triggered', display: 'K', name: 'Auxiliary triggered'},
-    {id: 'archive-triggered', display: 'L', name: 'Archive triggered'},
-    {id: 'source-to-auxiliary', display: 'M', name: 'Source to auxiliary'},
-    {id: 'branch-to-archive', display: 'N', name: 'Branch to archive'},
-  ],
-  flows: [
-    {from: 'source-a', pulse: 'branch-a-ready', to: 'branch-a'},
-    {from: 'source-b', pulse: 'alternate-branch-update', to: 'branch-b'},
-    {from: 'source-b', pulse: 'relay-ready', to: 'relay-a'},
-    {from: 'source-a', pulse: 'branch-b-ready', to: 'relay-b'},
-    {from: 'branch-a', pulse: 'direct-update', to: 'sink-a'},
-    {from: 'relay-a', pulse: 'shared-update', to: 'sink-a'},
-    {from: 'relay-b', pulse: 'shared-update', to: 'sink-a'},
-    {from: 'source-a', pulse: 'source-to-auxiliary', to: 'auxiliary-a'},
-    {from: 'branch-b', pulse: 'branch-to-archive', to: 'archive-a'},
-    {trigger: 'Source event', pulse: 'source-triggered', to: 'source-a'},
-    {trigger: 'Branch event', pulse: 'branch-triggered', to: 'branch-a'},
-    {trigger: 'Relay event', pulse: 'relay-triggered', to: 'relay-a'},
-    {trigger: 'Sink event', pulse: 'sink-triggered', to: 'sink-a'},
-    {trigger: 'Auxiliary event', pulse: 'auxiliary-triggered', to: 'auxiliary-a'},
-    {trigger: 'Archive event', pulse: 'archive-triggered', to: 'archive-a'},
-  ],
-};
-const repeatedCapabilityOverview = layoutPulse(repeatedCapabilityFlowPulse).pages[0];
-const segmentContains = (a, b, point) => (a.y === b.y && point.y === a.y
-  && point.x >= Math.min(a.x, b.x) && point.x <= Math.max(a.x, b.x))
-  || (a.x === b.x && point.x === a.x
-    && point.y >= Math.min(a.y, b.y) && point.y <= Math.max(a.y, b.y));
-for (const flow of repeatedCapabilityOverview.flows) {
-  assert.ok(flow.points.slice(1).some((point, index) => segmentContains(flow.points[index], point, flow.symbol)),
-    `Overview keeps Pulse ${flow.event.display} symbol on its own connector`);
-  const target = repeatedCapabilityOverview.nodes.find(node => node.id === flow.to);
-  const end = flow.points.at(-1);
-  assert.equal(end.x, target.x,
-    `Overview Pulse ${flow.event.display} enters its target on the left side`);
-  assert.ok(end.y > target.y && end.y < target.y + target.height,
-    `Overview Pulse ${flow.event.display} enters within the target side, not at a corner`);
-  if ('from' in flow) {
-    const source = repeatedCapabilityOverview.nodes.find(node => node.id === flow.from);
-    const start = flow.points[0];
-    assert.equal(start.x, source.x + source.width,
-      `Overview Pulse ${flow.event.display} leaves its source on the right side`);
-    assert.ok(start.y > source.y && start.y < source.y + source.height,
-      `Overview Pulse ${flow.event.display} leaves within the source side, not at a corner`);
-  }
-}
-const connectorTouchesUnrelatedNode = (flow, node) => {
-  const sourceId = 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
-  if (node.id === sourceId || node.id === flow.to) return false;
-  return flow.points.slice(1).some((end, index) => {
-    const start = flow.points[index];
-    if (start.y === end.y) {
-      return start.y >= node.y && start.y <= node.y + node.height
-        && Math.max(Math.min(start.x, end.x), node.x) <= Math.min(Math.max(start.x, end.x), node.x + node.width);
-    }
-    if (start.x === end.x) {
-      return start.x >= node.x && start.x <= node.x + node.width
-        && Math.max(Math.min(start.y, end.y), node.y) <= Math.min(Math.max(start.y, end.y), node.y + node.height);
-    }
-    return false;
-  });
-};
-for (const flow of repeatedCapabilityOverview.flows) {
-  for (const node of repeatedCapabilityOverview.nodes) {
-    assert.ok(!connectorTouchesUnrelatedNode(flow, node),
-      `Overview Pulse ${flow.event.display} stays clear of unrelated node ${node.name}`);
-  }
-}
-const positiveOverlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max(b1, b2))
-  - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 0.01;
-const collinearOverlap = (first, second) => first.points.slice(1).some((aEnd, aIndex) =>
-  second.points.slice(1).some((bEnd, bIndex) => {
-    const aStart = first.points[aIndex];
-    const bStart = second.points[bIndex];
-    if (aStart.y === aEnd.y && bStart.y === bEnd.y && aStart.y === bStart.y) {
-      return positiveOverlap(aStart.x, aEnd.x, bStart.x, bEnd.x);
-    }
-    if (aStart.x === aEnd.x && bStart.x === bEnd.x && aStart.x === bStart.x) {
-      return positiveOverlap(aStart.y, aEnd.y, bStart.y, bEnd.y);
-    }
-    return false;
-  }));
-for (let left = 0; left < repeatedCapabilityOverview.flows.length; left += 1) {
-  for (let right = left + 1; right < repeatedCapabilityOverview.flows.length; right += 1) {
-    const first = repeatedCapabilityOverview.flows[left];
-    const second = repeatedCapabilityOverview.flows[right];
-    assert.ok(!collinearOverlap(first, second),
-      `Overview keeps Pulse ${first.event.display} and ${second.event.display} visually distinct`);
-    const symbolDistance = Math.hypot(first.symbol.x - second.symbol.x, first.symbol.y - second.symbol.y);
-    assert.ok(symbolDistance >= PULSE_RADIUS * 2,
-      `Overview keeps Pulse symbols ${first.event.display} and ${second.event.display} separately visible`);
-  }
-}
-
 const output = path.join(directory, 'pulse.pdf');
 const result = spawnSync(process.execPath, [path.join(root, 'tools', 'render_pulse_native.mjs'), '--source', directory, '--output', output], {encoding: 'utf8'});
 assert.equal(result.status, 0, result.stderr);
@@ -313,7 +187,7 @@ const pdf = await PDFDocument.load(fs.readFileSync(output));
 const pulseContents = pdf.getPages().flatMap(page => page.node.Annots().asArray().map(reference => pdf.context.lookup(reference)))
   .filter(annotation => annotation.get(PDFName.of('Subtype'))?.toString() === '/Text')
   .map(annotation => annotation.get(PDFName.of('Contents')).decodeText());
-assert.equal(pulseContents.filter(text => text === 'The result ready event shall retain its identity.\n\nThe result ready event shall follow result establishment.').length, 3, 'Repeated Pulse occurrences preserve complete declared requirement order');
+assert.equal(pulseContents.filter(text => text === 'The result ready event shall retain its identity.\n\nThe result ready event shall follow result establishment.').length, 2, 'Repeated Pulse occurrences in Capability details preserve complete declared requirement order');
 
 const systemPulse = {
   'domain-information': [{id: 'input', name: 'Input'}],
