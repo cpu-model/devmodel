@@ -33,7 +33,7 @@ export function loadPulseModel(sourceDirectory) {
   const source = parseYaml(path.join(sourceDirectory, 'pulse.yaml'));
   exactFields(source, ['pulse'], ['pulse'], 'pulse.yaml');
   const pulse = mapping(source.pulse, 'pulse');
-  exactFields(pulse, ['capabilities', 'capability-flows', 'domain-information', 'behaviors', 'pulses', 'flows'], ['behaviors', 'pulses', 'flows'], 'pulse');
+  exactFields(pulse, ['capabilities', 'domain-information', 'behaviors', 'pulses', 'flows'], ['behaviors', 'pulses', 'flows'], 'pulse');
   const hasCapabilities = 'capabilities' in pulse;
   const capabilities = hasCapabilities ? list(pulse.capabilities, 'pulse.capabilities') : [];
   const capabilityIds = new Set();
@@ -42,24 +42,6 @@ export function loadPulseModel(sourceDirectory) {
     id(capability.id, `pulse.capabilities[${index}].id`); nonEmpty(capability.name, `pulse.capabilities[${index}].name`);
     if (capabilityIds.has(capability.id)) throw new Error(`Duplicate Capability ID: ${capability.id}`);
     capabilityIds.add(capability.id);
-  }
-  if (!hasCapabilities && 'capability-flows' in pulse) throw new Error('pulse.capability-flows is forbidden when pulse.capabilities is absent');
-  const capabilityFlows = list(pulse['capability-flows'] || [], 'pulse.capability-flows');
-  const capabilityFlowIds = new Set();
-  for (const [index, capabilityFlow] of capabilityFlows.entries()) {
-    exactFields(capabilityFlow, ['id', 'name', 'capabilities'], ['id', 'name', 'capabilities'], `pulse.capability-flows[${index}]`);
-    id(capabilityFlow.id, `pulse.capability-flows[${index}].id`); nonEmpty(capabilityFlow.name, `pulse.capability-flows[${index}].name`);
-    if (capabilityFlowIds.has(capabilityFlow.id)) throw new Error(`Duplicate Capability Flow ID: ${capabilityFlow.id}`);
-    const references = list(capabilityFlow.capabilities, `pulse.capability-flows[${index}].capabilities`);
-    if (references.length < 2) throw new Error(`Capability Flow requires at least two Capabilities: ${capabilityFlow.id}`);
-    const seen = new Set();
-    for (const [referenceIndex, reference] of references.entries()) {
-      nonEmpty(reference, `pulse.capability-flows[${index}].capabilities[${referenceIndex}]`);
-      if (!capabilityIds.has(reference)) throw new Error(`Unknown Capability in Capability Flow ${capabilityFlow.id}: ${reference}`);
-      if (seen.has(reference)) throw new Error(`Duplicate Capability in Capability Flow ${capabilityFlow.id}: ${reference}`);
-      seen.add(reference);
-    }
-    capabilityFlowIds.add(capabilityFlow.id);
   }
   const domainInformation = list(pulse['domain-information'] || [], 'pulse.domain-information');
   const informationIds = new Set();
@@ -97,21 +79,7 @@ export function loadPulseModel(sourceDirectory) {
     if (!behaviorIds.has(flow.to)) throw new Error(`Unknown Pulse target Behavior: ${flow.to}`);
     if (!pulseIds.has(flow.pulse)) throw new Error(`Unknown Pulse reference: ${flow.pulse}`);
   }
-  const behaviorById = new Map(pulse.behaviors.map(behavior => [behavior.id, behavior]));
-  const supportedCapabilityRelations = new Set(pulse.flows.filter(flow => 'from' in flow)
-    .map(flow => [behaviorById.get(flow.from).capability, behaviorById.get(flow.to).capability])
-    .filter(([from, to]) => from && to && from !== to)
-    .map(([from, to]) => `${from}\u0000${to}`));
-  for (const capabilityFlow of capabilityFlows) {
-    for (let index = 1; index < capabilityFlow.capabilities.length; index += 1) {
-      const from = capabilityFlow.capabilities[index - 1];
-      const to = capabilityFlow.capabilities[index];
-      if (!supportedCapabilityRelations.has(`${from}\u0000${to}`)) {
-        throw new Error(`Unsupported Capability Flow transition in ${capabilityFlow.id}: ${from} -> ${to}`);
-      }
-    }
-  }
   const targets = new Set([...pulse.behaviors.map(item => `pulse.behavior.${item.id}`), ...pulse.pulses.map(item => `pulse.pulse.${item.id}`), ...domainInformation.map(item => `pulse.domain-information.${item.id}`)]);
   const requirements = requirementsForPrefix(loadRequirements(sourceDirectory), 'pulse.', targets, 'Pulse');
-  return {pulse: {...pulse, 'capability-flows': capabilityFlows, 'domain-information': domainInformation}, requirements};
+  return {pulse: {...pulse, 'domain-information': domainInformation}, requirements};
 }
