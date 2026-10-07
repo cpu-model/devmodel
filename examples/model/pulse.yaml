@@ -4,6 +4,10 @@ pulse:
       name: Input handling
     - id: result-presentation
       name: Result presentation
+  capability-flows:
+    - id: process-and-present
+      name: Process and present
+      capabilities: [input-handling, result-presentation]
   domain-information:
     - id: submitted-input
       name: Submitted input
