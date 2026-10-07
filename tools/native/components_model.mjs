@@ -65,12 +65,13 @@ export function loadComponentsModel(sourceDirectory, pulse, requirements) {
   const componentIds = new Set();
   const assignedBehaviors = new Map();
   const evidenceByComponent = new Map();
+  const prerequisitesByComponent = new Map();
   const components = list(root.components, 'components.components');
   if (!components.length) throw new Error('components.components must not be empty; omit components.yaml when no Component is normative');
 
   for (const [index, component] of components.entries()) {
     const label = `components.components[${index}]`;
-    exactFields(component, ['id', 'name', 'responsibility', 'behaviors', 'requirement-evidence'], ['id', 'name', 'responsibility', 'behaviors'], label);
+    exactFields(component, ['id', 'name', 'responsibility', 'behaviors', 'requirement-evidence', 'reconciliation'], ['id', 'name', 'responsibility', 'behaviors'], label);
     id(component.id, `${label}.id`);
     nonEmpty(component.name, `${label}.name`);
     nonEmpty(component.responsibility, `${label}.responsibility`);
@@ -87,7 +88,36 @@ export function loadComponentsModel(sourceDirectory, pulse, requirements) {
       if (!requirementIds.has(requirementId)) throw new Error(`Unknown requirement evidence: ${requirementId}`);
     }
     evidenceByComponent.set(component.id, evidence.length);
+    if ('reconciliation' in component) {
+      exactFields(component.reconciliation, ['requires'], ['requires'], `${label}.reconciliation`);
+      prerequisitesByComponent.set(component.id,
+        uniqueStrings(component.reconciliation.requires, `${label}.reconciliation.requires`));
+    } else prerequisitesByComponent.set(component.id, []);
   }
+
+  const reconciliationParticipants = new Set();
+  for (const [componentId, prerequisites] of prerequisitesByComponent) {
+    for (const prerequisite of prerequisites) {
+      if (!componentIds.has(prerequisite)) throw new Error(`Unknown Component reconciliation prerequisite: ${prerequisite}`);
+      if (prerequisite === componentId) throw new Error(`Component reconciliation self dependency: ${componentId}`);
+      reconciliationParticipants.add(componentId);
+      reconciliationParticipants.add(prerequisite);
+    }
+  }
+  const visiting = new Set();
+  const visited = new Set();
+  function visit(componentId, path = []) {
+    if (visiting.has(componentId)) {
+      const start = path.indexOf(componentId);
+      throw new Error(`Component reconciliation cycle: ${[...path.slice(start), componentId].join(' -> ')}`);
+    }
+    if (visited.has(componentId)) return;
+    visiting.add(componentId);
+    for (const prerequisite of prerequisitesByComponent.get(componentId) || []) visit(prerequisite, [...path, componentId]);
+    visiting.delete(componentId);
+    visited.add(componentId);
+  }
+  for (const componentId of componentIds) visit(componentId);
 
   for (const behaviorId of behaviorIds) {
     if (!assignedBehaviors.has(behaviorId)) throw new Error(`Missing Component assignment for Pulse Behavior: ${behaviorId}`);
@@ -118,7 +148,8 @@ export function loadComponentsModel(sourceDirectory, pulse, requirements) {
     if (!mappedInformation.has(informationId)) throw new Error(`Missing Domain Information mapping: ${informationId}`);
   }
   for (const component of components) {
-    if (!component.behaviors.length && !(authorityCounts.get(component.id) > 0) && !(evidenceByComponent.get(component.id) > 0)) {
+    if (!component.behaviors.length && !(authorityCounts.get(component.id) > 0)
+      && !(evidenceByComponent.get(component.id) > 0) && !reconciliationParticipants.has(component.id)) {
       throw new Error(`Component lacks structural grounding: ${component.id}`);
     }
   }

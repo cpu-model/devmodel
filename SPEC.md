@@ -14,7 +14,7 @@ The three artifacts are complementary. None of them is an implementation archite
 
 `deployment.yaml` is a complementary implementation artifact. It records one concrete intended deployment of the CPU-described system without changing the meaning or name of Context-Pulse-UI.
 
-`components.yaml` is an optional complementary logical architecture artifact. When present, it records reviewed normative Component boundaries without changing the semantics of the five-file semantic base model or implying physical deployment boundaries.
+`components.yaml` is an optional complementary Component architecture artifact. A Component is one semantically derived cohesive functional responsibility and the normative runtime implementation boundary that realizes it. The artifact does not change the five-file semantic base model or imply that a Component automatically equals a package, process, service, repository, database, container, or deployment unit.
 
 ## Normative sources
 
@@ -36,7 +36,7 @@ For a concrete system model, the authoritative semantic sources are:
 - `deployment.yaml`
 - `requirements.yaml`
 
-These five files are the concrete semantic base model: Context, Pulse, and UI are the functional core, Deployment is the complementary implementation artifact, and Requirements contains normative attachments. A concrete system may additionally contain `components.yaml`. Its absence means that CPU makes no normative Component-boundary claim; its presence makes the reviewed logical Component architecture normative.
+These five files are the concrete semantic base model: Context, Pulse, and UI are the functional core, Deployment is the complementary implementation artifact, and Requirements contains normative attachments. A concrete system may additionally contain `components.yaml`. Its absence means that CPU makes no normative Component-boundary claim; its presence makes the reviewed Component architecture normative.
 
 Generated diagrams are derived artifacts. The four repository-backed files `context.pdf`, `pulse.pdf`, `ui.pdf`, and `deployment.pdf` are the permanent review artifacts; the semantic YAML remains authoritative. The renderer generates these PDFs directly as vector graphics and does not require D2 or SVG intermediates.
 
@@ -47,7 +47,9 @@ Generated diagrams are derived artifacts. The four repository-backed files `cont
 - Pulse represents possible causal event propagation, not data dependencies or exact execution traces.
 - UI describes user capability and intent, not widgets, layout, gestures, responsive rules, or technical components.
 - Deployment describes one concrete normative host/process topology, including explicitly selected implementation and runtime decisions.
-- Components describe logical implementation authority and isolation, not packages, processes, services, repositories, databases, containers, or deployment units.
+- Components describe cohesive model-derived functional responsibilities and the runtime implementation boundaries that realize them. Authority is strong evidence but not mandatory for every Component. Components are not automatically packages, directories, processes, services, repositories, databases, containers, or deployment units.
+- Pulse describes normal functional causality. Component reconciliation establishes or re-establishes valid Component runtime state after startup or invalidation; its mechanical states are not Domain Information.
+- Domain-functional configuration is Domain Information even when Deployment describes its delivery mechanism. Purely technical configuration remains in Deployment.
 - Requirement addresses attach ordered requirement objects with stable, globally unique IDs directly to identified model elements. There is no implicit inheritance.
 - IDs are stable machine-readable identity. Names are display text and may change independently.
 - Unknown fields and unresolved references are errors. Tools must not silently repair or reinterpret invalid models.

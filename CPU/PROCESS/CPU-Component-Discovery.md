@@ -4,122 +4,144 @@ Status: Normative methodology.
 
 ## 1. Purpose and status
 
-CPU's concrete semantic base model remains `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml`, with the meanings defined by the CPU specification and Artifact Formats v2. Context, Pulse, and UI are the functional core, Deployment is the complementary implementation artifact, and Requirements contains normative attachments. Component Discovery derives logical implementation boundaries from that semantic model without changing it.
+CPU's concrete semantic base model remains `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml`. `components.yaml` is an optional complementary normative Component architecture artifact derived from that complete base model without changing it.
 
-`components.yaml` is an optional complementary logical architecture artifact. If it is absent, CPU makes no normative statement about logical Component boundaries. If it is present, its Component boundaries, Behavior assignments, and Domain Information authority or disposition assignments are normative. An implementation agent must follow that reviewed model and must not replace it with a new discovery result. Changing a boundary requires an explicit model change and human review.
+If `components.yaml` is absent, CPU makes no normative Component-boundary claim. If present, its Component boundaries, Behavior assignments, Domain Information authority or disposition assignments, and reconciliation prerequisites are normative. Changing them requires an explicit model change and human review.
 
-A **Component is a normative logical implementation boundary that has exclusive authority for a cohesive responsibility whose ownership or isolation must be preserved. It owns the decisions, state transitions, persistent supporting lifecycle, or invariants assigned to that responsibility. It does not imply a package, directory, process, service, repository, database, container, or deployment unit.** Deployment continues to describe physical realization.
+A **Component is a normative runtime implementation boundary with a cohesive functional responsibility derived from the CPU semantic model. A Component realizes that responsibility at runtime and may own authoritative state and transitions, derive information, perform observations or integrations, realize presentation behavior, protect safety or failure isolation, reconcile runtime state, or otherwise provide functionality required by the model.**
 
-Component Discovery is a semantic design and review activity. It must not begin from files, packages, processes, deployment units, or an existing implementation. Existing implementation may be considered only after the initial semantic proposal exists, as a separate reconciliation against the proposed or approved Component architecture; it must not retroactively become discovery evidence.
+There is one Component concept, not separate logical and runtime Components. Semantic responsibility determines the Component; runtime artifacts realize that same Component. A Component does not automatically correspond to a package, directory, process, service, repository, database, container, or deployment unit. Deployment continues to describe concrete physical realization.
+
+Component Discovery is semantic-first. It must not begin from files, packages, processes, deployment units, or an existing implementation. Existing implementation is examined only after a semantic proposal has been reviewed, through realization reconciliation in section 8; it never retroactively becomes discovery evidence.
 
 ## 2. Interpretation principles
 
-- Authority granularity is not Component granularity. One Component may own several compatible authorities, and separate state or separate authority does not by itself require separate Components.
-- A Capability is cohesion evidence, not a Component boundary. Several Capabilities may belong to one Component, and one Capability may require several Components.
-- A Pulse crossing identifies a possible interaction, not ownership.
-- `information-out` makes a Behavior an authority candidate for the emitted information; it does not prove that the Behavior's eventual Component owns the information.
-- Reading information does not confer authority.
-- An external adapter does not own internal domain state merely because it delivers an observation.
-- A persistence mechanism does not own state merely because it stores it.
-- Adapters, projections, calculations, presentation, infrastructure, and utilities are not automatically Components.
+- Authority is strong Component-boundary evidence, not a prerequisite for every Component.
+- Authority granularity is not Component granularity. One Component may own several compatible authorities; separate state or authority does not automatically require separate Components.
+- A Capability is cohesion evidence, not a Component boundary. Several Capabilities may belong to one Component and one Capability may require several Components.
+- A Pulse crossing identifies possible causal interaction, not ownership or reconciliation dependency.
+- `information-out` makes a Behavior an authority candidate for emitted information; it does not establish eventual Component authority.
+- Reading information does not confer authority and does not imply a reconciliation prerequisite.
+- An external adapter does not own internal domain state merely because it delivers an observation. Persistence does not own state merely because it stores it.
+- Observation, integration, calculation, estimation, projection, presentation, safety/failure isolation, and reconciliation responsibilities may be legitimate Components when the semantic base model supplies a cohesive functional foundation and the Necessity Test requires a separate runtime boundary. The category alone never creates a Component.
 
-Authority means the logical implementation authority permitted to accept or establish the relevant state transitions and responsible for protecting their invariants.
+Authority means the runtime implementation authority permitted to accept or establish relevant mutable state transitions and responsible for protecting their invariants.
 
-## 3. Discovery procedure
+## 3. Functional configuration
+
+A configuration value with domain-functional meaning whose change can alter functional decisions, results, or domain behavior is Domain Information. Deployment may additionally describe how the implementation receives that value. For example, `fallback-charging-rate` is Domain Information even when Deployment supplies it through `CHARGING_RATE_SOC_PER_HOUR`.
+
+Purely technical configuration remains in Deployment, including HTTP ports, SQLite paths, mounts, and container restart policies. Delivery mechanism does not determine semantic classification.
+
+## 4. Discovery procedure
 
 Perform Component Discovery in this order:
 
-1. Read and strictly validate the complete current five-file CPU semantic base model.
-2. Create a Behavior–Information inventory recording each Behavior's Domain Information inputs and outputs and the requirements that bear directly on the analysis.
-3. Classify every Domain Information item semantically as mutable internal information, external input or fact, immutable transfer or result, or derived information. Record uncertainty rather than guessing.
-4. Identify candidate authorities: who may establish, accept, reject, or change each relevant item or decision. Do not equate producer, reader, adapter, or storage mechanism with owner.
-5. Inventory invariants, acceptance transitions, and persistent lifecycles. Trace each to the Behaviors, Domain Information, and requirement IDs that support it; do not copy or rewrite requirement text.
-6. Form small authority seeds around transitions and invariants that must initially remain together.
-7. Identify explicit producer/acceptor and other contracts between seeds, including whether a recipient independently accepts, rejects, activates, supersedes, suspends, or ends a producer's result.
-8. After authority analysis, use Capability membership as additional cohesion evidence.
-9. Identify adapters, projections, calculations, presentation, infrastructure, and utilities separately so technical or derived work is not mistaken for domain authority.
-10. Apply the merge/split test in section 4 to the seeds.
-11. Apply the Component Necessity Test in section 5 to every resulting candidate.
-12. Absorb candidates that do not need a separate normative boundary into a passing Component where semantically appropriate, or classify implementation-only elements outside the Component model.
-13. Verify that every Pulse Behavior has exactly one proposed Component and every Domain Information item has exactly one authority or non-authoritative disposition.
-14. Record unresolved boundaries and functional-model findings explicitly. Do not conceal them through an architectural choice.
-15. Submit the proposal and its evidence to human review. Codex or another analysis agent is not the final architecture authority.
+1. Read and strictly validate the complete current semantic base model.
+2. Create a Behavior–Information inventory with relevant requirement IDs.
+3. Classify every Domain Information item as mutable internal authority, external input or fact, immutable transfer or result, or derived information. Record uncertainty rather than guessing.
+4. Identify cohesive functional responsibilities evidenced by Behaviors and Requirements, including authority, invariants/lifecycles, observation/integration, calculation/estimation/projection, presentation, safety/failure isolation, and reconciliation responsibility.
+5. Identify candidate authorities and inventory invariants, acceptance transitions, persistent lifecycles, supporting state, and failure/ordering/non-interference rules. Trace all findings to semantic evidence.
+6. Form small responsibility seeds around functions that initially need to remain coherent. Do not form seeds from implementation structure.
+7. Identify producer/acceptor and other explicit contracts between seeds.
+8. Use Capability membership as additional cohesion evidence, never as an automatic boundary.
+9. Apply the merge/split test in section 5.
+10. Apply the Component Necessity Test in section 6 to every candidate.
+11. Absorb failed candidates into a passing Component where semantically appropriate. An implementation element that is not itself a Component candidate still realizes exactly one passing Component; it does not receive a separate Component entry.
+12. Verify that every Pulse Behavior has exactly one proposed Component and every Domain Information item has exactly one authority or non-authoritative disposition.
+13. Define reconciliation prerequisites only where validity establishment truly requires another Component to be RECONCILED. Do not derive them from ordinary information reads.
+14. Record unresolved boundaries and functional-model findings explicitly.
+15. Submit the proposal and evidence to human review. An analysis agent is not the final architecture authority.
 16. Condense only the approved result into `components.yaml`.
 
-The semantic authority matrix, invariant inventory, candidate decision log, merge/split analysis, and unresolved alternatives are discovery work and review material. They are not additional normative CPU artifacts. Requirements remain the source of truth for functional rules and invariants.
+The inventories, decision logs, merge/split analysis, and alternatives are discovery work, not additional normative CPU artifacts.
 
-The four Domain Information outcomes are mutually exclusive in the approved architecture:
+Domain Information outcomes are mutually exclusive:
 
-- **mutable internal authority** maps to `authority`; the named Component owns acceptance of its transitions and protection of its invariants;
-- **external input or fact** maps to `external-input` only while its relevant truth is established outside the system; an internally accepted, normalized, or mutable representation with its own transitions instead needs an authority;
-- **immutable transfer or result** maps to `transfer` when it crosses a responsibility contract without a continuing mutable lifecycle; later acceptance may create separate authoritative state;
-- **derived information** maps to `derived` when it is reproducible from other information and has no independently authoritative transitions. It may be materialized or cached, but persistent derived information with independent update, validity, or consistency invariants needs an authority instead.
+- **mutable internal authority** maps to `authority`;
+- **external input or fact** maps to `external-input` while relevant truth remains externally established;
+- **immutable transfer or result** maps to `transfer` when it has no continuing mutable lifecycle;
+- **derived information** maps to `derived` when reproducible from other information and without independently authoritative transitions.
 
-If the model does not establish which case applies, record UNRESOLVED and do not create `components.yaml` until human review resolves the disposition.
+`derived` classifies information authority status. It does not place the deriving function outside Component architecture. For example, `charging-rate-estimate` may be `derived` while a Charging Estimation Component realizes the normative estimator function. Persistent derived information with independent update, validity, finalization, invalidation, consistency, or reconciliation rules must instead be analyzed as authority.
 
-## 4. Merge/split test
+## 5. Merge/split test
 
-For each pair or group of candidates, answer all of the following:
+For each pair or group of candidates ask:
 
+- Do they realize one cohesive functional responsibility?
 - Do they exercise the same authority?
-- Must their transitions be atomic to protect the same invariant?
-- Is there an explicit producer/acceptor contract between them?
-- Can the recipient independently accept, reject, activate, supersede, suspend, or end the result?
-- Does safety or consistency require an exclusive authority boundary?
-- Do they have independently identifiable lifecycles?
+- Must transitions be atomic to protect one invariant?
+- Is there an explicit producer/acceptor contract?
+- Can a recipient independently accept, reject, activate, supersede, suspend, or end the result?
+- Does safety, consistency, failure isolation, ordering, or non-interference require a boundary?
+- Do they have independently identifiable lifecycles or reconciliation responsibilities?
+- Would merging or splitting obscure a runtime responsibility required by the model?
 
-The following are normative decisions:
+Transitions that must be atomic under one invariant are merged unless the base model defines a consistency protocol across the boundary. Exclusive safety or consistency authority is not duplicated. An explicit result contract with independent acceptance remains separable unless a documented merge preserves both responsibilities. Independently identified lifecycles and required failure isolation are not silently collapsed.
 
-- Candidates whose transitions must be atomic under one invariant must be merged unless the base model explicitly defines a consistency protocol that preserves the invariant across the boundary.
-- Authorities that must be exclusive for safety or consistency must not be duplicated across Components.
-- A producer and a recipient with an explicit result contract and an independently authoritative acceptance lifecycle must remain separable; merging requires an explicit reason that preserves both authorities.
-- Independently identified lifecycles must not be silently collapsed when doing so obscures their acceptance or termination authority.
+Timing, external dependencies, retry patterns, persistence, and observed implementation coupling are heuristics only. The same subject, Capability, external system, database, process, View, or frequent information read never justifies a merge or split by itself. Conflicting mandatory conclusions produce UNRESOLVED, not hidden design intuition.
 
-Reasons to change, timing, external dependencies, failure and retry patterns, persistence, and observed coupling or cohesion are heuristics. They can strengthen or weaken a proposal but cannot override the normative authority and invariant rules.
+## 6. Component Necessity Test
 
-The following never justify a merge by themselves: the same subject word, the same Capability, the same external system, the same database, the same process, the same UI View, or many reads of the same information.
+Run this after merge/split analysis and before proposing the normative architecture.
 
-If mandatory merge and split conclusions conflict, record an unresolved boundary or functional-model finding. Do not resolve the conflict by hidden design intuition.
+### Phase A — functional foundation
 
-## 5. Component Necessity Test
-
-Run this test after merge/split analysis and before proposing the normative model.
-
-### Phase A — authority foundation
-
-A candidate must have at least one semantically evidenced foundation:
+A candidate must have semantic evidence for an independently identifiable runtime responsibility. Evidence may include:
 
 - authority over mutable Domain Information;
-- authority over an invariant that spans transitions or time;
-- an independently modeled domain or supporting lifecycle;
-- exclusive safety or consistency authority; or
-- persistent supporting state whose ownership must be unambiguous.
+- an invariant spanning transitions or time;
+- an independent lifecycle;
+- safety or consistency authority;
+- persistent supporting state;
+- modeled observation or external integration;
+- modeled calculation, estimation, or projection;
+- modeled presentation responsibility;
+- normative failure, ordering, or non-interference responsibility;
+- reconciliation responsibility; or
+- another function directly evidenced by Behaviors or Requirements.
 
-If no foundation exists, the candidate is **FAIL**.
+Without a modeled functional foundation the candidate is **FAIL**. Component architecture never introduces functionality absent from the semantic base model and requirements.
 
 ### Phase B — boundary necessity
 
-An authority foundation is necessary but not sufficient. A separate normative boundary also requires at least one of these reasons:
+A functional foundation is necessary but insufficient. The responsibility must genuinely require a separate cohesive runtime Component boundary. Evidence includes ambiguous authority or invariant ownership if merged, independent acceptance or lifecycle, required safety/consistency/failure isolation, normative ordering or non-interference, independent reconciliation responsibility, or another model-backed reason that the runtime responsibility must remain separately identifiable.
 
-- merging would make authority or invariant ownership ambiguous;
-- the candidate independently accepts, rejects, activates, supersedes, suspends, or ends another responsibility's result;
-- safety or consistency requires an exclusive boundary;
-- a normative failure, ordering, or non-interference rule requires isolation;
-- a persistent supporting lifecycle spans otherwise independent authorities and needs one owner; or
-- an independently identified lifecycle must remain visible and protected.
+The result is:
 
-The result is one of:
+- **PASS** — a normative Component boundary is required;
+- **FAIL** — the responsibility is realized within another Component or remains implementation-only; or
+- **UNRESOLVED** — the base model lacks enough semantics and human review is required.
 
-- **PASS** — the candidate requires a normative Component boundary;
-- **FAIL** — it remains an internal responsibility or module, calculation, projection, adapter, presentation concern, infrastructure, or utility; or
-- **UNRESOLVED** — the CPU base model lacks enough semantics to decide. This is a model finding for human review.
+A file, package, View, algorithm, cadence, external source, database, container, deployment unit, or reason to change is never sufficient alone. Small implementation size does not demote a real responsibility. Every modeled Behavior must be assigned to exactly one passing Component before `components.yaml` can be created. A behaviorless Component still needs explicit structural grounding under Artifact Formats v2.
 
-FAIL does not remove the responsibility. A separate algorithm, View, package, cadence, external source, persistence mechanism, or reason to change is never sufficient by itself. Conversely, small implementation size does not demote real state or invariant authority to a utility.
+## 7. Component reconciliation
 
-When a failing candidate contains a modeled Pulse Behavior, that Behavior must be absorbed into exactly one passing Component before `components.yaml` can be created. Only responsibilities without modeled Behaviors can remain wholly outside the Component list. If no candidate passes the test, omit `components.yaml`; do not invent a Component merely to satisfy coverage.
+Component reconciliation is the general runtime architecture mechanism for startup, relevant reconfiguration, migration, and recovery. It establishes or re-establishes valid Component runtime state and invariants after validity has been lost. It is distinct from Pulse, which expresses normal functional causality.
 
-## 6. Review and realization
+Every Component has one architecture-mechanical state:
 
-The proposal must show the intended Components, assigned Behaviors, authoritative Domain Information, non-authoritative Domain Information dispositions, failed candidates and their placement, and unresolved findings. Review evaluates semantic correctness, cohesion, necessity, and consistency with Deployment. Structural validation cannot perform that judgment.
+- `UNRECONCILED` — valid runtime state and invariants cannot yet be assumed;
+- `RECONCILING` — the Component is establishing them;
+- `RECONCILED` — normal operation may rely on them.
 
-After approval, `components.yaml` is the sole normative condensation of the Component architecture. Discovery working material may be retained as ordinary project review material when useful, but it has no CPU artifact status. Implementation then realizes the approved logical boundaries within the physical constraints in Deployment. Package or runtime choices remain implementation decisions unless another normative artifact constrains them.
+These states are not Domain Information. At startup all Components are `UNRECONCILED`. A Component may begin reconciliation only after every Component in its `reconciliation.requires` list is `RECONCILED`. The Component itself determines how to establish correct runtime state and invariants using relevant persistent state, functional configuration, current or reusable valid observations, and valid prerequisites. Reconciliation may perform external effects, including fail-safe effects, when required to establish the invariant.
+
+The system/runtime executes dependency ordering and must not permit normal operation to use a Component in a way that assumes reconciled state before it is `RECONCILED`. This graph execution is general runtime mechanics and does not create a Startup Manager or Reconciliation Manager domain Component.
+
+A Component becomes `UNRECONCILED` when its established runtime state or invariants can no longer be assumed valid. Invalidation propagates transitively to every Component that directly or indirectly requires it. The affected acyclic graph then reconciles again in dependency order. Ordinary Domain Information change does not automatically invalidate a Component; normal functional change is handled through Pulse.
+
+Startup, relevant reconfiguration, migration, and recovery use the same mechanism and differ only in which Components are invalidated. A reconciliation dependency is stronger than an ordinary information dependency. Reading information produced by another Component never automatically creates `requires`.
+
+## 8. Review and realization reconciliation
+
+The proposal shows Components, assigned Behaviors, Domain Information outcomes, reconciliation prerequisites, failed candidates and placement, and unresolved findings. Review evaluates semantic correctness, cohesion, necessity, runtime boundary fitness, and consistency with Deployment.
+
+After approval, `components.yaml` is the sole normative condensation of Component architecture. Implementation must realize those same runtime boundaries within Deployment constraints.
+
+Realization reconciliation compares implementation with the approved architecture after semantic discovery. Every source artifact realizing the system has exactly one unambiguous Component ownership, including Go source and tests, HTML, templates, JavaScript, CSS, SQL, and equivalent source artifacts. HTML/templates/JavaScript/CSS are source code and are not outside Component architecture.
+
+File-to-Component mapping is not stored in `components.yaml`; Codex and implementation work keep it unambiguous. A folder tree per Component is a natural strategy but not a CPU format requirement. A generic `shared` folder must not evade ownership. If one source artifact appears to realize several Components, split it when appropriate or report that the Component boundary may need review.
+
+Current implementation may produce findings during realization reconciliation but never supplies retroactive evidence for initial discovery.

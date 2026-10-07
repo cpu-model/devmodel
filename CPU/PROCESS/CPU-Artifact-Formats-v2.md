@@ -19,6 +19,7 @@ The formats are intentionally small and artifact-specific. v2 does not introduce
 - Presentation and renderer concerns do not belong in semantic YAML.
 - Generated PDF diagrams and any optional preview files are derived artifacts and are not semantic sources.
 - References must resolve within the artifact, except for the defined requirement target addresses.
+- A configuration value with domain-functional meaning whose change can alter functional decisions, results, or domain behavior is modeled as Domain Information. Deployment may additionally describe its delivery mechanism. Purely technical configuration remains solely in Deployment.
 
 ## 3. Context format
 
@@ -953,7 +954,7 @@ requirements:
 
 ## 11. Optional Component architecture format
 
-`components.yaml` is an optional complementary logical architecture artifact governed by CPU Component Discovery. It does not extend or alter Context, Pulse, UI, Deployment, or Requirements semantics. If absent, the five-file semantic base model remains complete and valid and CPU makes no normative claim about logical Component boundaries. If present, the declared boundaries and assignments are normative.
+`components.yaml` is an optional complementary Component architecture artifact governed by CPU Component Discovery. A Component is both a cohesive functional responsibility derived from the semantic base model and the normative runtime implementation boundary that realizes it. There are no separate logical and runtime Component types. The artifact does not extend or alter Context, Pulse, UI, Deployment, or Requirements semantics. If absent, the five-file semantic base model remains complete and valid and CPU makes no normative Component-boundary claim. If present, its boundaries, assignments, and reconciliation prerequisites are normative.
 
 The document has exactly one top-level field, `components`:
 
@@ -961,6 +962,10 @@ The document has exactly one top-level field, `components`:
 components:
   base-model-digest: sha256:<digest>
   components:
+    - id: observation-integration
+      name: Observation Integration
+      responsibility: Establish the valid external observation used by result processing.
+      behaviors: []
     - id: result-authority
       name: Result Authority
       responsibility: >
@@ -969,6 +974,9 @@ components:
       behaviors:
         - process-input
         - present-result
+      reconciliation:
+        requires:
+          - observation-integration
   domain-information:
     - id: submitted-input
       disposition: external-input
@@ -978,23 +986,28 @@ components:
 
 ### 11.1 Component entries
 
-The `components` list is non-empty when the artifact exists; omit `components.yaml` when no Component is normative. Every Component contains exactly `id`, `name`, `responsibility`, and `behaviors`, with optional `requirement-evidence`.
+The `components` list is non-empty when the artifact exists; omit `components.yaml` when no Component is normative. Every Component contains exactly `id`, `name`, `responsibility`, and `behaviors`, with optional `requirement-evidence` and `reconciliation`.
 
 - `id` is a stable, non-empty, unique machine-readable ID and contains no period.
 - `name` and `responsibility` are non-empty strings.
 - `behaviors` is a list of Pulse Behavior IDs. Every Pulse Behavior occurs exactly once across all Components.
 - `requirement-evidence`, when present, is a non-duplicated list of existing requirement IDs. It provides structural grounding and traceability only when requirement evidence helps establish the Component's existence or boundary. It neither copies requirement text nor attaches, inherits, relocates, or changes a requirement. It does not imply that only the referenced requirements apply to the Component.
+- `reconciliation`, when present, contains exactly `requires`. `requires` is a list of unique Component IDs and defines the Component's reconciliation prerequisites. Absence of `reconciliation` means that the Component has no Component reconciliation prerequisites.
 
-A Component may have an empty `behaviors` list only when at least one Domain Information item names it as authority or it has non-empty `requirement-evidence`. No Component classification field exists: every listed entry has already passed the Component Necessity Test and is a normative logical authority boundary.
+A Component may have an empty `behaviors` list only when at least one Domain Information item names it as authority, it has non-empty `requirement-evidence`, or it participates in the reconciliation graph by requiring another Component or being required by another Component. Derived Domain Information alone does not ground a behaviorless Component. Every listed entry has passed the Component Necessity Test and is a normative runtime implementation boundary for one model-derived functional responsibility.
+
+The `requires` graph is always a DAG. Unknown references, duplicates, self-dependencies, and direct or indirect cycles are invalid. No topological order is stored. `requires` means that whenever this Component needs reconciliation, every listed Component must first be `RECONCILED`. It is stronger than ordinary information dependency; reading information established by another Component does not imply `requires`.
+
+Reconciliation uses the architecture-mechanical states `UNRECONCILED`, `RECONCILING`, and `RECONCILED`. These states are not Domain Information and are not stored in `components.yaml`. Startup, relevant reconfiguration, migration, and recovery use the same invalidation and reconciliation mechanism. The Component owns how it restores valid runtime state and invariants; the system/runtime owns dependency ordering and transitive invalidation.
 
 ### 11.2 Domain Information disposition
 
 `domain-information` contains exactly one entry for every Pulse Domain Information ID. The outcomes are mutually exclusive. Each entry contains `id` and exactly one of:
 
-- `authority: <component-id>` — the named Component has logical authority to accept or establish the relevant mutable state transitions and protect their invariants; or
+- `authority: <component-id>` — the named Component has authority to accept or establish the relevant mutable state transitions and protect their invariants; or
 - `disposition: external-input` — information whose relevant truth is established outside the system and observed as input or fact; an internally accepted, normalized, or mutable representation with its own transitions instead requires `authority`;
 - `disposition: transfer` — an immutable result transferred across a responsibility contract without a continuing mutable lifecycle; acceptance may establish separate authoritative state; or
-- `disposition: derived` — information reproducible from other information and without independently authoritative transitions. It may be materialized or cached, but persistent derived information with independent update, validity, or consistency invariants requires `authority`.
+- `disposition: derived` — information reproducible from other information and without independently authoritative transitions. It may be materialized or cached. This classifies authority status only and does not exclude the deriving calculation, estimation, or projection responsibility from Component architecture. Persistent derived information with independent update, validity, finalization, invalidation, consistency, or reconciliation rules requires authority analysis instead.
 
 Reader, producer, adapter, and persistence mechanism are not implicit owners. The disposition is architectural classification only; it does not create information, alter Pulse causality, or replace the functional definition in Pulse.
 
@@ -1008,8 +1021,8 @@ Any semantic change to the five base files therefore requires Component review a
 
 ### 11.4 Strict structural validation
 
-When `components.yaml` exists, validation rejects unknown fields, duplicate YAML keys, invalid or duplicate Component IDs, blank names or responsibilities, unknown or duplicate Behavior assignments, incomplete Behavior coverage, unknown or duplicate Domain Information mappings, incomplete Domain Information coverage, entries that have both or neither `authority` and `disposition`, unknown Component authorities, invalid dispositions, unknown or duplicate requirement evidence, ungrounded behaviorless Components, and a stale digest.
+When `components.yaml` exists, validation rejects unknown fields, duplicate YAML keys, invalid or duplicate Component IDs, blank names or responsibilities, unknown or duplicate Behavior assignments, incomplete Behavior coverage, unknown or duplicate Domain Information mappings, incomplete Domain Information coverage, entries that have both or neither `authority` and `disposition`, unknown Component authorities, invalid dispositions, unknown or duplicate requirement evidence, invalid reconciliation shapes, unknown or duplicate prerequisites, self-dependencies, reconciliation cycles, ungrounded behaviorless Components, and a stale digest.
 
-Validation does not decide whether a responsibility is cohesive, an authority or disposition is semantically correct, the Necessity Test was performed correctly, Components should be merged or split, or invariant isolation is sound. Those are discovery and human-review decisions.
+Validation does not decide whether a responsibility is cohesive, an authority or disposition is semantically correct, reconciliation is semantically necessary, the Necessity Test was performed correctly, Components should be merged or split, or invariant isolation is sound. Those are discovery and human-review decisions.
 
-The artifact contains no Pulse interactions, readers, requirement text, packages, processes, transports, implementation technology, or Deployment placement. It has no generated Component diagram in Visual Language v2.
+The artifact contains no Pulse interactions, readers, requirement text, source-artifact lists, packages, directories, processes, transports, implementation technology, or Deployment mappings. File-to-Component ownership is maintained through realization reconciliation, not stored here. The artifact has no generated Component diagram in Visual Language v2.

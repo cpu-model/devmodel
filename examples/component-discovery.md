@@ -18,14 +18,30 @@ A planner produces an immutable proposed plan. An execution authority independen
 
 If two Behaviors update a balance and its reserved amount under the invariant `reserved <= balance`, and the model provides no cross-boundary consistency protocol, the atomic invariant requires one authority seed and one Component boundary.
 
-## Inputs, derived information, and adapters
+## Inputs, derived information, and functional Components
 
-A supplier observation whose truth remains externally established is `external-input`. If the system accepts or normalizes it into mutable internal state with its own validity transitions, that representation instead needs an authority. The protocol adapter that fetches the observation does not become that owner merely because it emits it. A deterministic risk score calculated from the observation and authoritative account state is `derived`; caching it does not create authority, but an independently governed persistent score lifecycle would. The calculation is an internal responsibility unless it owns a qualifying lifecycle or invariant boundary.
+A supplier observation whose truth remains externally established is `external-input`. If the system accepts or normalizes it into mutable internal state with its own validity transitions, that representation instead needs an authority. The protocol adapter that fetches the observation does not become that owner merely because it emits it.
 
-A protocol adapter that translates messages, retries transport, and authenticates to an external system is normally an implementation element outside the Component list. It becomes a Component candidate only if the CPU semantics establish qualifying persistent authority and boundary necessity, not simply because the adapter has its own package or failure modes. If adapter-like work is itself modeled as a Pulse Behavior, that Behavior must still be absorbed into exactly one passing Component before `components.yaml` can exist.
+A deterministic `charging-rate-estimate` calculated from observations remains `derived`; that classification says only that the information has no independent authoritative transitions. A model-backed Charging Estimation responsibility may nevertheless pass the Component Necessity Test and become a Component. Caching does not create authority, while independent persistent update, validity, finalization, invalidation, consistency, or reconciliation rules require authority analysis.
+
+A protocol adapter that translates messages, retries transport, and authenticates to an external system is not a Component merely because it has its own package. It can become one when modeled observation/integration responsibility supplies a functional foundation and a separate runtime boundary passes the Necessity Test. Every modeled Behavior still belongs to exactly one passing Component.
+
+## Functional configuration
+
+`fallback-charging-rate` is Domain Information when changing it alters charging decisions or results. Deployment may state that the implementation receives it through `CHARGING_RATE_SOC_PER_HOUR`. HTTP ports, SQLite paths, mounts, and restart policies remain technical Deployment configuration.
+
+## Reconciliation
+
+Suppose Charging Estimation cannot establish a valid estimator until Vehicle Observation has established a reusable valid observation. Charging Estimation may declare `reconciliation.requires: [vehicle-observation]`. This is stronger than merely reading observed Domain Information. At startup both Components are `UNRECONCILED`; Vehicle Observation reconciles first, then Charging Estimation. If Vehicle Observation loses validity, invalidation propagates to Charging Estimation and the affected graph reconciles again.
+
+Ordinary vehicle-state change is handled through Pulse and does not automatically invalidate either Component. No Startup Manager Component is introduced; dependency execution is general Component runtime mechanics.
+
+## Realization reconciliation
+
+After approval, Go source, tests, HTML, templates, JavaScript, CSS, and SQL are each reconciled to exactly one Component ownership. A folder per Component may help, but no file mapping is stored in `components.yaml` and a generic `shared` folder cannot evade ownership.
 
 ## FAIL and UNRESOLVED
 
-A formatter reads an accepted result and produces display text. Its algorithm and reason to change are distinct, but it owns no mutable information, lifecycle, or cross-transition invariant. It therefore FAILs the Necessity Test and remains presentation or an internal module.
+A formatter reads an accepted result and produces display text. If the semantic model contains no independently identifiable presentation responsibility or requirement requiring a separate runtime boundary, its algorithm and reason to change alone do not supply a functional foundation and it FAILs. Modeled presentation responsibility can instead be a legitimate candidate, but still must pass boundary necessity.
 
 Suppose a Behavior emits `approved-request`, while requirements do not say whether a later Behavior must independently accept it or whether both transitions must be atomic. The evidence points both toward a transfer contract and toward possible shared authority. Discovery must record UNRESOLVED/model finding; it must not select a split or merge from naming, code structure, or intuition.

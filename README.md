@@ -7,7 +7,7 @@ This repository contains the reusable methodology and tooling for the Context-Pu
 - [`SPEC.md`](SPEC.md) explains the model, source hierarchy, and project adoption rules.
 - [`AGENTS.md`](AGENTS.md) tells Codex and other coding agents how to interpret and change CPU models.
 - [`CPU Artifact Formats v2`](CPU/PROCESS/CPU-Artifact-Formats-v2.md) defines the semantic YAML formats and requirement attachments.
-- [`CPU Component Discovery`](CPU/PROCESS/CPU-Component-Discovery.md) defines how reviewed logical Component boundaries are derived from CPU semantics.
+- [`CPU Component Discovery`](CPU/PROCESS/CPU-Component-Discovery.md) defines how reviewed Component runtime boundaries are derived from cohesive responsibilities in CPU semantics.
 - [`CPU Visual Language v2`](CPU/PROCESS/CPU-Visual-Language-v2.md) defines diagram notation, rendering, and interactive requirement review.
 - [`examples/model`](examples/model) is a minimal valid model.
 - [`CPU - lathund för ett nytt projekt`](CPU-nytt-projekt-lathund.md) is a concise Swedish guide from an empty repository to incremental CPU development.
@@ -25,6 +25,8 @@ A concrete system model consists of:
 - `requirements.yaml`
 
 These five files are the semantic base model. Context, Pulse, and UI are the functional core, Deployment is the complementary implementation artifact, and Requirements contains normative attachments. A reviewed model may additionally contain optional normative `components.yaml`; existing models without it remain valid.
+
+A Component is one model-derived cohesive functional responsibility and the runtime implementation boundary that realizes it. Authority is strong boundary evidence but not mandatory for every Component. Optional reconciliation prerequisites form an acyclic graph used to establish valid Component runtime state during startup, relevant reconfiguration, migration, and recovery.
 
 Pulse optionally declares flat Capabilities for deterministic local causal review and Domain Information for domain-significant participation in Behaviors. `information-in` and `information-out` remain independent of Pulse causality. Requirements are objects containing exactly stable `id` and normative `text`; IDs are globally unique within the concrete model's `requirements.yaml`.
 
@@ -65,7 +67,7 @@ The project keeps its concrete five-file semantic base model and optional review
 npm run validate -- --source /path/to/model
 ```
 
-When a reviewed `components.yaml` is present, validation also checks exhaustive Behavior assignment, exhaustive Domain Information authority/disposition, requirement evidence, and the base-model staleness digest. Generate the digest used during review with:
+When a reviewed `components.yaml` is present, validation also checks exhaustive Behavior assignment, exhaustive Domain Information authority/disposition, requirement evidence, reconciliation DAG integrity, structural grounding, and the base-model staleness digest. Generate the digest used during review with:
 
 ```sh
 node tools/model_digest.mjs --source /path/to/model

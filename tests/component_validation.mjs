@@ -56,10 +56,64 @@ validWithoutComponents();
 
 const validResult = validate(example);
 assert.equal(validResult.status, 0, validResult.stderr);
-assert.match(validResult.stdout, /1 Component/);
+assert.match(validResult.stdout, /2 Components/);
 const digestResult = spawnSync(process.execPath, [path.join(root, 'tools', 'model_digest.mjs'), '--source', example], {encoding: 'utf8'});
 assert.equal(digestResult.status, 0, digestResult.stderr);
 assert.equal(digestResult.stdout.trim(), baseModelDigest(example), 'CLI and validator digest implementation must agree');
+
+{
+  const directory = copyModel();
+  try {
+    const filename = path.join(directory, componentFile);
+    const document = parse(fs.readFileSync(filename, 'utf8'));
+    delete document.components.components[1].reconciliation;
+    fs.writeFileSync(filename, stringify(document));
+    const result = validate(directory);
+    assert.equal(result.status, 0, result.stderr);
+  } finally {
+    fs.rmSync(directory, {recursive: true, force: true});
+  }
+}
+
+{
+  const directory = copyModel();
+  try {
+    const filename = path.join(directory, componentFile);
+    const document = parse(fs.readFileSync(filename, 'utf8'));
+    document.components.components.push({
+      id: 'required-reconciliation-only',
+      name: 'Required Reconciliation-only Component',
+      responsibility: 'Provide a reviewed prerequisite responsibility without assigned Behaviors.',
+      behaviors: [],
+    });
+    document.components.components[1].reconciliation.requires.push('required-reconciliation-only');
+    fs.writeFileSync(filename, stringify(document));
+    const result = validate(directory);
+    assert.equal(result.status, 0, result.stderr);
+  } finally {
+    fs.rmSync(directory, {recursive: true, force: true});
+  }
+}
+
+{
+  const directory = copyModel();
+  try {
+    const filename = path.join(directory, componentFile);
+    const document = parse(fs.readFileSync(filename, 'utf8'));
+    document.components.components.push({
+      id: 'reconciliation-only',
+      name: 'Reconciliation-only Component',
+      responsibility: 'Provide a reviewed reconciliation responsibility without assigned Behaviors.',
+      behaviors: [],
+      reconciliation: {requires: ['result-processing']},
+    });
+    fs.writeFileSync(filename, stringify(document));
+    const result = validate(directory);
+    assert.equal(result.status, 0, result.stderr);
+  } finally {
+    fs.rmSync(directory, {recursive: true, force: true});
+  }
+}
 
 {
   const directory = copyModel();
@@ -179,7 +233,7 @@ invalidComponent(document => {
 
 invalidComponent(document => {
   document.components.components[0].behaviors.pop();
-}, /Missing Component assignment for Pulse Behavior: present-result/);
+}, /Missing Component assignment for Pulse Behavior: process-input/);
 
 invalidComponent(document => {
   document.components.components[0].behaviors[0] = 'unknown-behavior';
@@ -229,6 +283,38 @@ invalidComponent(document => {
   document.components.components[0].implementation = 'package';
 }, /unknown \[implementation\]/);
 
+invalidComponent(document => {
+  document.components.components[0]['source-files'] = ['internal/result.go'];
+}, /unknown \[source-files\]/);
+
+invalidComponent(document => {
+  document.components.components[1].reconciliation.mode = 'startup';
+}, /reconciliation: unknown \[mode\]/);
+
+invalidComponent(document => {
+  document.components.components[1].reconciliation.requires = ['missing-component'];
+}, /Unknown Component reconciliation prerequisite: missing-component/);
+
+invalidComponent(document => {
+  document.components.components[1].reconciliation.requires = ['result-processing', 'result-processing'];
+}, /Duplicate reference.*reconciliation\.requires/);
+
+invalidComponent(document => {
+  document.components.components[1].reconciliation.requires = ['result-presentation'];
+}, /Component reconciliation self dependency: result-presentation/);
+
+invalidComponent(document => {
+  document.components.components[0].reconciliation = {requires: ['result-presentation']};
+}, /Component reconciliation cycle/);
+
+invalidComponent(document => {
+  document.components.components.push({
+    id: 'indirect-cycle', name: 'Indirect Cycle', responsibility: 'Invalid cycle participant.', behaviors: [],
+    reconciliation: {requires: ['result-presentation']},
+  });
+  document.components.components[0].reconciliation = {requires: ['indirect-cycle']};
+}, /Component reconciliation cycle/);
+
 invalidComponent((document, directory) => {
   const pulseFilename = path.join(directory, 'pulse.yaml');
   const pulse = parse(fs.readFileSync(pulseFilename, 'utf8'));
@@ -244,6 +330,16 @@ invalidComponent(document => {
     behaviors: [],
   });
 }, /Component lacks structural grounding/);
+
+invalidComponent(document => {
+  document.components['domain-information'][1] = {id: 'processed-result', disposition: 'derived'};
+  document.components.components.push({
+    id: 'derived-only-estimator',
+    name: 'Derived-only Estimator',
+    responsibility: 'Claims estimation responsibility without explicit model grounding.',
+    behaviors: [],
+  });
+}, /Component lacks structural grounding: derived-only-estimator/);
 
 {
   const directory = copyModel();
