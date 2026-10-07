@@ -382,12 +382,12 @@ function layoutCausal(pulse, options = {}) {
       item.target.y + item.target.height - PORT_PADDING);
     if (low > high) continue;
     const preferred = Math.max(low, Math.min(high, (centerY(item.source) + centerY(item.target)) / 2));
-    // Trigger/boundary projections are presentation sources, not Behaviors.
-    // They may move their connection point along the boundary side just like
-    // Behavior endpoints; this is essential when several incoming projected
-    // Pulse occurrences converge on the same target Behavior.
-    const sourceCandidates = [item.start.y, item.end.y, preferred];
-    for (let offset = 6; offset <= high - low; offset += 6) sourceCandidates.push(preferred - offset, preferred + offset);
+    // Either endpoint may move along its side. Trying both existing endpoint
+    // heights first makes this symmetric instead of favoring the target side.
+    const sourceCandidates = item.source.kind === 'trigger' ? [item.start.y] : [item.start.y, item.end.y, preferred];
+    if (item.source.kind !== 'trigger') {
+      for (let offset = 6; offset <= high - low; offset += 6) sourceCandidates.push(preferred - offset, preferred + offset);
+    }
     const y = sourceCandidates.find(value => value >= low && value <= high
       && candidateFits(`${item.sourceId}:out`, item.flow, value)
       && candidateFits(`${item.flow.to}:in`, item.flow, value)
@@ -1166,8 +1166,17 @@ function causalPage(pulse, projection, title, kind, options = {}) {
   return layout;
 }
 
-function capabilityDetails(pulse) {
+function capabilityProjections(pulse) {
   const behaviorById = new Map(pulse.behaviors.map(item => [item.id, item]));
+  const overviewFlows = pulse.flows.filter(flow => 'trigger' in flow
+    || behaviorById.get(flow.from).capability !== behaviorById.get(flow.to).capability);
+  const overview = {
+    behaviors: pulse.capabilities.map(item => ({...item})),
+    flows: overviewFlows.map(flow => 'trigger' in flow
+      ? {trigger: flow.trigger, pulse: flow.pulse, to: behaviorById.get(flow.to).capability}
+      : {...flow, from: behaviorById.get(flow.from).capability, to: behaviorById.get(flow.to).capability}),
+    capabilityIds: pulse.capabilities.map(item => item.id), boundaryIds: [],
+  };
   const details = pulse.capabilities.map(capability => {
     const behaviors = pulse.behaviors.filter(behavior => behavior.capability === capability.id);
     const boundary = new Map();
@@ -1183,10 +1192,7 @@ function capabilityDetails(pulse) {
         flows.push({...flow, to: id});
       } else if (destinationCapability === capability.id) {
         const label = `FROM ${pulse.capabilities.find(item => item.id === sourceCapability).name}`;
-        // Preserve occurrence identity for incoming cross-Capability flows.
-        // Several source Behaviors may emit the same Pulse toward the same
-        // destination Behavior; they must not collapse into one layout source.
-        const source = `${label} · ${flow.from} · ${flow.pulse} · ${flow.to}`;
+        const source = `${label} · ${flow.pulse}`;
         const id = `trigger:${source}`;
         flows.push({trigger: source, triggerLabel: label, pulse: flow.pulse, to: flow.to});
         boundary.set(id, null);
@@ -1194,7 +1200,7 @@ function capabilityDetails(pulse) {
     }
     return {capability, behaviors: [...behaviors, ...boundary.values()].filter(Boolean), flows, boundaryIds: [...boundary.keys()]};
   });
-  return details;
+  return {overview, details};
 }
 
 export function layoutPulse(pulse, options = {}) {
@@ -1202,7 +1208,8 @@ export function layoutPulse(pulse, options = {}) {
     const page = causalPage(pulse, {behaviors: pulse.behaviors, flows: pulse.flows}, 'SYSTEM PULSE', 'system', options);
     return {...page, pages: [page]};
   }
-  const pages = capabilityDetails(pulse)
-    .map(detail => causalPage(pulse, detail, `CAPABILITY: ${detail.capability.name}`, 'capability-detail', options));
+  const {overview, details} = capabilityProjections(pulse);
+  const pages = [causalPage(pulse, overview, 'PULSE CAPABILITY OVERVIEW', 'overview', options)];
+  for (const detail of details) pages.push(causalPage(pulse, detail, `CAPABILITY: ${detail.capability.name}`, 'capability-detail', options));
   return {pages};
 }
