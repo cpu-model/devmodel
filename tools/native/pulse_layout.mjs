@@ -456,47 +456,6 @@ function layoutCausal(pulse, options = {}) {
         .map(node => node.id),
     }));
     item.sourceEscapeX = evaluatedCandidates.find(candidate => candidate.blockers.length === 0)?.x;
-    if (item.sourceEscapeX === undefined) {
-      // A projected source may span every straight escape candidate. Defer the
-      // vertical detour to track routing; only the short horizontal source leg
-      // must be clear here.
-      const horizontalCandidate = evaluatedCandidates.find(candidate => {
-        const x = candidate.x;
-        return ![...nodes.values()].some(node => node.id !== item.sourceId && node.id !== item.flow.to
-          && segmentIntersectsBox(item.start, {x, y: item.start.y}, node));
-      });
-      if (horizontalCandidate) {
-        item.sourceEscapeX = horizontalCandidate.x;
-        item.sourceEscapeNeedsDetour = true;
-      }
-    }
-    if (item.sourceEscapeX === undefined) {
-      const leftEdge = Math.min(...[...nodes.values()].map(node => node.x));
-      const outsideX = leftEdge - MIN_SIDE_CLEARANCE;
-      const clear = [...nodes.values()].every(node =>
-        node.id === item.sourceId || node.id === item.flow.to
-        || !segmentIntersectsBox(item.start, {x: outsideX, y: item.start.y}, node));
-      if (clear) item.sourceEscapeX = outsideX;
-    }
-    if (item.sourceEscapeX === undefined) {
-      const otherNodes = [...nodes.values()].filter(node => node.id !== item.sourceId && node.id !== item.flow.to);
-      const leftX = Math.min(...[...nodes.values()].map(node => node.x)) - MIN_SIDE_CLEARANCE;
-      const ys = [];
-      for (let step = 1; step <= 40; step += 1) {
-        ys.push(item.start.y - step * MIN_LINE_SPACING, item.start.y + step * MIN_LINE_SPACING);
-      }
-      const detourY = ys.find(y => {
-        const segments = [
-          [item.start, {x: item.start.x, y}],
-          [{x: item.start.x, y}, {x: leftX, y}],
-        ];
-        return otherNodes.every(node => segments.every(([a, b]) => !segmentIntersectsBox(a, b, node)));
-      });
-      if (detourY !== undefined) {
-        item.sourceEscapeX = leftX;
-        item.sourceDetourY = detourY;
-      }
-    }
     if (options.debugRouting) sourceEscapeDiagnostics.push({
       pulse: item.flow.pulse, sourceId: item.sourceId, targetId: item.flow.to,
       start: {...item.start}, end: {...item.end}, midX: item.midX,
@@ -506,11 +465,7 @@ function layoutCausal(pulse, options = {}) {
   const unroutable = routed.filter(item => !item.direct && item.minimalBendX === undefined
     && item.sourceEscapeX === undefined);
   if (unroutable.length) {
-    throw new Error(`No clear source escape channel for Pulse Flow: ${unroutable.map(item => {
-      const diagnostic = sourceEscapeDiagnostics.find(entry => entry.pulse === item.flow.pulse
-        && entry.sourceId === item.sourceId && entry.targetId === item.flow.to);
-      return `${item.sourceId} --${item.flow.pulse}--> ${item.flow.to} start=${JSON.stringify(item.start)} end=${JSON.stringify(item.end)} candidates=${JSON.stringify(diagnostic?.candidates || [])}`;
-    }).join(' | ')}`);
+    throw new Error(`No clear source escape channel for Pulse Flow: ${unroutable.map(item => item.flow.pulse).join(', ')}`);
   }
   const reservations = [...minimalReservations, ...routed.filter(item => !item.direct && item.minimalBendX === undefined).flatMap(item => [
     {x1: item.start.x, x2: item.sourceEscapeX, y: item.start.y},
@@ -518,7 +473,7 @@ function layoutCausal(pulse, options = {}) {
   ])];
   const requests = routed.filter(item => !item.direct && item.minimalBendX === undefined).map(item => ({
     item,
-    baseY: ((item.sourceDetourY ?? item.start.y) + item.end.y) / 2,
+    baseY: (item.start.y + item.end.y) / 2,
     x1: item.sourceEscapeX,
     x2: item.targetEscapeX,
   })).sort((a, b) => a.baseY - b.baseY || a.item.flow.pulse.localeCompare(b.item.flow.pulse));
@@ -528,9 +483,8 @@ function layoutCausal(pulse, options = {}) {
       const trackY = request.baseY + (step === 0 ? 0
         : (step % 2 ? 1 : -1) * Math.ceil(step / 2) * MIN_LINE_SPACING);
       const routeSegments = [
-        [{x: request.item.start.x, y: request.item.start.y}, {x: request.item.start.x, y: request.item.sourceDetourY ?? request.item.start.y}],
-        [{x: request.item.start.x, y: request.item.sourceDetourY ?? request.item.start.y}, {x: request.x1, y: request.item.sourceDetourY ?? request.item.start.y}],
-        [{x: request.x1, y: request.item.sourceDetourY ?? request.item.start.y}, {x: request.x1, y: trackY}],
+        [{x: request.item.start.x, y: request.item.start.y}, {x: request.x1, y: request.item.start.y}],
+        [{x: request.x1, y: request.item.start.y}, {x: request.x1, y: trackY}],
         [{x: request.x1, y: trackY}, {x: request.x2, y: trackY}],
         [{x: request.x2, y: trackY}, {x: request.x2, y: request.item.end.y}],
         [{x: request.x2, y: request.item.end.y}, {x: request.item.end.x, y: request.item.end.y}],
@@ -591,18 +545,9 @@ function layoutCausal(pulse, options = {}) {
       };
     }
     const trackY = routeTracks.get(flow);
-    const sourceDetourY = routed.find(item => item.flow === flow)?.sourceDetourY;
-    const points = sourceDetourY === undefined ? [
+    const points = [
       start,
       {x: sourceEscapeX, y: start.y},
-      {x: sourceEscapeX, y: trackY},
-      {x: targetEscapeX, y: trackY},
-      {x: targetEscapeX, y: end.y},
-      end,
-    ] : [
-      start,
-      {x: start.x, y: sourceDetourY},
-      {x: sourceEscapeX, y: sourceDetourY},
       {x: sourceEscapeX, y: trackY},
       {x: targetEscapeX, y: trackY},
       {x: targetEscapeX, y: end.y},
@@ -1221,9 +1166,18 @@ function causalPage(pulse, projection, title, kind, options = {}) {
   return layout;
 }
 
-function capabilityDetails(pulse) {
+function capabilityProjections(pulse) {
   const behaviorById = new Map(pulse.behaviors.map(item => [item.id, item]));
-  return pulse.capabilities.map(capability => {
+  const overviewFlows = pulse.flows.filter(flow => 'trigger' in flow
+    || behaviorById.get(flow.from).capability !== behaviorById.get(flow.to).capability);
+  const overview = {
+    behaviors: pulse.capabilities.map(item => ({...item})),
+    flows: overviewFlows.map(flow => 'trigger' in flow
+      ? {trigger: flow.trigger, pulse: flow.pulse, to: behaviorById.get(flow.to).capability}
+      : {...flow, from: behaviorById.get(flow.from).capability, to: behaviorById.get(flow.to).capability}),
+    capabilityIds: pulse.capabilities.map(item => item.id), boundaryIds: [],
+  };
+  const details = pulse.capabilities.map(capability => {
     const behaviors = pulse.behaviors.filter(behavior => behavior.capability === capability.id);
     const boundary = new Map();
     const flows = [];
@@ -1246,41 +1200,7 @@ function capabilityDetails(pulse) {
     }
     return {capability, behaviors: [...behaviors, ...boundary.values()].filter(Boolean), flows, boundaryIds: [...boundary.keys()]};
   });
-}
-
-function capabilityFlowPage(pulse, capabilityFlow) {
-  const capabilityById = new Map(pulse.capabilities.map(item => [item.id, item]));
-  const nodeWidth = 190;
-  const nodeHeight = 72;
-  const gap = 110;
-  const top = PAGE.margin + 90;
-  const nodes = capabilityFlow.capabilities.map((id, index) => ({
-    ...capabilityById.get(id),
-    kind: 'capability',
-    x: PAGE.margin + index * (nodeWidth + gap),
-    y: top,
-    width: nodeWidth,
-    height: nodeHeight,
-  }));
-  const flows = nodes.slice(1).map((target, index) => {
-    const source = nodes[index];
-    const y = source.y + source.height / 2;
-    return {from: source.id, to: target.id, points: [
-      {x: source.x + source.width, y},
-      {x: target.x, y},
-    ]};
-  });
-  const right = nodes.at(-1)?.x + nodeWidth || PAGE.margin;
-  return {
-    page: {margin: PAGE.margin, width: Math.max(595, right + PAGE.margin), height: 300},
-    title: `CAPABILITY FLOW: ${capabilityFlow.name}`,
-    kind: 'capability-flow',
-    nodes,
-    flows,
-    legend: [],
-    domainNodes: [],
-    informationFlows: [],
-  };
+  return {overview, details};
 }
 
 export function layoutPulse(pulse, options = {}) {
@@ -1288,7 +1208,8 @@ export function layoutPulse(pulse, options = {}) {
     const page = causalPage(pulse, {behaviors: pulse.behaviors, flows: pulse.flows}, 'SYSTEM PULSE', 'system', options);
     return {...page, pages: [page]};
   }
-  const pages = (pulse['capability-flows'] || []).map(capabilityFlow => capabilityFlowPage(pulse, capabilityFlow));
-  for (const detail of capabilityDetails(pulse)) pages.push(causalPage(pulse, detail, `CAPABILITY: ${detail.capability.name}`, 'capability-detail', options));
+  const {overview, details} = capabilityProjections(pulse);
+  const pages = [causalPage(pulse, overview, 'PULSE CAPABILITY OVERVIEW', 'overview', options)];
+  for (const detail of details) pages.push(causalPage(pulse, detail, `CAPABILITY: ${detail.capability.name}`, 'capability-detail', options));
   return {pages};
 }
