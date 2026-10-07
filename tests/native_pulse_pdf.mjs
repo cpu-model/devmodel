@@ -107,6 +107,19 @@ assert.equal(coverage.length, 2, 'Coverage projection contains only the two Capa
 assert.equal(coverage[0].flows.length, 3, 'Source detail covers trigger, internal, and outgoing cross-Capability flows');
 assert.equal(coverage[1].flows.length, 1, 'Destination detail covers only incoming cross-Capability flow');
 
+const repeatedIncomingPulse = {
+  capabilities: [{id: 'source', name: 'Source'}, {id: 'target', name: 'Target'}], 'domain-information': [],
+  behaviors: [
+    ...Array.from({length: 4}, (_, index) => ({id: `source-${index}`, name: `Source ${index}`, capability: 'source'})),
+    {id: 'target-a', name: 'Target A', capability: 'target'},
+  ],
+  pulses: [{id: 'decided', display: '1', name: 'Decided'}],
+  flows: Array.from({length: 4}, (_, index) => ({from: `source-${index}`, pulse: 'decided', to: 'target-a'})),
+};
+const repeatedIncomingLayout = layoutPulse(repeatedIncomingPulse);
+assert.equal(repeatedIncomingLayout.pages.length, 2);
+assert.equal(repeatedIncomingLayout.pages[1].flows.length, 4, 'Target detail preserves every repeated incoming Pulse occurrence');
+
 const capabilitySourcePulse = {
   capabilities: [{id: 'source', name: 'Source'}, {id: 'detail', name: 'Detail'}],
   'domain-information': [{id: 'state', name: 'State'}],
