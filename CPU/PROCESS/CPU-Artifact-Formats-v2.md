@@ -147,7 +147,7 @@ context:
 
 ## 4. Pulse format
 
-Pulse describes functional Behavior through two independent dimensions: causal event propagation through Pulses and Flows, and Domain Information participation through `information-in` and `information-out`. Trigger is a role in a Flow, not a separately declared semantic element. Information participation never implies Pulse causality, and Pulse causality never implies information participation.
+Pulse describes functional Behavior through two independent dimensions: causal event propagation through Pulses and Flows, and Domain Information participation through `information-in` and `information-out`. Trigger is a role in a Flow, not a separately declared semantic element. Information participation never implies Pulse causality, and Pulse causality never implies information participation. When Capabilities are present, optional Capability Flows identify named high-level functional progressions through the already modeled causal structure; they do not add causality.
 
 ```yaml
 pulse:
@@ -187,25 +187,33 @@ pulse:
 
 `capabilities` is optional. A Capability contains exactly `id` and `name` and is a flat functional review partition. When the field is present, every Behavior has exactly one valid `capability` reference. When absent, no Behavior may contain `capability`. Capability membership adds no ownership, causality, information flow, implementation boundary, or requirement inheritance. Capabilities are not hierarchical and are not requirement-addressable.
 
-### 4.2 Domain Information
+### 4.2 Capability Flows
+
+`capability-flows` is optional and is allowed only when `capabilities` is present. A Capability Flow identifies one named high-level functional progression selected during modeling and review. It contains exactly `id`, `name`, and `capabilities`. The ordered `capabilities` list contains at least two distinct Capability references.
+
+A Capability Flow is a review projection over existing Pulse semantics, not a second causal model. Every adjacent pair `A → B` in the ordered list must be supported by at least one declared Pulse Flow whose source Behavior belongs to Capability A and whose target Behavior belongs to Capability B. The Capability Flow does not select, suppress, classify, or alter the supporting Pulses. It may therefore emphasize a primary functional progression while the Capability detail projections remain the complete causal review representation.
+
+Capability Flows are explicitly selected during collaborative modeling because the Pulse graph alone does not determine which valid causal progression is most important for human understanding. A renderer must not infer additional Capability Flows by graph heuristics.
+
+### 4.3 Domain Information
 
 `domain-information` is optional. Each element contains exactly `id` and `name` and identifies domain-significant information with identity independent of technical representation. Every declaration is referenced by at least one Behavior. Domain Information introduces no schemas, fields, cardinality, persistence, ownership, source/destination, or information-to-information relation.
 
-### 4.3 Behaviors
+### 4.4 Behaviors
 
 Each Behavior contains `id` and `name`, the conditional `capability` field described above, and optional ordered `information-in` and `information-out` lists. Each list contains unique references to declared Domain Information. The same reference may occur once in each list.
 
-### 4.4 Pulses
+### 4.5 Pulses
 
 Each Pulse contains `id`, `display`, and `name`. The ID is semantic identity. `display` is the short diagram identity, such as `01`, and is not used for references.
 
-### 4.5 Flows
+### 4.6 Flows
 
 A Flow contains exactly one source form: either free-text `trigger` or Behavior reference `from`. It also contains Pulse reference `pulse` and Behavior reference `to`.
 
 The invariant is `trigger` XOR `from`. A Flow with both is invalid; a Flow with neither is invalid.
 
-### 4.6 Functional decomposition guidance
+### 4.7 Functional decomposition guidance
 
 Capability grouping should express coherent functional responsibility rather than merely collect Behaviors that concern the same subject area.
 
@@ -218,10 +226,11 @@ Capability grouping should express coherent functional responsibility rather tha
 - Review Capability boundaries using representative domain disturbances and lifecycle transitions. For each event, identify independently which responsibilities must react. If one Capability or Behavior repeatedly dispatches consequences on behalf of several others, reconsider the decomposition.
 - These tests refine functional semantics only. They do not make Capabilities implementation components, assign Domain Information ownership, or require a one-to-one mapping from Pulse structure to packages, processes, services, interfaces, or deployment units.
 
-### 4.7 Pulse validation
+### 4.8 Pulse validation
 
 - Behavior IDs are unique.
 - Capability IDs are unique. If Capabilities are present every Behavior has exactly one resolving `capability`; otherwise `capability` is forbidden.
+- Capability Flow IDs are unique. `capability-flows` is forbidden when Capabilities are absent. Every Capability Flow contains at least two distinct resolving Capability references, and every adjacent ordered pair is supported in the same direction by at least one cross-Capability Pulse Flow.
 - Domain Information IDs are unique and every declaration participates in at least one Behavior.
 - Every `information-in` and `information-out` value resolves to declared Domain Information and is unique within its list.
 - Pulse IDs are unique.
@@ -234,13 +243,14 @@ Capability grouping should express coherent functional responsibility rather tha
 - Cycles and fan-out are valid and require no special syntax.
 - No validation rule infers Pulse relations from data dependencies.
 
-### 4.8 Pulse field reference
+### 4.9 Pulse field reference
 
 The top-level document contains exactly `pulse`. Its value contains exactly:
 
 | Field | Type | Required | Default | Meaning |
 | --- | --- | --- | --- | --- |
 | `capabilities` | list of Capability mappings | no | absent | Optional functional review partition. |
+| `capability-flows` | list of Capability Flow mappings | no | absent | Named high-level functional progressions through supported cross-Capability causal relations. |
 | `domain-information` | list of Domain Information mappings | no | empty | Domain-significant information participating in Behaviors. |
 | `behaviors` | list of Behavior mappings | yes | none | System reactions; may be empty. |
 | `pulses` | list of Pulse mappings | yes | none | Named causal signals; may be empty. |
@@ -257,6 +267,14 @@ Behavior mapping:
 | `information-out` | list of Domain Information IDs | no | empty; no duplicates. |
 
 Capability and Domain Information mappings each contain exactly `id` and `name`; their IDs are unique within their respective collections and contain no period.
+
+Capability Flow mapping:
+
+| Field | Type | Required | Allowed/default |
+| --- | --- | --- | --- |
+| `id` | non-empty string ID | yes | Unique among Capability Flows; no period. |
+| `name` | non-empty string | yes | Human-readable name for the high-level functional progression. |
+| `capabilities` | ordered list of Capability IDs | yes | At least two distinct resolving references; every adjacent pair must be supported by a cross-Capability Pulse Flow in the same direction. |
 
 Pulse mapping:
 
@@ -277,7 +295,7 @@ Flow mapping:
 
 `trigger` XOR `from` is mandatory. A Pulse Flow has no ID, name, or direct requirement address. No other fields are allowed.
 
-### 4.9 Invalid Pulse examples
+### 4.10 Invalid Pulse examples
 
 ```yaml
 # Invalid: both source forms are present.
