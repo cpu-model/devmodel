@@ -1166,17 +1166,8 @@ function causalPage(pulse, projection, title, kind, options = {}) {
   return layout;
 }
 
-function capabilityProjections(pulse) {
+function capabilityDetails(pulse) {
   const behaviorById = new Map(pulse.behaviors.map(item => [item.id, item]));
-  const overviewFlows = pulse.flows.filter(flow => 'trigger' in flow
-    || behaviorById.get(flow.from).capability !== behaviorById.get(flow.to).capability);
-  const overview = {
-    behaviors: pulse.capabilities.map(item => ({...item})),
-    flows: overviewFlows.map(flow => 'trigger' in flow
-      ? {trigger: flow.trigger, pulse: flow.pulse, to: behaviorById.get(flow.to).capability}
-      : {...flow, from: behaviorById.get(flow.from).capability, to: behaviorById.get(flow.to).capability}),
-    capabilityIds: pulse.capabilities.map(item => item.id), boundaryIds: [],
-  };
   const details = pulse.capabilities.map(capability => {
     const behaviors = pulse.behaviors.filter(behavior => behavior.capability === capability.id);
     const boundary = new Map();
@@ -1200,7 +1191,7 @@ function capabilityProjections(pulse) {
     }
     return {capability, behaviors: [...behaviors, ...boundary.values()].filter(Boolean), flows, boundaryIds: [...boundary.keys()]};
   });
-  return {overview, details};
+  return details;
 }
 
 export function layoutPulse(pulse, options = {}) {
@@ -1208,8 +1199,7 @@ export function layoutPulse(pulse, options = {}) {
     const page = causalPage(pulse, {behaviors: pulse.behaviors, flows: pulse.flows}, 'SYSTEM PULSE', 'system', options);
     return {...page, pages: [page]};
   }
-  const {overview, details} = capabilityProjections(pulse);
-  const pages = [causalPage(pulse, overview, 'PULSE CAPABILITY OVERVIEW', 'overview', options)];
-  for (const detail of details) pages.push(causalPage(pulse, detail, `CAPABILITY: ${detail.capability.name}`, 'capability-detail', options));
+  const pages = capabilityDetails(pulse)
+    .map(detail => causalPage(pulse, detail, `CAPABILITY: ${detail.capability.name}`, 'capability-detail', options));
   return {pages};
 }
