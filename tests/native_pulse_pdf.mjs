@@ -235,13 +235,13 @@ const result = spawnSync(process.execPath, [path.join(root, 'tools', 'render_pul
 assert.equal(result.status, 0, result.stderr);
 const source = fs.readFileSync(output, 'latin1');
 assert.equal((source.match(/\/Type \/Page\b/g) || []).length, 2);
-assert.equal((source.match(/\/Subtype \/Text/g) || []).length, 4, 'Every requirement-addressable detail occurrence is annotated');
+assert.equal((source.match(/\/Subtype \/Text/g) || []).length, 5, 'Every requirement-addressable detail occurrence is annotated');
 assert.doesNotMatch(source, /<svg|\/Image\b/);
 const pdf = await PDFDocument.load(fs.readFileSync(output));
 const pulseContents = pdf.getPages().flatMap(page => page.node.Annots().asArray().map(reference => pdf.context.lookup(reference)))
   .filter(annotation => annotation.get(PDFName.of('Subtype'))?.toString() === '/Text')
   .map(annotation => annotation.get(PDFName.of('Contents')).decodeText());
-assert.equal(pulseContents.filter(text => text === 'The result ready event shall retain its identity.\n\nThe result ready event shall follow result establishment.').length, 3, 'Repeated Pulse occurrences preserve complete declared requirement order');
+assert.equal(pulseContents.filter(text => text === 'The result ready event shall retain its identity.\n\nThe result ready event shall follow result establishment.').length, 2, 'Repeated Pulse occurrences in Capability details preserve complete declared requirement order');
 
 const systemPulse = {
   'domain-information': [{id: 'input', name: 'Input'}],
