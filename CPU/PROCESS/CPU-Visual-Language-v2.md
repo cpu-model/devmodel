@@ -175,17 +175,27 @@ Display identity remains globally stable and is never renumbered per diagram. Th
 
 ### 4.6 Review projections
 
-Without Capabilities, `pulse.pdf` contains one integrated system Pulse diagram. With Capabilities it contains, in order, a Capability overview and one integrated detail diagram per Capability in declaration order.
+Without Capabilities, `pulse.pdf` contains one integrated system Pulse diagram.
 
-The overview contains Capability nodes, cross-Capability Flow occurrences, external-trigger Pulses entering Capability boundaries, and its local legend. It excludes Domain Information, internal flows, invented Capability dependencies, and full trigger text beyond the external trigger occurrence.
+With Capabilities, the Capability detail diagrams together preserve the complete Pulse semantics. Flow coverage is exact and deterministic:
 
-Flow coverage is exact and deterministic:
-
-- trigger source: overview and receiving Capability detail;
+- trigger source: receiving Capability detail only;
 - same-Capability source and destination: that Capability detail only;
-- different source and destination Capabilities: overview, source detail, and destination detail.
+- different source and destination Capabilities: source detail and destination detail, with the original Pulse identity preserved in both.
 
-Cross-Capability details use graphical `FROM <Capability>` and `TO <Capability>` boundary references. They are presentation context, not semantic or requirement-addressable elements. Different Pulses between the same Capabilities remain distinct; real fan-out preserves Pulse identity; internal flows never become overview self-loops.
+Cross-Capability details use graphical `FROM <Capability>` and `TO <Capability>` boundary references. They are presentation context, not semantic or requirement-addressable elements. Different Pulses between the same Capabilities remain distinct in the detail projections, real fan-out preserves Pulse identity, and no causal Flow is omitted merely because it is not part of a high-level overview.
+
+When `capability-flows` are declared, `pulse.pdf` begins with one Capability Flow overview page per declared Capability Flow, in declaration order, followed by one integrated detail diagram per Capability in Capability declaration order. When no Capability Flows are declared, no Capability overview page is generated.
+
+A Capability Flow overview renders only the ordered Capability sequence declared by that Capability Flow:
+
+- one strong Capability node for each referenced Capability, in declared order;
+- one directed connector from each Capability to the next;
+- the Capability Flow name as the page title.
+
+The overview does not render Pulse identities, external triggers, Behaviors, Domain Information, internal flows, a Pulse legend, or other cross-Capability relations. Its connectors mean only that the declared high-level progression is supported by the underlying Pulse model. The renderer must not infer additional overview relations or choose a primary progression by graph analysis.
+
+Because the semantic source is an ordered progression rather than an arbitrary dependency graph, overview layout is deterministic and simple: referenced Capability nodes are placed as one readable progression and adjacent connectors are routed independently without shared horizontal or vertical segments. The renderer must preserve clear separation from node edges and corners.
 
 ### 4.7 Domain Information notation
 
