@@ -9,6 +9,7 @@ const files = [
   'SPEC.md',
   'AGENTS.md',
   `${processDirectory}/CPU-Artifact-Formats-v2.md`,
+  `${processDirectory}/CPU-Component-Discovery.md`,
   `${processDirectory}/CPU-Visual-Language-v2.md`,
 ];
 const documents = new Map(files.map(file => [file, fs.readFileSync(path.join(root, file), 'utf8')]));

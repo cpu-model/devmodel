@@ -810,7 +810,7 @@ The following are intentionally not part of Artifact Formats v2:
 - areas, hierarchy, groups, tags, and metadata bags;
 - layout coordinates or renderer style;
 - UI widgets, gestures, responsive rules, colors, and typography;
-- implementation architecture outside the complementary Deployment artifact;
+- implementation architecture outside the complementary Deployment and optional Component artifacts;
 - UUIDs, namespaces, or global ID registries;
 - general cross-artifact relations;
 - active or superseded lifecycle machinery;
@@ -825,6 +825,7 @@ system/
   ui.yaml
   deployment.yaml
   requirements.yaml
+  components.yaml  # optional
 
 context.yaml + requirements.yaml -> context.pdf
 pulse.yaml + requirements.yaml -> pulse.pdf
@@ -949,3 +950,66 @@ requirements:
     - id: expose-web-ui
       text: The Web UI shall be publicly reachable.
 ```
+
+## 11. Optional Component architecture format
+
+`components.yaml` is an optional complementary logical architecture artifact governed by CPU Component Discovery. It does not extend or alter Context, Pulse, UI, Deployment, or Requirements semantics. If absent, the five-file semantic base model remains complete and valid and CPU makes no normative claim about logical Component boundaries. If present, the declared boundaries and assignments are normative.
+
+The document has exactly one top-level field, `components`:
+
+```yaml
+components:
+  base-model-digest: sha256:<digest>
+  components:
+    - id: result-authority
+      name: Result Authority
+      responsibility: >
+        Accept submitted work, own the processed result and preserve its
+        meaning through presentation.
+      behaviors:
+        - process-input
+        - present-result
+  domain-information:
+    - id: submitted-input
+      disposition: external-input
+    - id: processed-result
+      authority: result-authority
+```
+
+### 11.1 Component entries
+
+The `components` list is non-empty when the artifact exists; omit `components.yaml` when no Component is normative. Every Component contains exactly `id`, `name`, `responsibility`, and `behaviors`, with optional `requirement-evidence`.
+
+- `id` is a stable, non-empty, unique machine-readable ID and contains no period.
+- `name` and `responsibility` are non-empty strings.
+- `behaviors` is a list of Pulse Behavior IDs. Every Pulse Behavior occurs exactly once across all Components.
+- `requirement-evidence`, when present, is a non-duplicated list of existing requirement IDs. It provides structural grounding and traceability only when requirement evidence helps establish the Component's existence or boundary. It neither copies requirement text nor attaches, inherits, relocates, or changes a requirement. It does not imply that only the referenced requirements apply to the Component.
+
+A Component may have an empty `behaviors` list only when at least one Domain Information item names it as authority or it has non-empty `requirement-evidence`. No Component classification field exists: every listed entry has already passed the Component Necessity Test and is a normative logical authority boundary.
+
+### 11.2 Domain Information disposition
+
+`domain-information` contains exactly one entry for every Pulse Domain Information ID. The outcomes are mutually exclusive. Each entry contains `id` and exactly one of:
+
+- `authority: <component-id>` — the named Component has logical authority to accept or establish the relevant mutable state transitions and protect their invariants; or
+- `disposition: external-input` — information whose relevant truth is established outside the system and observed as input or fact; an internally accepted, normalized, or mutable representation with its own transitions instead requires `authority`;
+- `disposition: transfer` — an immutable result transferred across a responsibility contract without a continuing mutable lifecycle; acceptance may establish separate authoritative state; or
+- `disposition: derived` — information reproducible from other information and without independently authoritative transitions. It may be materialized or cached, but persistent derived information with independent update, validity, or consistency invariants requires `authority`.
+
+Reader, producer, adapter, and persistence mechanism are not implicit owners. The disposition is architectural classification only; it does not create information, alter Pulse causality, or replace the functional definition in Pulse.
+
+If discovery cannot determine one outcome from the semantic base model, it records UNRESOLVED and does not create `components.yaml` until review resolves the classification. The validator checks the declared outcome structurally and never infers one.
+
+### 11.3 Base-model digest
+
+`base-model-digest` is required and is a conservative staleness barrier. It is `sha256:` followed by the SHA-256 digest of a canonical representation of the validated `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml` documents. Mapping keys are recursively sorted; list order and scalar values are preserved. YAML comments, whitespace, quoting style, and mapping-key order do not affect the digest.
+
+Any semantic change to the five base files therefore requires Component review and a regenerated digest even when all referenced IDs still exist. A matching digest proves only that the reviewed base snapshot has not changed; it does not prove that the architecture is semantically correct. Generate the value with `node tools/model_digest.mjs --source <model-directory>`.
+
+### 11.4 Strict structural validation
+
+When `components.yaml` exists, validation rejects unknown fields, duplicate YAML keys, invalid or duplicate Component IDs, blank names or responsibilities, unknown or duplicate Behavior assignments, incomplete Behavior coverage, unknown or duplicate Domain Information mappings, incomplete Domain Information coverage, entries that have both or neither `authority` and `disposition`, unknown Component authorities, invalid dispositions, unknown or duplicate requirement evidence, ungrounded behaviorless Components, and a stale digest.
+
+Validation does not decide whether a responsibility is cohesive, an authority or disposition is semantically correct, the Necessity Test was performed correctly, Components should be merged or split, or invariant isolation is sound. Those are discovery and human-review decisions.
+
+The artifact contains no Pulse interactions, readers, requirement text, packages, processes, transports, implementation technology, or Deployment placement. It has no generated Component diagram in Visual Language v2.

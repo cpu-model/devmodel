@@ -364,12 +364,14 @@ The artifact-specific native PDF renderer is the normative renderer.
 The renderer implementation:
 
 - pins the PDF library version;
-- validates all five semantic sources before drawing;
+- validates all five base-model sources and optional `components.yaml` before drawing;
 - computes layout deterministically from semantic YAML;
 - derives semantic-symbol and annotation placement from the same computed geometry used for drawing;
 - avoids manual per-diagram pixel fixes;
 - avoids image-AI redrawing;
 - preserves semantic meaning independently of renderer limitations.
+
+Visual Language v2 has no Component diagram. Validation of an optional Component architecture does not add a fifth generated PDF or alter Context, Pulse, UI, or Deployment notation.
 
 ## 11. Verified v2 decisions
 

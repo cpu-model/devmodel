@@ -1,0 +1,14 @@
+components:
+  base-model-digest: sha256:02174b69006023cbb3aa2dc4c826522c5b0ecaa64b3a45c24b52af340b56eebd
+  components:
+    - id: result-authority
+      name: Result Authority
+      responsibility: Accept submitted input, own the processed result and preserve its meaning through presentation.
+      behaviors:
+        - process-input
+        - present-result
+  domain-information:
+    - id: submitted-input
+      disposition: external-input
+    - id: processed-result
+      authority: result-authority

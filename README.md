@@ -7,11 +7,12 @@ This repository contains the reusable methodology and tooling for the Context-Pu
 - [`SPEC.md`](SPEC.md) explains the model, source hierarchy, and project adoption rules.
 - [`AGENTS.md`](AGENTS.md) tells Codex and other coding agents how to interpret and change CPU models.
 - [`CPU Artifact Formats v2`](CPU/PROCESS/CPU-Artifact-Formats-v2.md) defines the semantic YAML formats and requirement attachments.
+- [`CPU Component Discovery`](CPU/PROCESS/CPU-Component-Discovery.md) defines how reviewed logical Component boundaries are derived from CPU semantics.
 - [`CPU Visual Language v2`](CPU/PROCESS/CPU-Visual-Language-v2.md) defines diagram notation, rendering, and interactive requirement review.
 - [`examples/model`](examples/model) is a minimal valid model.
 - [`CPU - lathund för ett nytt projekt`](CPU-nytt-projekt-lathund.md) is a concise Swedish guide from an empty repository to incremental CPU development.
 
-Markdown is the only documentation source. The repository includes a native PDF renderer for model review artifacts.
+Markdown is the only documentation source. The repository includes a native PDF renderer for model review artifacts and a normative Component Discovery method.
 
 ## Model sources
 
@@ -22,6 +23,8 @@ A concrete system model consists of:
 - `ui.yaml`
 - `deployment.yaml`
 - `requirements.yaml`
+
+These five files are the semantic base model. Context, Pulse, and UI are the functional core, Deployment is the complementary implementation artifact, and Requirements contains normative attachments. A reviewed model may additionally contain optional normative `components.yaml`; existing models without it remain valid.
 
 Pulse optionally declares flat Capabilities for deterministic local causal review and Domain Information for domain-significant participation in Behaviors. `information-in` and `information-out` remain independent of Pulse causality. Requirements are objects containing exactly stable `id` and normative `text`; IDs are globally unique within the concrete model's `requirements.yaml`.
 
@@ -54,12 +57,18 @@ cd my-project
 ln -s ../devmodel devmodel
 ```
 
-The project keeps only its concrete five-file model under `CPU/`. It does not copy or pin the methodology. Its root `AGENTS.md` can bootstrap local agents with `./devmodel/AGENTS.md`. Add `/devmodel` to the project's `.gitignore` so the workspace link is not committed.
+The project keeps its concrete five-file semantic base model and optional reviewed `components.yaml` under `CPU/`. It does not copy or pin the methodology. Its root `AGENTS.md` can bootstrap local agents with `./devmodel/AGENTS.md`. Add `/devmodel` to the project's `.gitignore` so the workspace link is not committed.
 
 ## Validate a model
 
 ```sh
 npm run validate -- --source /path/to/model
+```
+
+When a reviewed `components.yaml` is present, validation also checks exhaustive Behavior assignment, exhaustive Domain Information authority/disposition, requirement evidence, and the base-model staleness digest. Generate the digest used during review with:
+
+```sh
+node tools/model_digest.mjs --source /path/to/model
 ```
 
 Validation is strict: duplicate YAML keys, unknown fields, invalid identities, unresolved references, invalid requirement targets, malformed requirement objects, and requirement-ID collisions are rejected.
@@ -72,7 +81,7 @@ npm run render -- \
   --out /path/to/model
 ```
 
-The renderer strictly validates all five YAML sources, computes artifact-specific layout, and writes only `context.pdf`, `pulse.pdf`, `ui.pdf`, and `deployment.pdf`. `pulse.pdf` is one system diagram without Capabilities or an overview plus one detail page per Capability. The diagrams are native PDF vector graphics. Every rendered occurrence with attached requirements carries a blue speech-bubble Text annotation containing the exact complete ordered requirement text.
+The renderer strictly validates all five base-model YAML sources and optional `components.yaml`, computes artifact-specific layout, and writes only `context.pdf`, `pulse.pdf`, `ui.pdf`, and `deployment.pdf`. `pulse.pdf` is one system diagram without Capabilities or an overview plus one detail page per Capability. The diagrams are native PDF vector graphics. Every rendered occurrence with attached requirements carries a blue speech-bubble Text annotation containing the exact complete ordered requirement text.
 
 ## Repository checks
 

@@ -5,6 +5,7 @@ import {loadPulseModel} from './native/pulse_model.mjs';
 import {loadUiModel} from './native/ui_model.mjs';
 import {loadDeploymentModel} from './native/deployment_model.mjs';
 import {loadRequirements} from './native/requirements_model.mjs';
+import {loadComponentsModel} from './native/components_model.mjs';
 
 function sourceOption(argv) {
   const index = argv.indexOf('--source');
@@ -16,7 +17,7 @@ function sourceOption(argv) {
 try {
   const source = sourceOption(process.argv.slice(2));
   loadContextModel(source);
-  loadPulseModel(source);
+  const pulse = loadPulseModel(source);
   loadUiModel(source);
   loadDeploymentModel(source);
   const requirements = loadRequirements(source);
@@ -24,7 +25,11 @@ try {
   for (const target of Object.keys(requirements)) {
     if (!allowed.some(prefix => target.startsWith(prefix))) throw new Error(`Unresolved requirement target: ${target}`);
   }
-  console.log(`Validated Context, Pulse, UI, Deployment, and ${Object.keys(requirements).length} requirement targets.`);
+  const components = loadComponentsModel(source, pulse.pulse, requirements);
+  const componentMessage = components
+    ? `, and ${components.components.length} Component${components.components.length === 1 ? '' : 's'}`
+    : '';
+  console.log(`Validated Context, Pulse, UI, Deployment, and ${Object.keys(requirements).length} requirement targets${componentMessage}.`);
 } catch (error) {
   console.error(error.message);
   process.exit(1);

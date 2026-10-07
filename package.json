@@ -9,6 +9,7 @@
   "scripts": {
     "test": "node tests/all.mjs",
     "validate": "node tools/validate_native_model.mjs",
+    "model-digest": "node tools/model_digest.mjs",
     "render": "node tools/render_native_model.mjs",
     "render:context-native": "node tools/render_context_native.mjs",
     "render:pulse-native": "node tools/render_pulse_native.mjs",

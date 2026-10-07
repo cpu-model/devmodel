@@ -1,6 +1,6 @@
 # Instructions for ChatGPT and Codex working with CPU models
 
-Resolve the methodology root as the directory containing this file. Read its `SPEC.md` and both normative Markdown documents under its `PROCESS/` directory when embedded in a target project, or under its `CPU/PROCESS/` directory when working in the source `devmodel` repository. Do this before creating, interpreting, validating, or changing a CPU model.
+Resolve the methodology root as the directory containing this file. Read its `SPEC.md` and all normative Markdown documents under its `PROCESS/` directory when embedded in a target project, or under its `CPU/PROCESS/` directory when working in the source `devmodel` repository. Do this before creating, interpreting, validating, or changing a CPU model.
 
 ## Terminology
 
@@ -13,10 +13,10 @@ Resolve the methodology root as the directory containing this file. Read its `SP
 
 - Treat the current `cpu-model/devmodel` default branch as the normative source of truth for the general CPU methodology, including its specifications, workflow, validation, rendering, and review tools.
 - Treat Markdown specifications in `cpu-model/devmodel` as authoritative methodology.
-- Treat `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml` as authoritative for a concrete system.
+- Treat `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml` as the authoritative five-file semantic base model for a concrete system. Context, Pulse, and UI are the functional core, Deployment is the complementary implementation artifact, and Requirements contains normative attachments. Treat `components.yaml` as an optional complementary normative logical architecture artifact when it exists.
 - Treat PDF diagram geometry and any optional preview formats as generated output. Never infer missing semantics from generated layout.
 - Do not edit generated artifacts to change meaning; change the semantic YAML or normative Markdown and regenerate.
-- In a consuming project, `CPU/` contains the project's concrete five-file semantic model. It does not contain a copied CPU methodology. General methodology is read from the current `cpu-model/devmodel` repository. In the normal local workspace, the project exposes that sibling clone through an ignored `devmodel -> ../devmodel` symbolic link so local agents can read `./devmodel/AGENTS.md`. ChatGPT may read the same repository directly from GitHub.
+- In a consuming project, `CPU/` contains the project's concrete five-file semantic base model and optional `components.yaml`. It does not contain a copied CPU methodology. General methodology is read from the current `cpu-model/devmodel` repository. In the normal local workspace, the project exposes that sibling clone through an ignored `devmodel -> ../devmodel` symbolic link so local agents can read `./devmodel/AGENTS.md`. ChatGPT may read the same repository directly from GitHub.
 
 ## Repository-backed incremental development
 
@@ -24,7 +24,7 @@ A CPU project repository is the source of truth for its concrete model, project-
 
 - Before implementation or normative model work from a local working copy, the acting agent may use `git pull` to synchronize it with the repository. Git is the transport for the current CPU model and project state; a clean but stale local copy is not sufficient. An agent working directly against the repository through repository tools must instead read the current repository state before changing it.
 - If pull cannot be completed safely because of local changes or a conflict, stop and report the problem. Do not automatically stash, reset, create or switch branches, or perform other Git interventions.
-- Before normative model work, read the current `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml` from the repository. Read all five even when the requested change appears to affect only one artifact, so cross-artifact consequences are evaluated against one current baseline.
+- Before normative model work, read the current `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml` from the repository, plus `components.yaml` when present. Read the complete base model even when the requested change appears to affect only one artifact, so cross-artifact consequences are evaluated against one current baseline.
 - Do not use conversational memory, previous chat summaries, generated diagrams, local copies, or Library artifacts as substitutes for current repository state.
 - Read changed files back and verify their content before reporting success.
 
@@ -46,19 +46,17 @@ CPU repositories carry the general working method so that task prompts can norma
 
 When asked to implement the current CPU model, or to make the project buildable or runnable according to the model:
 
-- Treat the complete current five-file semantic model and project-specific repository instructions as the implementation contract.
+- Treat the complete current five-file semantic base model, optional normative `components.yaml`, and project-specific repository instructions as the implementation contract.
 - Inspect the existing implementation before changing it and implement only what is needed to satisfy the requested outcome and the current model.
-- Before significant implementation or structural refactoring, derive a component projection from the complete current CPU model and the current implementation. The projection is implementation reasoning, not a sixth semantic CPU artifact and not automatically a durable project artifact.
-- Use Capabilities as cohesion candidates, Behaviors as responsibility candidates, Domain Information as state or information-ownership candidates, Pulse crossings as component-interaction candidates, Context parties and flows as external-adapter-boundary candidates, and Deployment as constraints on physical or process decomposition. These are derivation signals, not mandatory one-to-one mappings or new CPU semantics.
-- In the projection, identify proposed components and their responsibilities, relevant state or information ownership, interactions or boundaries between components, external adapters, and shared technical infrastructure. Explain materially important cases where multiple Capabilities belong in one component or one Capability spans multiple components.
-- Do not infer that a Capability must become a package, process, service, or deployment unit, and do not infer that every Pulse crossing requires a particular programming or transport interface.
-- When the projection would materially reorganize the existing implementation architecture, present the proposed projection for user review and stop before performing the structural reorganization. After acceptance, use the reviewed projection to guide the implementation while continuing to treat the five-file CPU model as the normative system contract.
-- Treat the component projection as a model-quality diagnostic as well as implementation reasoning. If it exposes an overloaded or unclear Capability, a dispatcher-like Behavior, a hidden domain-significant transition, or another possible functional-modeling problem, evaluate that finding in Pulse terms before restructuring the implementation. Component convenience alone is never justification for changing the CPU model. When the finding is genuinely functional rather than merely architectural, present the CPU-model issue for user review and resolve the normative model before using the projection to drive the affected structural implementation change.
+- If `components.yaml` exists, validate and follow it. Do not redo Component Discovery, substitute different boundaries, or infer that a Component is a package, process, service, repository, database, container, or deployment unit. A base-model digest mismatch requires architecture review; do not merely refresh the digest.
+- If `components.yaml` is absent, CPU makes no normative Component-boundary claim. For significant new architecture or structural refactoring, perform semantic Component Discovery according to `CPU/PROCESS/CPU-Component-Discovery.md`, present the proposal and findings for human review, and do not silently turn implementation intuition into normative architecture.
+- Initial Component Discovery must not use current packages, files, processes, deployment units, or implementation structure as its input. Existing implementation may be inspected separately to understand an implementation task, but it must not influence the initial semantic discovery. Compare implementation structure with the proposed or approved architecture only afterward, as a reconciliation step.
+- Treat Component Discovery as a model-quality diagnostic. If it exposes an overloaded or unclear Capability, a dispatcher-like Behavior, a hidden domain-significant transition, or another possible functional-modeling problem, evaluate that finding in Pulse terms before restructuring implementation. Component convenience alone never justifies changing the base model.
 - Derive build, runtime, topology, configuration, ports, mounts, health checks, and other deployment behavior from `deployment.yaml`. Do not assume Docker, Compose, or any other deployment technology unless the concrete model selects or requires it.
 - Do not change the semantic model merely to make an implementation convenient or to match existing code.
 - If implementation requires information that the normative model and project instructions do not provide, do not guess. Stop or continue only with unblocked work as appropriate, and report the concrete model gap for user resolution.
 - Build and test the implementation using the repository's declared mechanisms, then run the CPU tests and strict validation required by this workflow.
-- After implementation, compare the result back against all five semantic artifacts and report any remaining model-to-implementation gaps.
+- After implementation, compare the result back against the complete semantic base model and optional Component architecture, and report any remaining model-to-implementation gaps.
 - Follow the repository-backed incremental workflow above and stop after verification and reporting for user review. Git administration remains the user's responsibility unless explicitly delegated.
 
 Therefore a normal task prompt does not need to restate synchronization, source hierarchy, model-reading, validation, reporting, or Git-administration rules already defined here. Project-specific prompts should primarily state what outcome the user wants.
@@ -72,6 +70,7 @@ Therefore a normal task prompt does not need to restate synchronization, source 
 - Keep requirement wording exact and ordered. Do not summarize or redistribute attached requirements.
 - Reject unknown fields, duplicate keys, unresolved references, invalid target addresses, and ambiguous IDs.
 - Do not introduce generic abstractions, global registries, or cross-artifact relations unless the normative model explicitly adds them.
+- Do not add `components.yaml` merely to document an existing implementation. It is created only from reviewed Component Discovery. When present, preserve its exhaustive Behavior and Domain Information assignments and its reviewed base-model digest.
 - Treat Deployment commands, environment declarations, ports, mounts, health checks, restart policies, and resource constraints as normative implementation instructions.
 - Default a server implementation language to Go when none is stated. Select and record an explicit platform for every Web UI; there is no Web UI platform default.
 - An implementing agent may choose an unspecified Web UI platform or port, but must write the choice into `deployment.yaml` and expose it for user review.
@@ -83,7 +82,7 @@ Therefore a normal task prompt does not need to restate synchronization, source 
 2. For methodology changes, update the authoritative Markdown first.
 3. For model changes, update semantic YAML first.
 4. From the methodology root containing `package.json`, run `npm test`.
-5. Run strict validation of the complete five-file model, using `npm run validate -- --source <model-directory>` or the equivalent validation performed by rendering.
+5. Run strict validation of the complete five-file semantic base model and optional Component artifact, using `npm run validate -- --source <model-directory>` or the equivalent validation performed by rendering.
 6. From that root, run the renderer against the complete model. Rendering publishes only `context.pdf`, `pulse.pdf`, `ui.pdf`, and `deployment.pdf` into the concrete project's `CPU/` directory. These four PDFs are the durable generated review artifacts and are committed with the accepted model change. The normative renderer draws native PDF vector content directly and creates no D2 or SVG intermediates.
 7. Present the four repository-backed PDFs for review.
 8. Verify that Context, Pulse, UI, and Deployment PDFs were generated and that their requirement popup annotations contain the exact complete ordered requirement text for every annotated model element.

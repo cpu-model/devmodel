@@ -1,0 +1,126 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {createRequire} from 'node:module';
+import {baseModelDigest} from './base_model_digest.mjs';
+
+const {parseDocument} = createRequire(import.meta.url)('yaml');
+const dispositions = new Set(['external-input', 'transfer', 'derived']);
+
+const mapping = (value, label) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${label} must be a mapping`);
+  return value;
+};
+const list = (value, label) => {
+  if (!Array.isArray(value)) throw new Error(`${label} must be a list`);
+  return value;
+};
+function exactFields(value, allowed, required, label) {
+  mapping(value, label);
+  const unknown = Object.keys(value).filter(key => !allowed.includes(key));
+  const missing = required.filter(key => !(key in value));
+  if (unknown.length || missing.length) throw new Error(`${label}: unknown [${unknown}], missing [${missing}]`);
+}
+function nonEmpty(value, label) {
+  if (typeof value !== 'string' || !value.trim()) throw new Error(`${label} must be a non-empty string`);
+  return value;
+}
+function id(value, label) {
+  nonEmpty(value, label);
+  if (value.includes('.')) throw new Error(`${label} must not contain a period`);
+  return value;
+}
+function uniqueStrings(value, label) {
+  const result = list(value, label);
+  const seen = new Set();
+  for (const [index, item] of result.entries()) {
+    nonEmpty(item, `${label}[${index}]`);
+    if (seen.has(item)) throw new Error(`Duplicate reference in ${label}: ${item}`);
+    seen.add(item);
+  }
+  return result;
+}
+function parseYaml(filename) {
+  const document = parseDocument(fs.readFileSync(filename, 'utf8'), {strict: true, uniqueKeys: true});
+  if (document.errors.length) throw new Error(`${filename}: ${document.errors.map(error => error.message).join('; ')}`);
+  return document.toJS({mapAsMap: false});
+}
+
+export function loadComponentsModel(sourceDirectory, pulse, requirements) {
+  const filename = path.join(sourceDirectory, 'components.yaml');
+  if (!fs.existsSync(filename)) return null;
+
+  const source = parseYaml(filename);
+  exactFields(source, ['components'], ['components'], 'components.yaml');
+  const root = mapping(source.components, 'components');
+  exactFields(root, ['base-model-digest', 'components', 'domain-information'], ['base-model-digest', 'components', 'domain-information'], 'components');
+  nonEmpty(root['base-model-digest'], 'components.base-model-digest');
+  const expectedDigest = baseModelDigest(sourceDirectory);
+  if (root['base-model-digest'] !== expectedDigest) {
+    throw new Error(`components.yaml is stale: base-model-digest must be ${expectedDigest}`);
+  }
+
+  const requirementIds = new Set(Object.values(requirements).flat().map(requirement => requirement.id));
+  const behaviorIds = new Set(pulse.behaviors.map(behavior => behavior.id));
+  const informationIds = new Set((pulse['domain-information'] || []).map(information => information.id));
+  const componentIds = new Set();
+  const assignedBehaviors = new Map();
+  const evidenceByComponent = new Map();
+  const components = list(root.components, 'components.components');
+  if (!components.length) throw new Error('components.components must not be empty; omit components.yaml when no Component is normative');
+
+  for (const [index, component] of components.entries()) {
+    const label = `components.components[${index}]`;
+    exactFields(component, ['id', 'name', 'responsibility', 'behaviors', 'requirement-evidence'], ['id', 'name', 'responsibility', 'behaviors'], label);
+    id(component.id, `${label}.id`);
+    nonEmpty(component.name, `${label}.name`);
+    nonEmpty(component.responsibility, `${label}.responsibility`);
+    if (componentIds.has(component.id)) throw new Error(`Duplicate Component ID: ${component.id}`);
+    componentIds.add(component.id);
+    const behaviors = uniqueStrings(component.behaviors, `${label}.behaviors`);
+    for (const behavior of behaviors) {
+      if (!behaviorIds.has(behavior)) throw new Error(`Unknown Pulse Behavior in components.yaml: ${behavior}`);
+      if (assignedBehaviors.has(behavior)) throw new Error(`Duplicate Component assignment for Pulse Behavior: ${behavior}`);
+      assignedBehaviors.set(behavior, component.id);
+    }
+    const evidence = 'requirement-evidence' in component ? uniqueStrings(component['requirement-evidence'], `${label}.requirement-evidence`) : [];
+    for (const requirementId of evidence) {
+      if (!requirementIds.has(requirementId)) throw new Error(`Unknown requirement evidence: ${requirementId}`);
+    }
+    evidenceByComponent.set(component.id, evidence.length);
+  }
+
+  for (const behaviorId of behaviorIds) {
+    if (!assignedBehaviors.has(behaviorId)) throw new Error(`Missing Component assignment for Pulse Behavior: ${behaviorId}`);
+  }
+
+  const mappedInformation = new Set();
+  const authorityCounts = new Map();
+  for (const [index, information] of list(root['domain-information'], 'components.domain-information').entries()) {
+    const label = `components.domain-information[${index}]`;
+    exactFields(information, ['id', 'authority', 'disposition'], ['id'], label);
+    id(information.id, `${label}.id`);
+    if (!informationIds.has(information.id)) throw new Error(`Unknown Domain Information in components.yaml: ${information.id}`);
+    if (mappedInformation.has(information.id)) throw new Error(`Duplicate Domain Information mapping: ${information.id}`);
+    mappedInformation.add(information.id);
+    if (('authority' in information) === ('disposition' in information)) {
+      throw new Error(`${label} requires authority XOR disposition`);
+    }
+    if ('authority' in information) {
+      nonEmpty(information.authority, `${label}.authority`);
+      if (!componentIds.has(information.authority)) throw new Error(`Unknown Component authority: ${information.authority}`);
+      authorityCounts.set(information.authority, (authorityCounts.get(information.authority) || 0) + 1);
+    } else {
+      nonEmpty(information.disposition, `${label}.disposition`);
+      if (!dispositions.has(information.disposition)) throw new Error(`Invalid Domain Information disposition: ${information.disposition}`);
+    }
+  }
+  for (const informationId of informationIds) {
+    if (!mappedInformation.has(informationId)) throw new Error(`Missing Domain Information mapping: ${informationId}`);
+  }
+  for (const component of components) {
+    if (!component.behaviors.length && !(authorityCounts.get(component.id) > 0) && !(evidenceByComponent.get(component.id) > 0)) {
+      throw new Error(`Component lacks structural grounding: ${component.id}`);
+    }
+  }
+  return root;
+}
