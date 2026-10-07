@@ -48,7 +48,22 @@ invalidModel('pulse.yaml', document => { document.pulse['domain-information'][0]
 invalidModel('pulse.yaml', document => { document.pulse['domain-information'].push({id: 'unused', name: 'Unused'}); }, /Unreferenced Domain Information/);
 invalidModel('pulse.yaml', document => { document.pulse.behaviors[0]['information-in'] = ['missing']; }, /Unknown Domain Information reference/);
 invalidModel('pulse.yaml', document => { document.pulse.behaviors[0]['information-in'] = ['submitted-input', 'submitted-input']; }, /Duplicate Domain Information reference/);
-invalidModel('pulse.yaml', document => { delete document.pulse.capabilities; }, /Behavior capability is forbidden/);
+invalidModel('pulse.yaml', document => {
+  delete document.pulse.capabilities;
+  delete document.pulse['capability-flows'];
+}, /Behavior capability is forbidden/);
+invalidModel('pulse.yaml', document => {
+  delete document.pulse.capabilities;
+}, /pulse\.capability-flows is forbidden when pulse\.capabilities is absent/);
+invalidModel('pulse.yaml', document => {
+  document.pulse['capability-flows'][0].capabilities = ['input-handling'];
+}, /Capability Flow requires at least two Capabilities/);
+invalidModel('pulse.yaml', document => {
+  document.pulse['capability-flows'][0].capabilities = ['input-handling', 'missing'];
+}, /Unknown Capability in Capability Flow/);
+invalidModel('pulse.yaml', document => {
+  document.pulse['capability-flows'][0].capabilities = ['result-presentation', 'input-handling'];
+}, /Unsupported Capability Flow transition/);
 invalidModel('deployment.yaml', document => {
   document.deployment.programs[0]['health-check'].command = 'unexpected';
 }, /command is not allowed for HTTP/);
