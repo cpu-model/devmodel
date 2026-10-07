@@ -35,19 +35,16 @@ assert.match(debugRender.stdout, /--- END PULSE LAYOUT DEBUG ---/);
 const model = loadPulseModel(directory);
 const layout = layoutPulse(model.pulse);
 assert.deepEqual(layoutPulse(model.pulse), layout, 'Pulse projections and geometry are deterministic');
-assert.equal(layout.pages.length, 3, 'Overview plus one detail per declared Capability');
-assert.equal(layout.pages[0].kind, 'overview');
-assert.deepEqual(layout.pages.slice(1).map(page => page.title), ['CAPABILITY: Input handling', 'CAPABILITY: Result presentation']);
-assert.equal(layout.pages[0].domainNodes.length, 0, 'Overview excludes Domain Information');
-assert.deepEqual(layout.pages[0].nodes.filter(node => node.kind === 'capability').map(node => node.id), ['input-handling', 'result-presentation']);
-assert.equal(layout.pages[0].flows.length, 2, 'Overview covers trigger and cross-Capability flows');
-assert.equal(layout.pages[1].flows.length, 2, 'Source detail covers trigger and outgoing cross-Capability flow');
-assert.equal(layout.pages[2].flows.length, 1, 'Destination detail covers incoming cross-Capability flow');
+assert.equal(layout.pages.length, 2, 'One detail per declared Capability');
+assert.ok(layout.pages.every(page => page.kind === 'capability-detail'));
+assert.deepEqual(layout.pages.map(page => page.title), ['CAPABILITY: Input handling', 'CAPABILITY: Result presentation']);
+assert.equal(layout.pages[0].flows.length, 2, 'Source detail covers trigger and outgoing cross-Capability flow');
+assert.equal(layout.pages[1].flows.length, 1, 'Destination detail covers incoming cross-Capability flow');
 assert.match(layout.pages[0].nodes.find(node => node.kind === 'boundary').name, /^TO /);
 assert.match(layout.pages[1].nodes.find(node => node.kind === 'boundary').name, /^FROM /);
-assert.deepEqual(layout.pages.map(page => page.legend.map(item => item.display)), [['01', '02'], ['01', '02'], ['02']], 'Local legends preserve global display identities and declaration order');
+assert.deepEqual(layout.pages.map(page => page.legend.map(item => item.display)), [['01', '02'], ['02']], 'Local legends preserve global display identities and declaration order');
 
-const behaviorOccurrences = layout.pages.slice(1).flatMap(page => page.nodes.filter(node => node.kind === 'behavior'));
+const behaviorOccurrences = layout.pages.flatMap(page => page.nodes.filter(node => node.kind === 'behavior'));
 for (const behavior of behaviorOccurrences) {
   const incoming = layout.pages.flatMap(page => page.flows).filter(flow => flow.to === behavior.id);
   const outgoing = layout.pages.flatMap(page => page.flows).filter(flow => flow.from === behavior.id);
@@ -55,7 +52,7 @@ for (const behavior of behaviorOccurrences) {
   assert.ok(incoming.every(flow => flow.points.at(-1).y >= behavior.y && flow.points.at(-1).y <= behavior.y + behavior.height), 'Incoming Pulse endpoint lies on the Behavior side');
   assert.ok(outgoing.every(flow => flow.points[0].x === behavior.x + behavior.width), 'Outgoing Pulse starts on right side');
 }
-for (const page of layout.pages.slice(1)) {
+for (const page of layout.pages) {
   assert.equal(page.domainNodes.length, 0, 'Domain Information has no standalone nodes');
   assert.equal(page.informationFlows.length, 0, 'Domain Information has no connector geometry');
   for (const behavior of page.nodes.filter(node => node.kind === 'behavior')) {
@@ -63,7 +60,7 @@ for (const page of layout.pages.slice(1)) {
     assert.ok(Array.isArray(behavior.informationOut), 'Behavior carries its lower Domain Information entries');
   }
 }
-const processedResultOccurrences = layout.pages.slice(1)
+const processedResultOccurrences = layout.pages
   .flatMap(page => page.nodes.filter(node => node.kind === 'behavior'))
   .flatMap(node => [...node.informationIn, ...node.informationOut])
   .filter(item => item.id === 'processed-result');
@@ -232,83 +229,13 @@ const repeatedCapabilityFlowPulse = {
     {trigger: 'Archive event', pulse: 'archive-triggered', to: 'archive-a'},
   ],
 };
-const repeatedCapabilityOverview = layoutPulse(repeatedCapabilityFlowPulse).pages[0];
-const segmentContains = (a, b, point) => (a.y === b.y && point.y === a.y
-  && point.x >= Math.min(a.x, b.x) && point.x <= Math.max(a.x, b.x))
-  || (a.x === b.x && point.x === a.x
-    && point.y >= Math.min(a.y, b.y) && point.y <= Math.max(a.y, b.y));
-for (const flow of repeatedCapabilityOverview.flows) {
-  assert.ok(flow.points.slice(1).some((point, index) => segmentContains(flow.points[index], point, flow.symbol)),
-    `Overview keeps Pulse ${flow.event.display} symbol on its own connector`);
-  const target = repeatedCapabilityOverview.nodes.find(node => node.id === flow.to);
-  const end = flow.points.at(-1);
-  assert.equal(end.x, target.x,
-    `Overview Pulse ${flow.event.display} enters its target on the left side`);
-  assert.ok(end.y > target.y && end.y < target.y + target.height,
-    `Overview Pulse ${flow.event.display} enters within the target side, not at a corner`);
-  if ('from' in flow) {
-    const source = repeatedCapabilityOverview.nodes.find(node => node.id === flow.from);
-    const start = flow.points[0];
-    assert.equal(start.x, source.x + source.width,
-      `Overview Pulse ${flow.event.display} leaves its source on the right side`);
-    assert.ok(start.y > source.y && start.y < source.y + source.height,
-      `Overview Pulse ${flow.event.display} leaves within the source side, not at a corner`);
-  }
-}
-const connectorTouchesUnrelatedNode = (flow, node) => {
-  const sourceId = 'trigger' in flow ? `trigger:${flow.trigger}` : flow.from;
-  if (node.id === sourceId || node.id === flow.to) return false;
-  return flow.points.slice(1).some((end, index) => {
-    const start = flow.points[index];
-    if (start.y === end.y) {
-      return start.y >= node.y && start.y <= node.y + node.height
-        && Math.max(Math.min(start.x, end.x), node.x) <= Math.min(Math.max(start.x, end.x), node.x + node.width);
-    }
-    if (start.x === end.x) {
-      return start.x >= node.x && start.x <= node.x + node.width
-        && Math.max(Math.min(start.y, end.y), node.y) <= Math.min(Math.max(start.y, end.y), node.y + node.height);
-    }
-    return false;
-  });
-};
-for (const flow of repeatedCapabilityOverview.flows) {
-  for (const node of repeatedCapabilityOverview.nodes) {
-    assert.ok(!connectorTouchesUnrelatedNode(flow, node),
-      `Overview Pulse ${flow.event.display} stays clear of unrelated node ${node.name}`);
-  }
-}
-const positiveOverlap = (a1, a2, b1, b2) => Math.min(Math.max(a1, a2), Math.max(b1, b2))
-  - Math.max(Math.min(a1, a2), Math.min(b1, b2)) > 0.01;
-const collinearOverlap = (first, second) => first.points.slice(1).some((aEnd, aIndex) =>
-  second.points.slice(1).some((bEnd, bIndex) => {
-    const aStart = first.points[aIndex];
-    const bStart = second.points[bIndex];
-    if (aStart.y === aEnd.y && bStart.y === bEnd.y && aStart.y === bStart.y) {
-      return positiveOverlap(aStart.x, aEnd.x, bStart.x, bEnd.x);
-    }
-    if (aStart.x === aEnd.x && bStart.x === bEnd.x && aStart.x === bStart.x) {
-      return positiveOverlap(aStart.y, aEnd.y, bStart.y, bEnd.y);
-    }
-    return false;
-  }));
-for (let left = 0; left < repeatedCapabilityOverview.flows.length; left += 1) {
-  for (let right = left + 1; right < repeatedCapabilityOverview.flows.length; right += 1) {
-    const first = repeatedCapabilityOverview.flows[left];
-    const second = repeatedCapabilityOverview.flows[right];
-    assert.ok(!collinearOverlap(first, second),
-      `Overview keeps Pulse ${first.event.display} and ${second.event.display} visually distinct`);
-    const symbolDistance = Math.hypot(first.symbol.x - second.symbol.x, first.symbol.y - second.symbol.y);
-    assert.ok(symbolDistance >= PULSE_RADIUS * 2,
-      `Overview keeps Pulse symbols ${first.event.display} and ${second.event.display} separately visible`);
-  }
-}
 
 const output = path.join(directory, 'pulse.pdf');
 const result = spawnSync(process.execPath, [path.join(root, 'tools', 'render_pulse_native.mjs'), '--source', directory, '--output', output], {encoding: 'utf8'});
 assert.equal(result.status, 0, result.stderr);
 const source = fs.readFileSync(output, 'latin1');
-assert.equal((source.match(/\/Type \/Page\b/g) || []).length, 3);
-assert.equal((source.match(/\/Subtype \/Text/g) || []).length, 6, 'Every requirement-addressable occurrence is annotated');
+assert.equal((source.match(/\/Type \/Page\b/g) || []).length, 2);
+assert.equal((source.match(/\/Subtype \/Text/g) || []).length, 4, 'Every requirement-addressable detail occurrence is annotated');
 assert.doesNotMatch(source, /<svg|\/Image\b/);
 const pdf = await PDFDocument.load(fs.readFileSync(output));
 const pulseContents = pdf.getPages().flatMap(page => page.node.Annots().asArray().map(reference => pdf.context.lookup(reference)))
