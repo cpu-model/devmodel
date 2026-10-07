@@ -29,7 +29,7 @@ const debugRender = spawnSync(process.execPath, [
 ], {encoding: 'utf8'});
 assert.equal(debugRender.status, 0, debugRender.stderr);
 assert.match(debugRender.stdout, /--- PULSE LAYOUT DEBUG ---/);
-assert.match(debugRender.stdout, /"kind": "overview"/);
+assert.doesNotMatch(debugRender.stdout, /"kind": "overview"/);
 assert.match(debugRender.stdout, /--- END PULSE LAYOUT DEBUG ---/);
 
 const model = loadPulseModel(directory);
@@ -43,8 +43,8 @@ assert.deepEqual(layout.pages[0].nodes.filter(node => node.kind === 'capability'
 assert.equal(layout.pages[0].flows.length, 2, 'Overview covers trigger and cross-Capability flows');
 assert.equal(layout.pages[1].flows.length, 2, 'Source detail covers trigger and outgoing cross-Capability flow');
 assert.equal(layout.pages[2].flows.length, 1, 'Destination detail covers incoming cross-Capability flow');
-assert.match(layout.pages[1].nodes.find(node => node.kind === 'boundary').name, /^TO /);
-assert.match(layout.pages[2].nodes.find(node => node.kind === 'boundary').name, /^FROM /);
+assert.match(layout.pages[0].nodes.find(node => node.kind === 'boundary').name, /^TO /);
+assert.match(layout.pages[1].nodes.find(node => node.kind === 'boundary').name, /^FROM /);
 assert.deepEqual(layout.pages.map(page => page.legend.map(item => item.display)), [['01', '02'], ['01', '02'], ['02']], 'Local legends preserve global display identities and declaration order');
 
 const behaviorOccurrences = layout.pages.slice(1).flatMap(page => page.nodes.filter(node => node.kind === 'behavior'));
@@ -102,12 +102,11 @@ const fanoutPulse = {
 const fanoutStart = performance.now();
 const fanoutLayout = layoutPulse(fanoutPulse);
 assert.ok(performance.now() - fanoutStart < 2000, 'Large fan-out avoids factorial/exponential port search');
-assert.equal(fanoutLayout.pages[1].flows.length, 9);
+assert.equal(fanoutLayout.pages[0].flows.length, 9);
 
 const coverage = layoutPulse(coveragePulse).pages;
-assert.equal(coverage[0].flows.length, 2, 'Overview excludes same-Capability flow');
-assert.equal(coverage[1].flows.length, 3, 'Source detail covers trigger, internal, and outgoing cross-Capability flows');
-assert.equal(coverage[2].flows.length, 1, 'Destination detail covers only incoming cross-Capability flow');
+assert.equal(coverage[0].flows.length, 3, 'Source detail covers trigger, internal, and outgoing cross-Capability flows');
+assert.equal(coverage[1].flows.length, 1, 'Destination detail covers only incoming cross-Capability flow');
 
 const capabilitySourcePulse = {
   capabilities: [{id: 'source', name: 'Source'}, {id: 'detail', name: 'Detail'}],
