@@ -382,12 +382,12 @@ function layoutCausal(pulse, options = {}) {
       item.target.y + item.target.height - PORT_PADDING);
     if (low > high) continue;
     const preferred = Math.max(low, Math.min(high, (centerY(item.source) + centerY(item.target)) / 2));
-    // Either endpoint may move along its side. Trying both existing endpoint
-    // heights first makes this symmetric instead of favoring the target side.
-    const sourceCandidates = item.source.kind === 'trigger' ? [item.start.y] : [item.start.y, item.end.y, preferred];
-    if (item.source.kind !== 'trigger') {
-      for (let offset = 6; offset <= high - low; offset += 6) sourceCandidates.push(preferred - offset, preferred + offset);
-    }
+    // Trigger/boundary projections are presentation sources, not Behaviors.
+    // They may move their connection point along the boundary side just like
+    // Behavior endpoints; this is essential when several incoming projected
+    // Pulse occurrences converge on the same target Behavior.
+    const sourceCandidates = [item.start.y, item.end.y, preferred];
+    for (let offset = 6; offset <= high - low; offset += 6) sourceCandidates.push(preferred - offset, preferred + offset);
     const y = sourceCandidates.find(value => value >= low && value <= high
       && candidateFits(`${item.sourceId}:out`, item.flow, value)
       && candidateFits(`${item.flow.to}:in`, item.flow, value)
@@ -456,12 +456,6 @@ function layoutCausal(pulse, options = {}) {
         .map(node => node.id),
     }));
     item.sourceEscapeX = evaluatedCandidates.find(candidate => candidate.blockers.length === 0)?.x;
-    if (item.sourceEscapeX === undefined && 'trigger' in item.flow && item.start.x < item.end.x) {
-      const outsideX = Math.min(...[...nodes.values()].map(node => node.x)) - MIN_SIDE_CLEARANCE;
-      const clear = [...nodes.values()].every(node => node.id === item.sourceId || node.id === item.flow.to
-        || !segmentIntersectsBox(item.start, {x: outsideX, y: item.start.y}, node));
-      if (clear) item.sourceEscapeX = outsideX;
-    }
     if (options.debugRouting) sourceEscapeDiagnostics.push({
       pulse: item.flow.pulse, sourceId: item.sourceId, targetId: item.flow.to,
       start: {...item.start}, end: {...item.end}, midX: item.midX,
