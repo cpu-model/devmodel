@@ -100,12 +100,12 @@ const fanoutPulse = {
 const fanoutStart = performance.now();
 const fanoutLayout = layoutPulse(fanoutPulse);
 assert.ok(performance.now() - fanoutStart < 2000, 'Large fan-out avoids factorial/exponential port search');
-assert.equal(fanoutLayout.pages[1].flows.length, 9);
+assert.equal(fanoutLayout.pages[0].flows.length, 9);
 
 const coverage = layoutPulse(coveragePulse).pages;
-assert.equal(coverage[0].flows.length, 2, 'Overview excludes same-Capability flow');
-assert.equal(coverage[1].flows.length, 3, 'Source detail covers trigger, internal, and outgoing cross-Capability flows');
-assert.equal(coverage[2].flows.length, 1, 'Destination detail covers only incoming cross-Capability flow');
+assert.equal(coverage.length, 2, 'Coverage projection contains only the two Capability details');
+assert.equal(coverage[0].flows.length, 3, 'Source detail covers trigger, internal, and outgoing cross-Capability flows');
+assert.equal(coverage[1].flows.length, 1, 'Destination detail covers only incoming cross-Capability flow');
 
 const capabilitySourcePulse = {
   capabilities: [{id: 'source', name: 'Source'}, {id: 'detail', name: 'Detail'}],
