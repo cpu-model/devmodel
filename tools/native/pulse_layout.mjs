@@ -1166,18 +1166,9 @@ function causalPage(pulse, projection, title, kind, options = {}) {
   return layout;
 }
 
-function capabilityProjections(pulse) {
+function capabilityDetails(pulse) {
   const behaviorById = new Map(pulse.behaviors.map(item => [item.id, item]));
-  const overviewFlows = pulse.flows.filter(flow => 'trigger' in flow
-    || behaviorById.get(flow.from).capability !== behaviorById.get(flow.to).capability);
-  const overview = {
-    behaviors: pulse.capabilities.map(item => ({...item})),
-    flows: overviewFlows.map(flow => 'trigger' in flow
-      ? {trigger: flow.trigger, pulse: flow.pulse, to: behaviorById.get(flow.to).capability}
-      : {...flow, from: behaviorById.get(flow.from).capability, to: behaviorById.get(flow.to).capability}),
-    capabilityIds: pulse.capabilities.map(item => item.id), boundaryIds: [],
-  };
-  const details = pulse.capabilities.map(capability => {
+  return pulse.capabilities.map(capability => {
     const behaviors = pulse.behaviors.filter(behavior => behavior.capability === capability.id);
     const boundary = new Map();
     const flows = [];
@@ -1200,7 +1191,41 @@ function capabilityProjections(pulse) {
     }
     return {capability, behaviors: [...behaviors, ...boundary.values()].filter(Boolean), flows, boundaryIds: [...boundary.keys()]};
   });
-  return {overview, details};
+}
+
+function capabilityFlowPage(pulse, capabilityFlow) {
+  const capabilityById = new Map(pulse.capabilities.map(item => [item.id, item]));
+  const nodeWidth = 190;
+  const nodeHeight = 72;
+  const gap = 110;
+  const top = PAGE.margin + 90;
+  const nodes = capabilityFlow.capabilities.map((id, index) => ({
+    ...capabilityById.get(id),
+    kind: 'capability',
+    x: PAGE.margin + index * (nodeWidth + gap),
+    y: top,
+    width: nodeWidth,
+    height: nodeHeight,
+  }));
+  const flows = nodes.slice(1).map((target, index) => {
+    const source = nodes[index];
+    const y = source.y + source.height / 2;
+    return {from: source.id, to: target.id, points: [
+      {x: source.x + source.width, y},
+      {x: target.x, y},
+    ]};
+  });
+  const right = nodes.at(-1)?.x + nodeWidth || PAGE.margin;
+  return {
+    page: {margin: PAGE.margin, width: Math.max(595, right + PAGE.margin), height: 300},
+    title: `CAPABILITY FLOW: ${capabilityFlow.name}`,
+    kind: 'capability-flow',
+    nodes,
+    flows,
+    legend: [],
+    domainNodes: [],
+    informationFlows: [],
+  };
 }
 
 export function layoutPulse(pulse, options = {}) {
@@ -1208,8 +1233,7 @@ export function layoutPulse(pulse, options = {}) {
     const page = causalPage(pulse, {behaviors: pulse.behaviors, flows: pulse.flows}, 'SYSTEM PULSE', 'system', options);
     return {...page, pages: [page]};
   }
-  const {overview, details} = capabilityProjections(pulse);
-  const pages = [causalPage(pulse, overview, 'PULSE CAPABILITY OVERVIEW', 'overview', options)];
-  for (const detail of details) pages.push(causalPage(pulse, detail, `CAPABILITY: ${detail.capability.name}`, 'capability-detail', options));
+  const pages = (pulse['capability-flows'] || []).map(capabilityFlow => capabilityFlowPage(pulse, capabilityFlow));
+  for (const detail of capabilityDetails(pulse)) pages.push(causalPage(pulse, detail, `CAPABILITY: ${detail.capability.name}`, 'capability-detail', options));
   return {pages};
 }
