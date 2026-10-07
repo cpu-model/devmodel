@@ -1183,7 +1183,10 @@ function capabilityDetails(pulse) {
         flows.push({...flow, to: id});
       } else if (destinationCapability === capability.id) {
         const label = `FROM ${pulse.capabilities.find(item => item.id === sourceCapability).name}`;
-        const source = `${label} · ${flow.pulse}`;
+        // Preserve occurrence identity for incoming cross-Capability flows.
+        // Several source Behaviors may emit the same Pulse toward the same
+        // destination Behavior; they must not collapse into one layout source.
+        const source = `${label} · ${flow.from} · ${flow.pulse} · ${flow.to}`;
         const id = `trigger:${source}`;
         flows.push({trigger: source, triggerLabel: label, pulse: flow.pulse, to: flow.to});
         boundary.set(id, null);
