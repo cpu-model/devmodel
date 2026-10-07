@@ -37,17 +37,14 @@ const layout = layoutPulse(model.pulse);
 assert.deepEqual(layoutPulse(model.pulse), layout, 'Pulse projections and geometry are deterministic');
 assert.equal(layout.pages.length, 3, 'Overview plus one detail per declared Capability');
 assert.equal(layout.pages[0].kind, 'overview');
-assert.deepEqual(layout.pages.slice(1).map(page => page.title), ['CAPABILITY: Input handling', 'CAPABILITY: Result presentation']);
-assert.equal(layout.pages[0].domainNodes.length, 0, 'Overview excludes Domain Information');
-assert.deepEqual(layout.pages[0].nodes.filter(node => node.kind === 'capability').map(node => node.id), ['input-handling', 'result-presentation']);
-assert.equal(layout.pages[0].flows.length, 2, 'Overview covers trigger and cross-Capability flows');
-assert.equal(layout.pages[1].flows.length, 2, 'Source detail covers trigger and outgoing cross-Capability flow');
-assert.equal(layout.pages[2].flows.length, 1, 'Destination detail covers incoming cross-Capability flow');
+assert.deepEqual(layout.pages.map(page => page.title), ['CAPABILITY: Input handling', 'CAPABILITY: Result presentation']);
+assert.equal(layout.pages[0].flows.length, 2, 'Source detail covers trigger and outgoing cross-Capability flow');
+assert.equal(layout.pages[1].flows.length, 1, 'Destination detail covers incoming cross-Capability flow');
 assert.match(layout.pages[1].nodes.find(node => node.kind === 'boundary').name, /^TO /);
 assert.match(layout.pages[2].nodes.find(node => node.kind === 'boundary').name, /^FROM /);
 assert.deepEqual(layout.pages.map(page => page.legend.map(item => item.display)), [['01', '02'], ['01', '02'], ['02']], 'Local legends preserve global display identities and declaration order');
 
-const behaviorOccurrences = layout.pages.slice(1).flatMap(page => page.nodes.filter(node => node.kind === 'behavior'));
+const behaviorOccurrences = layout.pages.flatMap(page => page.nodes.filter(node => node.kind === 'behavior'));
 for (const behavior of behaviorOccurrences) {
   const incoming = layout.pages.flatMap(page => page.flows).filter(flow => flow.to === behavior.id);
   const outgoing = layout.pages.flatMap(page => page.flows).filter(flow => flow.from === behavior.id);
@@ -55,7 +52,7 @@ for (const behavior of behaviorOccurrences) {
   assert.ok(incoming.every(flow => flow.points.at(-1).y >= behavior.y && flow.points.at(-1).y <= behavior.y + behavior.height), 'Incoming Pulse endpoint lies on the Behavior side');
   assert.ok(outgoing.every(flow => flow.points[0].x === behavior.x + behavior.width), 'Outgoing Pulse starts on right side');
 }
-for (const page of layout.pages.slice(1)) {
+for (const page of layout.pages) {
   assert.equal(page.domainNodes.length, 0, 'Domain Information has no standalone nodes');
   assert.equal(page.informationFlows.length, 0, 'Domain Information has no connector geometry');
   for (const behavior of page.nodes.filter(node => node.kind === 'behavior')) {
@@ -63,7 +60,7 @@ for (const page of layout.pages.slice(1)) {
     assert.ok(Array.isArray(behavior.informationOut), 'Behavior carries its lower Domain Information entries');
   }
 }
-const processedResultOccurrences = layout.pages.slice(1)
+const processedResultOccurrences = layout.pages
   .flatMap(page => page.nodes.filter(node => node.kind === 'behavior'))
   .flatMap(node => [...node.informationIn, ...node.informationOut])
   .filter(item => item.id === 'processed-result');
@@ -308,8 +305,8 @@ const output = path.join(directory, 'pulse.pdf');
 const result = spawnSync(process.execPath, [path.join(root, 'tools', 'render_pulse_native.mjs'), '--source', directory, '--output', output], {encoding: 'utf8'});
 assert.equal(result.status, 0, result.stderr);
 const source = fs.readFileSync(output, 'latin1');
-assert.equal((source.match(/\/Type \/Page\b/g) || []).length, 3);
-assert.equal((source.match(/\/Subtype \/Text/g) || []).length, 6, 'Every requirement-addressable occurrence is annotated');
+assert.equal((source.match(/\/Type \/Page\b/g) || []).length, 2);
+assert.equal((source.match(/\/Subtype \/Text/g) || []).length, 5, 'Every requirement-addressable Capability detail occurrence is annotated');
 assert.doesNotMatch(source, /<svg|\/Image\b/);
 const pdf = await PDFDocument.load(fs.readFileSync(output));
 const pulseContents = pdf.getPages().flatMap(page => page.node.Annots().asArray().map(reference => pdf.context.lookup(reference)))
