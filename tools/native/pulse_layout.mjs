@@ -456,6 +456,12 @@ function layoutCausal(pulse, options = {}) {
         .map(node => node.id),
     }));
     item.sourceEscapeX = evaluatedCandidates.find(candidate => candidate.blockers.length === 0)?.x;
+    if (item.sourceEscapeX === undefined && 'trigger' in item.flow && item.start.x < item.end.x) {
+      const outsideX = Math.min(...[...nodes.values()].map(node => node.x)) - MIN_SIDE_CLEARANCE;
+      const clear = [...nodes.values()].every(node => node.id === item.sourceId || node.id === item.flow.to
+        || !segmentIntersectsBox(item.start, {x: outsideX, y: item.start.y}, node));
+      if (clear) item.sourceEscapeX = outsideX;
+    }
     if (options.debugRouting) sourceEscapeDiagnostics.push({
       pulse: item.flow.pulse, sourceId: item.sourceId, targetId: item.flow.to,
       start: {...item.start}, end: {...item.end}, midX: item.midX,
