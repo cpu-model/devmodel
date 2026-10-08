@@ -960,7 +960,6 @@ The document has exactly one top-level field, `components`:
 
 ```yaml
 components:
-  base-model-digest: sha256:<digest>
   components:
     - id: observation-integration
       name: Observation Integration
@@ -1013,15 +1012,13 @@ Reader, producer, adapter, and persistence mechanism are not implicit owners. Th
 
 If discovery cannot determine one outcome from the semantic base model, it records UNRESOLVED and does not create `components.yaml` until review resolves the classification. The validator checks the declared outcome structurally and never infers one.
 
-### 11.3 Base-model digest
+### 11.3 Semantic change impact review
 
-`base-model-digest` is required and is a conservative staleness barrier. It is `sha256:` followed by the SHA-256 digest of a canonical representation of the validated `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml` documents. Mapping keys are recursively sorted; list order and scalar values are preserved. YAML comments, whitespace, quoting style, and mapping-key order do not affect the digest.
-
-Any semantic change to the five base files therefore requires Component review and a regenerated digest even when all referenced IDs still exist. A matching digest proves only that the reviewed base snapshot has not changed; it does not prove that the architecture is semantically correct. Generate the value with `node tools/model_digest.mjs --source <model-directory>`.
+When any of the five semantic base-model files changes, review the effect on the approved Component responsibilities, Behavior assignments, Domain Information dispositions, and reconciliation prerequisites. Update `components.yaml` only when the architecture is affected. Git history records the reviewed changes; no digest is stored in the Component artifact.
 
 ### 11.4 Strict structural validation
 
-When `components.yaml` exists, validation rejects unknown fields, duplicate YAML keys, invalid or duplicate Component IDs, blank names or responsibilities, unknown or duplicate Behavior assignments, incomplete Behavior coverage, unknown or duplicate Domain Information mappings, incomplete Domain Information coverage, entries that have both or neither `authority` and `disposition`, unknown Component authorities, invalid dispositions, unknown or duplicate requirement evidence, invalid reconciliation shapes, unknown or duplicate prerequisites, self-dependencies, reconciliation cycles, ungrounded behaviorless Components, and a stale digest.
+When `components.yaml` exists, validation rejects unknown fields, duplicate YAML keys, invalid or duplicate Component IDs, blank names or responsibilities, unknown or duplicate Behavior assignments, incomplete Behavior coverage, unknown or duplicate Domain Information mappings, incomplete Domain Information coverage, entries that have both or neither `authority` and `disposition`, unknown Component authorities, invalid dispositions, unknown or duplicate requirement evidence, invalid reconciliation shapes, unknown or duplicate prerequisites, self-dependencies, reconciliation cycles, ungrounded behaviorless Components.
 
 Validation does not decide whether a responsibility is cohesive, an authority or disposition is semantically correct, reconciliation is semantically necessary, the Necessity Test was performed correctly, Components should be merged or split, or invariant isolation is sound. Those are discovery and human-review decisions.
 
