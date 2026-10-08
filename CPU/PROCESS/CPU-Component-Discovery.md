@@ -160,3 +160,15 @@ Realization reconciliation compares implementation with the approved architectur
 File-to-Component mapping is not stored in `components.yaml`; Codex and implementation work keep it unambiguous. A folder tree per Component is a natural strategy but not a CPU format requirement. A generic `shared` folder must not evade ownership. If one source artifact appears to realize several Components, split it when appropriate or report that the Component boundary may need review.
 
 Current implementation may produce findings during realization reconciliation but never supplies retroactive evidence for initial discovery.
+
+### Mandatory realization-reconciliation closure gate
+
+Realization reconciliation is **not complete** merely because the normative Component model validates, tests pass, or selected runtime responsibilities have been reviewed. Before reporting completion, the implementing agent must:
+
+1. Establish a reproducible, exhaustive inventory of the current repository's system-realizing source artifacts, including Go source and tests, HTML, templates, JavaScript, CSS, SQL, and equivalent source artifacts. Explicitly state inclusion and exclusion rules; exclude generated, vendored, and non-system artifacts only with a documented rationale.
+2. Assign **exactly one** approved normative Component to each in-scope artifact. Record the file-to-Component mapping in a reviewable realization-reconciliation report, **not** in `components.yaml`. Do not use a generic shared/unowned classification as a substitute for ownership.
+3. Review each assignment against the Component's normative responsibility and the actual implementation, not merely file names, folders, or package names. Identify mixed-responsibility artifacts and either split them where appropriate or report a concrete boundary question for human review.
+4. Report the inventory total, assigned total, unassigned/ambiguous total, exclusions, and every unresolved finding, with enough file-level evidence to audit the result. Check mechanically that every in-scope artifact appears exactly once; semantic correctness still requires review.
+5. State an explicit **PASS** only when coverage is exhaustive, ownership is unambiguous, and no unresolved realization-boundary findings remain. Otherwise report **FAIL / INCOMPLETE**, identify the blocking findings, and do not declare Component realization or realization reconciliation complete.
+
+The review report is implementation evidence, not a new normative CPU model artifact. If completion status must survive a chat or increment boundary, preserve the evidence and findings in the project repository according to its working instructions. A successful automated coverage check cannot substitute for semantic ownership review.
