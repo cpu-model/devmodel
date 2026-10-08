@@ -6,7 +6,7 @@ Status: Normative methodology.
 
 CPU's concrete semantic base model remains `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml`. `components.yaml` is an optional complementary normative Component architecture artifact derived from that complete base model without changing it.
 
-If `components.yaml` is absent, CPU makes no normative Component-boundary claim. If present, its Component boundaries, Behavior assignments, Domain Information authority or disposition assignments, and reconciliation prerequisites are normative. Changing them requires an explicit model change and human review.
+If `components.yaml` is absent, CPU makes no normative Component-boundary claim. If present, its Component boundaries, Behavior assignments, Domain Information authority or disposition assignments, and reconciliation prerequisites are normative. Changing them requires an explicit model change and human review. A change to any semantic base-model file requires an impact review of the approved Component architecture; update `components.yaml` only if its responsibilities, assignments, dispositions, or reconciliation prerequisites are affected.
 
 A **Component is a normative runtime implementation boundary with a cohesive functional responsibility derived from the CPU semantic model. A Component realizes that responsibility at runtime and may own authoritative state and transitions, derive information, perform observations or integrations, realize presentation behavior, protect safety or failure isolation, reconcile runtime state, or otherwise provide functionality required by the model.**
 
