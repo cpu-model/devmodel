@@ -12,7 +12,7 @@ A **Component is a normative runtime implementation boundary with a cohesive fun
 
 There is one Component concept, not separate logical and runtime Components. Semantic responsibility determines the Component; runtime artifacts realize that same Component. A Component does not automatically correspond to a package, directory, process, service, repository, database, container, or deployment unit. Deployment continues to describe concrete physical realization.
 
-Component Discovery is semantic-first. It must not begin from files, packages, processes, deployment units, or an existing implementation. Existing implementation is examined only after a semantic proposal has been reviewed, through realization reconciliation in section 8; it never retroactively becomes discovery evidence.
+Component Discovery is semantic-first. It must not begin from files, packages, processes, deployment units, or an existing implementation. Existing implementation is examined only after a semantic proposal has been reviewed, through realization reconciliation in section 9; it never retroactively becomes discovery evidence.
 
 ## 2. Interpretation principles
 
@@ -134,7 +134,22 @@ A Component becomes `UNRECONCILED` when its established runtime state or invaria
 
 Startup, relevant reconfiguration, migration, and recovery use the same mechanism and differ only in which Components are invalidated. A reconciliation dependency is stronger than an ordinary information dependency. Reading information produced by another Component never automatically creates `requires`.
 
-## 8. Review and realization reconciliation
+## 8. Convergence and decision closure
+
+Component Discovery must terminate in a reviewable architecture rather than an open-ended cycle of candidate reconsideration.
+
+1. **One complete inventory first.** Establish the complete Behavior and Domain Information inventory and collect relevant requirement evidence before proposing final boundaries. Missing coverage is a concrete defect, not a reason to reopen already resolved unrelated decisions.
+2. **Explicit candidate verdicts.** Apply the merge/split test and both Necessity Test phases once per candidate or contested boundary. Record PASS, FAIL, or UNRESOLVED, with specific model evidence and the placement of every failed responsibility. An unsubstantiated preference is not an UNRESOLVED finding.
+3. **Evidence-driven reopening only.** Reopen a closed verdict only for newly discovered normative evidence, a demonstrated contradiction, a changed base model, or a failed coverage/consistency check. State exactly what changed and which verdicts it affects. Repeated review with no such delta must not reset a decision.
+4. **Localize conflicts.** Resolve a conflict at the smallest affected boundary or Domain Information item. Preserve all unaffected verdicts; do not restart the entire discovery.
+5. **No speculative Components.** A possible future feature, implementation convenience, shared utility, or hypothetical failure mode cannot keep a boundary unresolved. If the model provides no necessity evidence for a separate Component, assign the function to a passing cohesive Component or record a specific functional-model gap.
+6. **Close with mechanical checks.** Before review, check exhaustive and unique Behavior assignments, exhaustive and unique Domain Information dispositions, authority consistency, acyclic and justified reconciliation prerequisites, and every candidate's Necessity Test verdict. The review proposal must contain the resulting complete mapping, not only a component-name shortlist.
+7. **Single consolidated human decision.** Present the completed proposal, evidence-backed alternatives that remain genuinely unresolved, and any required model corrections together. Human approval closes the reviewed architecture. After approval, produce the normative artifact; do not reopen approved boundaries without one of the concrete triggers in rule 3.
+8. **No arbitrary numerical target.** Neither a preferred Component count nor a target number of iterations may override semantic correctness. Convergence comes from closing evidence-backed decisions, not suppressing genuine contradictions.
+
+These are process rules, not additional semantic evidence or permission to guess. A real contradiction or insufficient normative definition remains UNRESOLVED until resolved through human review or a base-model correction.
+
+## 9. Review and realization reconciliation
 
 The proposal shows Components, assigned Behaviors, Domain Information outcomes, reconciliation prerequisites, failed candidates and placement, and unresolved findings. Review evaluates semantic correctness, cohesion, necessity, runtime boundary fitness, and consistency with Deployment.
 
