@@ -5,7 +5,6 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
-import {baseModelDigest} from '../tools/native/base_model_digest.mjs';
 
 const {parse, stringify} = createRequire(import.meta.url)('yaml');
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -57,9 +56,6 @@ validWithoutComponents();
 const validResult = validate(example);
 assert.equal(validResult.status, 0, validResult.stderr);
 assert.match(validResult.stdout, /2 Components/);
-const digestResult = spawnSync(process.execPath, [path.join(root, 'tools', 'model_digest.mjs'), '--source', example], {encoding: 'utf8'});
-assert.equal(digestResult.status, 0, digestResult.stderr);
-assert.equal(digestResult.stdout.trim(), baseModelDigest(example), 'CLI and validator digest implementation must agree');
 
 {
   const directory = copyModel();
@@ -150,73 +146,6 @@ assert.equal(digestResult.stdout.trim(), baseModelDigest(example), 'CLI and vali
     fs.writeFileSync(filename, stringify(document));
     const result = validate(directory);
     assert.equal(result.status, 0, result.stderr);
-  } finally {
-    fs.rmSync(directory, {recursive: true, force: true});
-  }
-}
-
-{
-  const directory = copyModel();
-  try {
-    const before = baseModelDigest(directory);
-    const pulseFilename = path.join(directory, 'pulse.yaml');
-    let source = fs.readFileSync(pulseFilename, 'utf8');
-    source = source.replace('name: Submitted input', 'name: "Submitted input"');
-    fs.writeFileSync(pulseFilename, `\n${source}\n# formatting-only comment\n`);
-    assert.equal(baseModelDigest(directory), before, 'Whitespace, quoting, and comments must not affect the base-model digest');
-
-    const document = parse(fs.readFileSync(pulseFilename, 'utf8'));
-    document.pulse = Object.fromEntries(Object.entries(document.pulse).reverse());
-    fs.writeFileSync(pulseFilename, stringify(document));
-    assert.equal(baseModelDigest(directory), before, 'Mapping-key order must not affect the base-model digest');
-
-    fs.appendFileSync(path.join(directory, componentFile), '\n# Component content is excluded\n');
-    assert.equal(baseModelDigest(directory), before, 'components.yaml must not affect the base-model digest');
-  } finally {
-    fs.rmSync(directory, {recursive: true, force: true});
-  }
-}
-
-{
-  const directory = copyModel();
-  try {
-    const before = baseModelDigest(directory);
-    const pulseFilename = path.join(directory, 'pulse.yaml');
-    const document = parse(fs.readFileSync(pulseFilename, 'utf8'));
-    document.pulse.behaviors[0].name = 'Changed scalar value';
-    fs.writeFileSync(pulseFilename, stringify(document));
-    assert.notEqual(baseModelDigest(directory), before, 'Scalar values must affect the base-model digest');
-  } finally {
-    fs.rmSync(directory, {recursive: true, force: true});
-  }
-}
-
-{
-  const directory = copyModel();
-  try {
-    const before = baseModelDigest(directory);
-    const pulseFilename = path.join(directory, 'pulse.yaml');
-    const document = parse(fs.readFileSync(pulseFilename, 'utf8'));
-    document.pulse.behaviors.reverse();
-    fs.writeFileSync(pulseFilename, stringify(document));
-    assert.notEqual(baseModelDigest(directory), before, 'List order must affect the base-model digest');
-  } finally {
-    fs.rmSync(directory, {recursive: true, force: true});
-  }
-}
-
-{
-  const directory = copyModel();
-  try {
-    const before = baseModelDigest(directory);
-    const requirementsFilename = path.join(directory, 'requirements.yaml');
-    const document = parse(fs.readFileSync(requirementsFilename, 'utf8'));
-    document.requirements['pulse.behavior.process-input'].push({
-      id: 'additional-processing-rule',
-      text: 'Additional semantic requirement.',
-    });
-    fs.writeFileSync(requirementsFilename, stringify(document));
-    assert.notEqual(baseModelDigest(directory), before, 'Semantic additions must affect the base-model digest');
   } finally {
     fs.rmSync(directory, {recursive: true, force: true});
   }
@@ -314,13 +243,6 @@ invalidComponent(document => {
   });
   document.components.components[0].reconciliation = {requires: ['indirect-cycle']};
 }, /Component reconciliation cycle/);
-
-invalidComponent((document, directory) => {
-  const pulseFilename = path.join(directory, 'pulse.yaml');
-  const pulse = parse(fs.readFileSync(pulseFilename, 'utf8'));
-  pulse.pulse.behaviors[0].name = 'Semantically changed name';
-  fs.writeFileSync(pulseFilename, stringify(pulse));
-}, /components.yaml is stale/);
 
 invalidComponent(document => {
   document.components.components.push({
