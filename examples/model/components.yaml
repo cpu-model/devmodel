@@ -1,5 +1,4 @@
 components:
-  base-model-digest: sha256:02174b69006023cbb3aa2dc4c826522c5b0ecaa64b3a45c24b52af340b56eebd
   components:
     - id: result-processing
       name: Result Processing
