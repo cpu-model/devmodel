@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {createRequire} from 'node:module';
-import {baseModelDigest} from './base_model_digest.mjs';
 
 const {parseDocument} = createRequire(import.meta.url)('yaml');
 const dispositions = new Set(['external-input', 'transfer', 'derived']);
@@ -52,13 +51,7 @@ export function loadComponentsModel(sourceDirectory, pulse, requirements) {
   const source = parseYaml(filename);
   exactFields(source, ['components'], ['components'], 'components.yaml');
   const root = mapping(source.components, 'components');
-  exactFields(root, ['base-model-digest', 'components', 'domain-information'], ['base-model-digest', 'components', 'domain-information'], 'components');
-  nonEmpty(root['base-model-digest'], 'components.base-model-digest');
-  const expectedDigest = baseModelDigest(sourceDirectory);
-  if (root['base-model-digest'] !== expectedDigest) {
-    throw new Error(`components.yaml is stale: base-model-digest must be ${expectedDigest}`);
-  }
-
+  exactFields(root, ['components', 'domain-information'], ['components', 'domain-information'], 'components');
   const requirementIds = new Set(Object.values(requirements).flat().map(requirement => requirement.id));
   const behaviorIds = new Set(pulse.behaviors.map(behavior => behavior.id));
   const informationIds = new Set((pulse['domain-information'] || []).map(information => information.id));
