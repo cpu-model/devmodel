@@ -67,11 +67,7 @@ The project keeps its concrete five-file semantic base model and optional review
 npm run validate -- --source /path/to/model
 ```
 
-When a reviewed `components.yaml` is present, validation also checks exhaustive Behavior assignment, exhaustive Domain Information authority/disposition, requirement evidence, reconciliation DAG integrity, structural grounding, and the base-model staleness digest. Generate the digest used during review with:
-
-```sh
-node tools/model_digest.mjs --source /path/to/model
-```
+When a reviewed `components.yaml` is present, validation also checks exhaustive Behavior assignment, exhaustive Domain Information authority/disposition, requirement evidence, reconciliation DAG integrity, structural grounding, and structural grounding. Semantic base-model changes require an explicit impact review of the approved Component architecture; no digest field is stored.
 
 Validation is strict: duplicate YAML keys, unknown fields, invalid identities, unresolved references, invalid requirement targets, malformed requirement objects, and requirement-ID collisions are rejected.
 
