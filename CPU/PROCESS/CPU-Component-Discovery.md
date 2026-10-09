@@ -37,9 +37,23 @@ A configuration value with domain-functional meaning whose change can alter func
 
 Purely technical configuration remains in Deployment, including HTTP ports, SQLite paths, mounts, and container restart policies. Delivery mechanism does not determine semantic classification.
 
+## 3A. Substitutability Discovery — mandatory pre-discovery gate
+
+Before beginning Component Discovery, perform and close a separate **Substitutability Discovery** against the current validated five-file semantic base model. This gate is mandatory whenever Component Discovery is undertaken, including when no substitutable responsibilities are ultimately approved. It does not make `components.yaml` mandatory for other CPU work.
+
+1. **Candidate inventory:** Examine Context, Pulse, UI, Deployment, and Requirements for realistically replaceable responsibilities, including integrations, information providers, algorithms, and realization mechanisms where supported by model evidence. Identify candidates by responsibility and semantic evidence, **not** by proposed Component IDs, source files, packages, or implementation structure. Do not begin Component Discovery while compiling candidates.
+2. **Assessment:** For each candidate, describe its responsibility, consumers, expected functional contract, plausible alternative realizations, reason for substitution, constraints, and uncertainty. Technical replaceability alone is not sufficient reason to recommend approval.
+3. **Human decision:** Present the complete candidate inventory together for explicit accept/reject decisions and allow human additions. No candidate may remain undecided when the gate closes. Rejected candidates must not silently reappear during Component Discovery.
+4. **Contract normalization:** For each accepted responsibility, specify stable information semantics, operations/behavior, errors and recovery, safety and lifecycle guarantees, and the replacement criterion. Distinguish the provider-independent contract from requirements of the currently selected provider. Existing provider-specific Context and Deployment descriptions may remain concrete; they must not be mistaken for universally required contract semantics. Resolve contradictions through an explicit, reviewed base-model change before proceeding.
+5. **Freeze and evidence:** Record approved normative substitution constraints as independently assessable requirements in `requirements.yaml`, attached to existing valid model addresses. Preserve a reviewable candidate/decision/contract-evidence report in the project repository; this report is not another normative CPU YAML artifact. Explicitly record closure even if the accepted set is empty. Do not invent a new YAML field or unaddressable target.
+
+The minimum default replacement level is **source-level substitution**: an alternative implementation may be selected through source composition and rebuilding, but its consumers and the approved common functional contract must not need modification. Runtime hot swapping, multiple concurrent providers, automatic fallback, or dynamic selection are **not** implied; they require separate functional requirements if needed.
+
+Approved substitution constraints are **binding Component-boundary evidence**, not automatic one-Component-per-provider or one-Component-per-contract rules. During the Necessity Test, demonstrate a stable boundary that keeps provider-specific implementation details out of consuming responsibilities and permits independent replacement. Several alternatives may realize the same normative Component responsibility. An interface declaration alone is not evidence of functional substitution; the contract must be independently verifiable. If a constraint conflicts with a proposed Component boundary, report the conflict and stop rather than weakening or reopening the approved decision implicitly. A change to an approved substitution decision requires a separate human-reviewed architecture decision and corresponding normative requirements update.
+
 ## 4. Discovery procedure
 
-Perform Component Discovery in this order:
+Perform Component Discovery only after the mandatory Substitutability Discovery gate in section 3A has been closed and its approved requirements incorporated into the validated base model. Then proceed in this order:
 
 1. Read and strictly validate the complete current semantic base model.
 2. Create a Behavior–Information inventory with relevant requirement IDs, and a Deployment–realization inventory of required process composition, technical configuration, persistence, transactions, transport, communication, coordination, and recovery mechanisms.
