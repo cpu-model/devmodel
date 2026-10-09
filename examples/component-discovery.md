@@ -4,6 +4,31 @@ Status: Non-normative examples of the normative method in `CPU/PROCESS/CPU-Compo
 
 These examples are deliberately small. A real discovery must evaluate the complete base model and must not treat a pattern below as an automatic boundary rule.
 
+## Substitutability Discovery before Component Discovery
+
+The candidate inventory is performed against the complete five-file semantic base model **before** proposing Component IDs or boundaries. The following is an illustrative review, not a normative EVC decision:
+
+| Candidate responsibility | Evidence | Recommendation | Human decision |
+| --- | --- | --- | --- |
+| Vehicle observation integration | External vehicle state and observation Behavior | Accept | Required before proceeding |
+| Charger observation and control integration | External charger state, energy and control flows | Accept | Required before proceeding |
+| Electricity price acquisition | External price data and acquisition Behavior | Accept | Required before proceeding |
+| Planning algorithm | Planning Behavior alone does not establish a replacement need | Reject unless justified | Required before proceeding |
+| Storage engine | Technical feasibility of another database alone is insufficient | Reject unless justified | Required before proceeding |
+
+A human may add candidates. The table must be completed with explicit accept/reject decisions; a recommendation is not approval. A reviewed record of rejected candidates and reasons remains in the project repository, while approved normative constraints are attached to valid semantic addresses in `requirements.yaml`.
+
+For an accepted charger integration, the **common contract** might require establishing an effective safe-off state, observing connection state, reporting whether a requested mode was actually established, and handling communication failures. A particular GARO implementation may use `ALWAYS_OFF` and `ALWAYS_ON`; those vendor commands are not automatically common-contract vocabulary. The current concrete Context and Deployment can still identify GARO.
+
+The default requirement is source-level substitution: replace an implementation and rebuild without changing consuming responsibilities or their approved contract. This does not imply hot swapping, simultaneous providers, or fallback. The Necessity Test must respect the approved boundary evidence but must **not** create one normative Component per vendor, nor automatically one per approved contract.
+
+### Gate acceptance examples
+
+- **PASS:** All candidates explicitly decided, approved requirements attached to valid model targets, provider-specific assumptions distinguished from common contracts, and no unresolved contradictions. Component Discovery may begin.
+- **PASS (empty):** All candidates explicitly rejected with rationale, reviewed closure recorded, and no substitution constraints added. Component Discovery may begin.
+- **BLOCK:** One candidate remains undecided, an approved contract contradicts a vendor-specific normative requirement without resolution, or a candidate was assessed only from source-file structure. Component Discovery must not begin.
+- **BLOCK:** Component Discovery proposes to merge a provider implementation with its consumer such that source-level substitution would require consumer modification. Report the boundary conflict rather than silently weakening the approved constraint.
+
 ## Capability and Component granularity
 
 One Capability may contain a producer that issues an immutable authorization and an independent executor that accepts or rejects it and owns an execution lifecycle. The contract and separate acceptance authority make both candidates PASS the boundary phase and can justify two Components even though the Capability is one cohesion signal.
