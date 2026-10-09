@@ -16,6 +16,8 @@ The three artifacts are complementary. None of them is an implementation archite
 
 `components.yaml` is an optional complementary Component architecture artifact. A Component is a cohesive, necessary, bounded part of the system that owns an identifiable responsibility and the normative runtime implementation boundary that realizes that same responsibility. The responsibility may be functional or infrastructural; these are responsibility categories within one Component concept, not separate logical and technical Component models. The artifact does not change the five-file semantic base model or imply that a Component automatically equals a file, package, process, service, repository, database, container, or deployment unit.
 
+Substitutability Discovery is a mandatory precondition when Component Discovery is performed. It establishes human-approved, provider-independent replacement constraints before Component boundaries are derived. Approved constraints are recorded through the existing requirements model; the optional status of `components.yaml` is unchanged. See `CPU/PROCESS/CPU-Component-Discovery.md`.
+
 ## Normative sources
 
 The normative responsibilities in `cpu-model/devmodel` are divided as follows:
