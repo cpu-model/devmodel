@@ -2,6 +2,10 @@
 
 Resolve the methodology root as the directory containing this file. Read its `SPEC.md` and all normative Markdown documents under its `PROCESS/` directory when embedded in a target project, or under its `CPU/PROCESS/` directory when working in the source `devmodel` repository. Do this before creating, interpreting, validating, or changing a CPU model.
 
+## Substitutability prerequisite
+
+Before undertaking Component Discovery, follow the mandatory Substitutability Discovery gate in `CPU/PROCESS/CPU-Component-Discovery.md` (or the corresponding embedded methodology path). Close the human-reviewed candidate decisions and contract normalization, and record approved substitution requirements in the semantic base model before identifying Component boundaries. No separate substitution YAML artifact is required.
+
 ## Terminology
 
 - The development model is **Context-Pulse-UI (CPU)**.
