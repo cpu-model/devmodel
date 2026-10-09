@@ -4,6 +4,7 @@ import {createRequire} from 'node:module';
 
 const {parseDocument} = createRequire(import.meta.url)('yaml');
 const dispositions = new Set(['external-input', 'transfer', 'derived']);
+const responsibilityKinds = new Set(['functional', 'infrastructure']);
 
 const mapping = (value, label) => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${label} must be a mapping`);
@@ -52,7 +53,11 @@ export function loadComponentsModel(sourceDirectory, pulse, requirements) {
   exactFields(source, ['components'], ['components'], 'components.yaml');
   const root = mapping(source.components, 'components');
   exactFields(root, ['components', 'domain-information'], ['components', 'domain-information'], 'components');
-  const requirementIds = new Set(Object.values(requirements).flat().map(requirement => requirement.id));
+  const requirementTargets = new Map();
+  for (const [target, targetRequirements] of Object.entries(requirements)) {
+    for (const requirement of targetRequirements) requirementTargets.set(requirement.id, target);
+  }
+  const requirementIds = new Set(requirementTargets.keys());
   const behaviorIds = new Set(pulse.behaviors.map(behavior => behavior.id));
   const informationIds = new Set((pulse['domain-information'] || []).map(information => information.id));
   const componentIds = new Set();
@@ -64,10 +69,12 @@ export function loadComponentsModel(sourceDirectory, pulse, requirements) {
 
   for (const [index, component] of components.entries()) {
     const label = `components.components[${index}]`;
-    exactFields(component, ['id', 'name', 'responsibility', 'behaviors', 'requirement-evidence', 'reconciliation'], ['id', 'name', 'responsibility', 'behaviors'], label);
+    exactFields(component, ['id', 'name', 'responsibility', 'kind', 'behaviors', 'requirement-evidence', 'reconciliation'], ['id', 'name', 'responsibility', 'behaviors'], label);
     id(component.id, `${label}.id`);
     nonEmpty(component.name, `${label}.name`);
     nonEmpty(component.responsibility, `${label}.responsibility`);
+    const kind = component.kind || 'functional';
+    if (!responsibilityKinds.has(kind)) throw new Error(`Invalid Component responsibility kind: ${kind}`);
     if (componentIds.has(component.id)) throw new Error(`Duplicate Component ID: ${component.id}`);
     componentIds.add(component.id);
     const behaviors = uniqueStrings(component.behaviors, `${label}.behaviors`);
@@ -79,6 +86,9 @@ export function loadComponentsModel(sourceDirectory, pulse, requirements) {
     const evidence = 'requirement-evidence' in component ? uniqueStrings(component['requirement-evidence'], `${label}.requirement-evidence`) : [];
     for (const requirementId of evidence) {
       if (!requirementIds.has(requirementId)) throw new Error(`Unknown requirement evidence: ${requirementId}`);
+    }
+    if (kind === 'infrastructure' && !evidence.some(requirementId => requirementTargets.get(requirementId).startsWith('deployment.'))) {
+      throw new Error(`Infrastructure Component requires Deployment requirement evidence: ${component.id}`);
     }
     evidenceByComponent.set(component.id, evidence.length);
     if ('reconciliation' in component) {

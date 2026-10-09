@@ -954,7 +954,7 @@ requirements:
 
 ## 11. Optional Component architecture format
 
-`components.yaml` is an optional complementary Component architecture artifact governed by CPU Component Discovery. A Component is both a cohesive functional responsibility derived from the semantic base model and the normative runtime implementation boundary that realizes it. There are no separate logical and runtime Component types. The artifact does not extend or alter Context, Pulse, UI, Deployment, or Requirements semantics. If absent, the five-file semantic base model remains complete and valid and CPU makes no normative Component-boundary claim. If present, its boundaries, assignments, and reconciliation prerequisites are normative.
+`components.yaml` is an optional complementary Component architecture artifact governed by CPU Component Discovery. A Component is a cohesive, necessary, bounded system part with one identifiable responsibility and the normative runtime implementation boundary that realizes it. A responsibility is functional or infrastructural; these are categories within one Component concept, not separate logical, runtime, functional, or technical Component types. The artifact does not extend or alter Context, Pulse, UI, Deployment, or Requirements semantics. If absent, the five-file semantic base model remains complete and valid and CPU makes no normative Component-boundary claim. If present, its boundaries, assignments, responsibility categories, evidence, and reconciliation prerequisites are normative.
 
 The document has exactly one top-level field, `components`:
 
@@ -976,6 +976,13 @@ components:
       reconciliation:
         requires:
           - observation-integration
+    - id: runtime-composition
+      name: Runtime Composition
+      responsibility: Compose the required process while preserving functional authority in its owning Components.
+      kind: infrastructure
+      behaviors: []
+      requirement-evidence:
+        - combine-server-and-web-ui
   domain-information:
     - id: submitted-input
       disposition: external-input
@@ -985,15 +992,16 @@ components:
 
 ### 11.1 Component entries
 
-The `components` list is non-empty when the artifact exists; omit `components.yaml` when no Component is normative. Every Component contains exactly `id`, `name`, `responsibility`, and `behaviors`, with optional `requirement-evidence` and `reconciliation`.
+The `components` list is non-empty when the artifact exists; omit `components.yaml` when no Component is normative. Every Component contains exactly `id`, `name`, `responsibility`, and `behaviors`, with optional `kind`, `requirement-evidence`, and `reconciliation`.
 
 - `id` is a stable, non-empty, unique machine-readable ID and contains no period.
 - `name` and `responsibility` are non-empty strings.
+- `kind`, when present, is exactly `functional` or `infrastructure`. Absence means `functional`, preserving existing Component models. The value classifies the responsibility, not the Component concept, runtime tier, package type, process type, or authority level.
 - `behaviors` is a list of Pulse Behavior IDs. Every Pulse Behavior occurs exactly once across all Components.
-- `requirement-evidence`, when present, is a non-duplicated list of existing requirement IDs. It provides structural grounding and traceability only when requirement evidence helps establish the Component's existence or boundary. It neither copies requirement text nor attaches, inherits, relocates, or changes a requirement. It does not imply that only the referenced requirements apply to the Component.
+- `requirement-evidence`, when present, is a non-duplicated list of existing requirement IDs. It provides structural grounding and traceability only when requirement evidence helps establish the Component's existence or boundary. It neither copies requirement text nor attaches, inherits, relocates, or changes a requirement. It does not imply that only the referenced requirements apply to the Component. An infrastructure Component must cite at least one requirement attached to a `deployment.*` target, establishing its normative realization basis without claiming a Pulse Behavior or Domain Information item. Additional requirement evidence may refine its technical invariant, lifecycle, or contracts.
 - `reconciliation`, when present, contains exactly `requires`. `requires` is a list of unique Component IDs and defines the Component's reconciliation prerequisites. Absence of `reconciliation` means that the Component has no Component reconciliation prerequisites.
 
-A Component may have an empty `behaviors` list only when at least one Domain Information item names it as authority, it has non-empty `requirement-evidence`, or it participates in the reconciliation graph by requiring another Component or being required by another Component. Derived Domain Information alone does not ground a behaviorless Component. Every listed entry has passed the Component Necessity Test and is a normative runtime implementation boundary for one model-derived functional responsibility.
+A Component may have an empty `behaviors` list only when at least one Domain Information item names it as authority, it has non-empty `requirement-evidence`, or it participates in the reconciliation graph by requiring another Component or being required by another Component. Derived Domain Information alone does not ground a behaviorless Component. Every infrastructure Component has Deployment requirement evidence even if it also owns Behaviors, authority, or reconciliation participation. This structural check does not prove necessity; every listed entry has passed the appropriate functional or infrastructure Component Necessity Test and is one normative runtime implementation boundary for one cohesive responsibility.
 
 The `requires` graph is always a DAG. Unknown references, duplicates, self-dependencies, and direct or indirect cycles are invalid. No topological order is stored. `requires` means that whenever this Component needs reconciliation, every listed Component must first be `RECONCILED`. It is stronger than ordinary information dependency; reading information established by another Component does not imply `requires`.
 
@@ -1018,8 +1026,8 @@ When any of the five semantic base-model files changes, review the effect on the
 
 ### 11.4 Strict structural validation
 
-When `components.yaml` exists, validation rejects unknown fields, duplicate YAML keys, invalid or duplicate Component IDs, blank names or responsibilities, unknown or duplicate Behavior assignments, incomplete Behavior coverage, unknown or duplicate Domain Information mappings, incomplete Domain Information coverage, entries that have both or neither `authority` and `disposition`, unknown Component authorities, invalid dispositions, unknown or duplicate requirement evidence, invalid reconciliation shapes, unknown or duplicate prerequisites, self-dependencies, reconciliation cycles, ungrounded behaviorless Components.
+When `components.yaml` exists, validation rejects unknown fields, duplicate YAML keys, invalid or duplicate Component IDs, blank names or responsibilities, invalid responsibility kinds, infrastructure Components without Deployment requirement evidence, unknown or duplicate Behavior assignments, incomplete Behavior coverage, unknown or duplicate Domain Information mappings, incomplete Domain Information coverage, entries that have both or neither `authority` and `disposition`, unknown Component authorities, invalid dispositions, unknown or duplicate requirement evidence, invalid reconciliation shapes, unknown or duplicate prerequisites, self-dependencies, reconciliation cycles, and ungrounded behaviorless Components.
 
-Validation does not decide whether a responsibility is cohesive, an authority or disposition is semantically correct, reconciliation is semantically necessary, the Necessity Test was performed correctly, Components should be merged or split, or invariant isolation is sound. Those are discovery and human-review decisions.
+Validation does not decide whether a responsibility is cohesive, cited Deployment evidence actually necessitates a separate infrastructure boundary, an authority or disposition is semantically correct, reconciliation is semantically necessary, the Necessity Test was performed correctly, Components should be merged or split, contracts preserve functional authority, or invariant isolation is sound. Those are discovery and human-review decisions.
 
 The artifact contains no Pulse interactions, readers, requirement text, source-artifact lists, packages, directories, processes, transports, implementation technology, or Deployment mappings. File-to-Component ownership is maintained through realization reconciliation, not stored here. The artifact has no generated Component diagram in Visual Language v2.

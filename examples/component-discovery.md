@@ -30,6 +30,14 @@ A protocol adapter that translates messages, retries transport, and authenticate
 
 `fallback-charging-rate` is Domain Information when changing it alters charging decisions or results. Deployment may state that the implementation receives it through `CHARGING_RATE_SOC_PER_HOUR`. HTTP ports, SQLite paths, mounts, and restart policies remain technical Deployment configuration.
 
+## Infrastructure responsibility without authority transfer
+
+A Deployment requirement mandates atomic durable storage of state owned by Planning, Vehicle Observation, and Charging Control. A Persistence candidate may PASS when atomic commit/rollback forms one necessary technical lifecycle with a justified boundary and explicit participant contracts. It uses `kind: infrastructure`, has no artificial Pulse Behaviors, and cites the Deployment requirement as `requirement-evidence`. Persistence owns transaction state, connection handling, durable representation integrity, and rollback mechanics; the participating functional Components still decide which domain transitions are valid and own their Domain Information authority.
+
+A runtime composition candidate may similarly PASS when Deployment requires one process to compose and supervise several Components and that composition has an independently necessary startup/shutdown or failure-containment lifecycle. `main.go`, a package, or dependency wiring alone is not evidence. Functional startup decisions—such as whether Charging Control establishes a fail-safe command—remain with the functional owner even when the composition Component orders invocation.
+
+A shared tariff calculation used by Planning and Economics is not infrastructure merely because several Components call it. If it expresses domain-functional cost meaning, discovery evaluates it as functional responsibility and applies merge/split normally. The same rule prevents a coordinator such as `service.go` from being labeled infrastructure solely because it calls several Components.
+
 ## Reconciliation
 
 Suppose Charging Estimation cannot establish a valid estimator until Vehicle Observation has established a reusable valid observation. Charging Estimation may declare `reconciliation.requires: [vehicle-observation]`. This is stronger than merely reading observed Domain Information. At startup both Components are `UNRECONCILED`; Vehicle Observation reconciles first, then Charging Estimation. If Vehicle Observation loses validity, invalidation propagates to Charging Estimation and the affected graph reconciles again.
@@ -39,6 +47,10 @@ Ordinary vehicle-state change is handled through Pulse and does not automaticall
 ## Realization reconciliation
 
 After approval, Go source, tests, HTML, templates, JavaScript, CSS, and SQL are each reconciled to exactly one Component ownership. A folder per Component may help, but no file mapping is stored in `components.yaml` and a generic `shared` folder cannot evade ownership.
+
+A common technical interface belongs to the Component whose invariant or lifecycle it defines. A broad integration test belongs to the Component contract or authoritative outcome it primarily verifies; using other Components as setup does not make it shared. Split a test that independently verifies several authorities. Create an integration or composition Component only when that responsibility itself passes the Necessity Test and architecture review.
+
+An inventory with an unassigned SQL migration is FAIL / INCOMPLETE even when all application code is assigned. Assigning it to `shared` is equally invalid. A Go file that both decides whether a charging plan is acceptable and implements generic transaction rollback remains mixed: it must be split, verified as one cohesive responsibility, or evaluated through an explicit normative architecture change and then verified against the changed architecture. Merely recording that architecture review occurred, proposing a Component, or placing one candidate owner in a table does not resolve ownership and cannot contribute to PASS.
 
 ## FAIL and UNRESOLVED
 

@@ -8,11 +8,13 @@ CPU's concrete semantic base model remains `context.yaml`, `pulse.yaml`, `ui.yam
 
 If `components.yaml` is absent, CPU makes no normative Component-boundary claim. If present, its Component boundaries, Behavior assignments, Domain Information authority or disposition assignments, and reconciliation prerequisites are normative. Changing them requires an explicit model change and human review. A change to any semantic base-model file requires an impact review of the approved Component architecture; update `components.yaml` only if its responsibilities, assignments, dispositions, or reconciliation prerequisites are affected.
 
-A **Component is a normative runtime implementation boundary with a cohesive functional responsibility derived from the CPU semantic model. A Component realizes that responsibility at runtime and may own authoritative state and transitions, derive information, perform observations or integrations, realize presentation behavior, protect safety or failure isolation, reconcile runtime state, or otherwise provide functionality required by the model.**
+A **Component is a cohesive, necessary, and bounded part of the system that owns an identifiable responsibility and the normative runtime implementation boundary that realizes that same responsibility.**
 
-There is one Component concept, not separate logical and runtime Components. Semantic responsibility determines the Component; runtime artifacts realize that same Component. A Component does not automatically correspond to a package, directory, process, service, repository, database, container, or deployment unit. Deployment continues to describe concrete physical realization.
+The responsibility may be **functional**—domain behavior, observation, decision, calculation, presentation, safety, or state—or **infrastructural**—process composition, technical configuration, persistence, transactions, transport, communication, coordination, or another necessary realization mechanism. These are responsibility categories within one Component concept. They do not create separate logical, runtime, functional, or technical Component models.
 
-Component Discovery is semantic-first. It must not begin from files, packages, processes, deployment units, or an existing implementation. Existing implementation is examined only after a semantic proposal has been reviewed, through realization reconciliation in section 9; it never retroactively becomes discovery evidence.
+There is one Component concept, not separate logical and runtime Components. The reviewed responsibility determines the Component; runtime artifacts realize that same Component. A Component does not automatically correspond to a file, package, directory, process, service, repository, database, container, or deployment unit. Deployment continues to describe concrete physical realization.
+
+Component Discovery is model-first. Functional responsibility discovery begins with Context, Pulse, UI, and Requirements. Infrastructure responsibility discovery begins with Deployment and normative realization requirements. Neither begins from files, packages, processes, deployment units, or an existing implementation. Existing implementation is examined through realization reconciliation in section 9 and may expose a necessary responsibility that the approved architecture omitted; it never makes its current structure normative or retroactively determines the initial proposal.
 
 ## 2. Interpretation principles
 
@@ -23,9 +25,11 @@ Component Discovery is semantic-first. It must not begin from files, packages, p
 - `information-out` makes a Behavior an authority candidate for emitted information; it does not establish eventual Component authority.
 - Reading information does not confer authority and does not imply a reconciliation prerequisite.
 - An external adapter does not own internal domain state merely because it delivers an observation. Persistence does not own state merely because it stores it.
-- Observation, integration, calculation, estimation, projection, presentation, safety/failure isolation, and reconciliation responsibilities may be legitimate Components when the semantic base model supplies a cohesive functional foundation and the Necessity Test requires a separate runtime boundary. The category alone never creates a Component.
+- Observation, integration, calculation, estimation, projection, presentation, safety/failure isolation, reconciliation, persistence, transport, transaction, and composition responsibilities may be legitimate Components when the applicable model and realization evidence supply a cohesive foundation and the Necessity Test requires a separate runtime boundary. The category alone never creates a Component.
 
 Authority means the runtime implementation authority permitted to accept or establish relevant mutable state transitions and responsible for protecting their invariants.
+
+An infrastructure Component may own its own technical state and invariants, such as transaction lifecycle, connections, delivery attempts, durable representation integrity, or recovery mechanisms. It does not automatically own the functional state handled by that mechanism. Transport conveys information without accepting its domain truth; persistence stores and retrieves an owner's state without deciding its functional transitions; restoration re-establishes an owner's valid state without changing who defines its invariants; coordination orders or atomically combines participant operations without taking their decisions; a functional decision accepts or establishes a domain-significant result under the deciding Component's authority.
 
 ## 3. Functional configuration
 
@@ -38,21 +42,22 @@ Purely technical configuration remains in Deployment, including HTTP ports, SQLi
 Perform Component Discovery in this order:
 
 1. Read and strictly validate the complete current semantic base model.
-2. Create a Behavior–Information inventory with relevant requirement IDs.
+2. Create a Behavior–Information inventory with relevant requirement IDs, and a Deployment–realization inventory of required process composition, technical configuration, persistence, transactions, transport, communication, coordination, and recovery mechanisms.
 3. Classify every Domain Information item as mutable internal authority, external input or fact, immutable transfer or result, or derived information. Record uncertainty rather than guessing.
-4. Identify cohesive functional responsibilities evidenced by Behaviors and Requirements, including authority, invariants/lifecycles, observation/integration, calculation/estimation/projection, presentation, safety/failure isolation, and reconciliation responsibility.
-5. Identify candidate authorities and inventory invariants, acceptance transitions, persistent lifecycles, supporting state, and failure/ordering/non-interference rules. Trace all findings to semantic evidence.
-6. Form small responsibility seeds around functions that initially need to remain coherent. Do not form seeds from implementation structure.
-7. Identify producer/acceptor and other explicit contracts between seeds.
-8. Use Capability membership as additional cohesion evidence, never as an automatic boundary.
-9. Apply the merge/split test in section 5.
-10. Apply the Component Necessity Test in section 6 to every candidate.
-11. Absorb failed candidates into a passing Component where semantically appropriate. An implementation element that is not itself a Component candidate still realizes exactly one passing Component; it does not receive a separate Component entry.
-12. Verify that every Pulse Behavior has exactly one proposed Component and every Domain Information item has exactly one authority or non-authoritative disposition.
-13. Define reconciliation prerequisites only where validity establishment truly requires another Component to be RECONCILED. Do not derive them from ordinary information reads.
-14. Record unresolved boundaries and functional-model findings explicitly.
-15. Submit the proposal and evidence to human review. An analysis agent is not the final architecture authority.
-16. Condense only the approved result into `components.yaml`.
+4. Identify cohesive functional responsibilities evidenced by Context, Pulse, UI, and Requirements, including authority, invariants/lifecycles, observation/integration, calculation/estimation/projection, presentation, safety/failure isolation, and reconciliation responsibility.
+5. Identify infrastructure responsibility candidates evidenced by Deployment and normative realization requirements. Record the concrete required mechanism, its technical invariant or lifecycle, its contracts with functional or other infrastructure Components, and why an independently identifiable implementation boundary may be necessary. Do not derive candidates from existing file or package organization.
+6. Identify candidate authorities and inventory functional and technical invariants, acceptance transitions, persistent lifecycles, supporting state, and failure/ordering/non-interference rules. Trace all findings to normative evidence.
+7. Form small responsibility seeds around responsibilities that initially need to remain coherent. Do not form seeds from implementation structure.
+8. Identify producer/acceptor, owner/mechanism, participant/coordinator, and other explicit contracts between seeds.
+9. Use Capability membership as additional functional cohesion evidence, never as an automatic boundary.
+10. Apply the merge/split test in section 5.
+11. Apply the Component Necessity Test in section 6 to every candidate.
+12. Absorb failed candidates into a passing Component where responsibility and authority remain coherent. A technical helper that fails the test realizes exactly one passing Component; it does not receive a separate Component entry.
+13. Verify that every Pulse Behavior has exactly one proposed Component and every Domain Information item has exactly one authority or non-authoritative disposition. Infrastructure Components need not artificially own either.
+14. Define reconciliation prerequisites only where validity establishment truly requires another Component to be RECONCILED. Do not derive them from ordinary information reads or technical call direction.
+15. Record unresolved boundaries and model or realization findings explicitly.
+16. Submit the proposal and evidence to human review. An analysis agent is not the final architecture authority.
+17. Condense only the approved result into `components.yaml`.
 
 The inventories, decision logs, merge/split analysis, and alternatives are discovery work, not additional normative CPU artifacts.
 
@@ -69,7 +74,7 @@ Domain Information outcomes are mutually exclusive:
 
 For each pair or group of candidates ask:
 
-- Do they realize one cohesive functional responsibility?
+- Do they realize one cohesive identifiable responsibility?
 - Do they exercise the same authority?
 - Must transitions be atomic to protect one invariant?
 - Is there an explicit producer/acceptor contract?
@@ -77,6 +82,7 @@ For each pair or group of candidates ask:
 - Does safety, consistency, failure isolation, ordering, or non-interference require a boundary?
 - Do they have independently identifiable lifecycles or reconciliation responsibilities?
 - Would merging or splitting obscure a runtime responsibility required by the model?
+- For infrastructure candidates, would separation isolate a real technical invariant or lifecycle, or merely create a helper, library, or organizational layer?
 
 Transitions that must be atomic under one invariant are merged unless the base model defines a consistency protocol across the boundary. Exclusive safety or consistency authority is not duplicated. An explicit result contract with independent acceptance remains separable unless a documented merge preserves both responsibilities. Independently identified lifecycles and required failure isolation are not silently collapsed.
 
@@ -86,9 +92,9 @@ Timing, external dependencies, retry patterns, persistence, and observed impleme
 
 Run this after merge/split analysis and before proposing the normative architecture.
 
-### Phase A — functional foundation
+### Phase A — normative responsibility foundation
 
-A candidate must have semantic evidence for an independently identifiable runtime responsibility. Evidence may include:
+A functional candidate must have semantic evidence for an independently identifiable runtime responsibility. Evidence may include:
 
 - authority over mutable Domain Information;
 - an invariant spanning transitions or time;
@@ -102,11 +108,20 @@ A candidate must have semantic evidence for an independently identifiable runtim
 - reconciliation responsibility; or
 - another function directly evidenced by Behaviors or Requirements.
 
-Without a modeled functional foundation the candidate is **FAIL**. Component architecture never introduces functionality absent from the semantic base model and requirements.
+An infrastructure candidate must have all of:
+
+- an identifiable technical responsibility;
+- a concrete need established by Deployment and normative realization requirements;
+- a cohesive technical invariant or lifecycle;
+- a justified implementation boundary;
+- clear contracts with other Components; and
+- no unjustified transfer of functional authority.
+
+Without the applicable normative foundation the candidate is **FAIL**. A file, package, library, framework, helper, database, transport, or preference for separate code organization is never foundation by itself. Component architecture never invents functionality or infrastructure absent from the complete model and normative realization requirements.
 
 ### Phase B — boundary necessity
 
-A functional foundation is necessary but insufficient. The responsibility must genuinely require a separate cohesive runtime Component boundary. Evidence includes ambiguous authority or invariant ownership if merged, independent acceptance or lifecycle, required safety/consistency/failure isolation, normative ordering or non-interference, independent reconciliation responsibility, or another model-backed reason that the runtime responsibility must remain separately identifiable.
+Normative foundation is necessary but insufficient. The responsibility must genuinely require a separate cohesive runtime Component boundary. Evidence includes ambiguous authority or invariant ownership if merged, an independent functional or technical lifecycle, required safety/consistency/failure isolation, normative ordering or non-interference, independent reconciliation responsibility, a necessary owner/mechanism contract, or another model-backed reason that the runtime responsibility must remain separately identifiable. Apply the merge/split test to infrastructure candidates as rigorously as to functional candidates; do not create a Component for every helper or technical function.
 
 The result is:
 
@@ -114,7 +129,7 @@ The result is:
 - **FAIL** — the responsibility is realized within another Component or remains implementation-only; or
 - **UNRESOLVED** — the base model lacks enough semantics and human review is required.
 
-A file, package, View, algorithm, cadence, external source, database, container, deployment unit, or reason to change is never sufficient alone. Small implementation size does not demote a real responsibility. Every modeled Behavior must be assigned to exactly one passing Component before `components.yaml` can be created. A behaviorless Component still needs explicit structural grounding under Artifact Formats v2.
+A file, package, View, algorithm, cadence, external source, library, database, container, deployment unit, or reason to change is never sufficient alone. Small implementation size does not demote a real responsibility. Every modeled Behavior must be assigned to exactly one passing Component before `components.yaml` can be created. A behaviorless functional Component still needs explicit functional grounding; a behaviorless infrastructure Component is expected to use Deployment requirement evidence and must not claim unrelated Pulse elements merely to satisfy the format.
 
 ## 7. Component reconciliation
 
@@ -159,7 +174,11 @@ Realization reconciliation compares implementation with the approved architectur
 
 File-to-Component mapping is not stored in `components.yaml`; Codex and implementation work keep it unambiguous. A folder tree per Component is a natural strategy but not a CPU format requirement. A generic `shared` folder must not evade ownership. If one source artifact appears to realize several Components, split it when appropriate or report that the Component boundary may need review.
 
-Current implementation may produce findings during realization reconciliation but never supplies retroactive evidence for initial discovery.
+Reviewing a mixed or disputed artifact is not resolution by itself. Review has exactly four possible outcomes: (1) the artifact is semantically verified to realize one approved Component responsibility and receives that single owner; (2) the artifact is split so each resulting artifact has one verified owner; (3) an explicit reviewed change to the normative Component architecture establishes the necessary responsibility and the artifact is then verified against it; or (4) the ownership remains unresolved. Only the first three outcomes can close the finding, and each requires an actual unambiguous ownership result. A review record, candidate owner, or proposed architecture change without that result remains outcome 4 and blocks PASS.
+
+Current implementation may reveal a necessary responsibility during realization reconciliation, including a transaction, persistence, composition, transport, or coordination boundary not identified initially. The implementation structure itself is not evidence that the boundary is necessary. Record the candidate, apply the same merge/split and Necessity Tests using Deployment and normative realization requirements, and obtain explicit architecture review before adding or changing a Component. Until approval, reconciliation remains incomplete.
+
+Common technical contracts are owned by the Component whose invariant or lifecycle the contract defines. If a contract genuinely defines a separate necessary transport, transaction, composition, or coordination responsibility, that infrastructure candidate must independently pass the Necessity Test. Broad integration and acceptance tests are owned by the Component whose contract or authoritative outcome they primarily verify; setup and calls into other Components do not make a test shared. A test that verifies multiple Components' independent authorities or contracts must be split where practical. If its indivisible scope is itself a necessary integration or composition contract, the corresponding candidate requires explicit architecture review and the Necessity Test before the test can be assigned to it.
 
 ### Mandatory realization-reconciliation closure gate
 
@@ -169,6 +188,6 @@ Realization reconciliation is **not complete** merely because the normative Comp
 2. Assign **exactly one** approved normative Component to each in-scope artifact. Record the file-to-Component mapping in a reviewable realization-reconciliation report, **not** in `components.yaml`. Do not use a generic shared/unowned classification as a substitute for ownership.
 3. Review each assignment against the Component's normative responsibility and the actual implementation, not merely file names, folders, or package names. Identify mixed-responsibility artifacts and either split them where appropriate or report a concrete boundary question for human review.
 4. Report the inventory total, assigned total, unassigned/ambiguous total, exclusions, and every unresolved finding, with enough file-level evidence to audit the result. Check mechanically that every in-scope artifact appears exactly once; semantic correctness still requires review.
-5. State an explicit **PASS** only when coverage is exhaustive, ownership is unambiguous, and no unresolved realization-boundary findings remain. Otherwise report **FAIL / INCOMPLETE**, identify the blocking findings, and do not declare Component realization or realization reconciliation complete.
+5. State an explicit **PASS** only when coverage is exhaustive, every artifact has one semantically verified owner under the approved normative Component architecture, and no unresolved realization-boundary findings remain. Architecture review alone never closes a finding: any approved architecture change must first be reflected normatively and the affected artifacts must then be verified against it. Otherwise report **FAIL / INCOMPLETE**, identify the blocking findings, and do not declare Component realization or realization reconciliation complete.
 
 The review report is implementation evidence, not a new normative CPU model artifact. If completion status must survive a chat or increment boundary, preserve the evidence and findings in the project repository according to its working instructions. A successful automated coverage check cannot substitute for semantic ownership review.

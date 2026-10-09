@@ -13,6 +13,13 @@ components:
       reconciliation:
         requires:
           - result-processing
+    - id: runtime-composition
+      name: Runtime Composition
+      responsibility: Compose the server and Web UI into the required operating-system process while preserving functional Component authority.
+      kind: infrastructure
+      behaviors: []
+      requirement-evidence:
+        - combine-server-and-web-ui
   domain-information:
     - id: submitted-input
       disposition: external-input

@@ -55,7 +55,7 @@ validWithoutComponents();
 
 const validResult = validate(example);
 assert.equal(validResult.status, 0, validResult.stderr);
-assert.match(validResult.stdout, /2 Components/);
+assert.match(validResult.stdout, /3 Components/);
 
 {
   const directory = copyModel();
@@ -262,6 +262,51 @@ invalidComponent(document => {
     behaviors: [],
   });
 }, /Component lacks structural grounding: derived-only-estimator/);
+
+invalidComponent(document => {
+  document.components.components.push({
+    id: 'unmotivated-infrastructure',
+    name: 'Unmotivated Infrastructure',
+    responsibility: 'Claim a technical boundary without normative realization evidence.',
+    kind: 'infrastructure',
+    behaviors: [],
+    'requirement-evidence': ['preserve-result-meaning'],
+  });
+}, /Infrastructure Component requires Deployment requirement evidence: unmotivated-infrastructure/);
+
+invalidComponent(document => {
+  document.components.components[0].kind = 'technical';
+}, /Invalid Component responsibility kind: technical/);
+
+// Realization reconciliation is semantic review rather than components.yaml
+// structure, so these executable closure cases encode its normative PASS gate.
+function realizationReconciliationPass(artifacts) {
+  return artifacts.length > 0 && artifacts.every(artifact =>
+    artifact.inScope
+    && artifact.owner
+    && artifact.ownerVerified === true
+    && artifact.mixed !== true
+    && artifact.unresolved !== true);
+}
+
+assert.equal(realizationReconciliationPass([
+  {path: 'store.sql', inScope: true, owner: '', ownerVerified: false},
+]), false, 'An unowned system artifact must block reconciliation PASS');
+
+assert.equal(realizationReconciliationPass([
+  {path: 'service.go', inScope: true, owner: 'runtime-composition', ownerVerified: false, mixed: true},
+]), false, 'A mixed artifact with a candidate owner must block reconciliation PASS');
+
+assert.equal(realizationReconciliationPass([
+  {
+    path: 'service.go', inScope: true, owner: 'runtime-composition', ownerVerified: false,
+    mixed: true, unresolved: true, architectureReviewed: true,
+  },
+]), false, 'Architecture review without resolved verified ownership must block reconciliation PASS');
+
+assert.equal(realizationReconciliationPass([
+  {path: 'main.go', inScope: true, owner: 'runtime-composition', ownerVerified: true},
+]), true, 'One semantically verified owner may contribute to reconciliation PASS');
 
 {
   const directory = copyModel();
