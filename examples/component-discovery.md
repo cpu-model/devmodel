@@ -77,6 +77,16 @@ A common technical interface belongs to the Component whose invariant or lifecyc
 
 An inventory with an unassigned SQL migration is FAIL / INCOMPLETE even when all application code is assigned. Assigning it to `shared` is equally invalid. A Go file that both decides whether a charging plan is acceptable and implements generic transaction rollback remains mixed: it must be split, verified as one cohesive responsibility, or evaluated through an explicit normative architecture change and then verified against the changed architecture. Merely recording that architecture review occurred, proposing a Component, or placing one candidate owner in a table does not resolve ownership and cannot contribute to PASS.
 
+## Component Package Realization
+
+After the Components above are approved, a Go implementation maps each Go-based Component ID to one primary import path. For example, `planning` might map to `example.com/system/internal/planning` and `charging-control` to `example.com/system/internal/chargingcontrol`. This mapping is implementation evidence and is not copied into `components.yaml`.
+
+The project uses `go list -json -deps -test` to inventory the effective packages and imports for every supported build configuration. Its architecture test fails if either Component gains a second package, if one package is assigned to both Components, if an unexpected package appears, or if Planning imports Charging Control on a dependency edge not approved by their reviewed contract. Typed checks based on `golang.org/x/tools/go/packages` can additionally verify that a consumer-owned interface remains in the consuming package and that callers use only the intended cross-Component API.
+
+An import cycle between Planning and Charging Control is not a reason to merge the Components or create `internal/shared`. If Planning consumes a control capability, Planning can own a narrow interface and the composition Component can inject Charging Control's implementation. Types remain with the Component whose semantics and invariants they define.
+
+A temporary second package for generated Planning code is an exception only when its exact package and files, waived rule, reason, owner, removal condition, and non-widening executable check are reviewed. A note saying "generated" or "legacy" without that bounded evidence is FAIL / INCOMPLETE.
+
 ## FAIL and UNRESOLVED
 
 A formatter reads an accepted result and produces display text. If the semantic model contains no independently identifiable presentation responsibility or requirement requiring a separate runtime boundary, its algorithm and reason to change alone do not supply a functional foundation and it FAILs. Modeled presentation responsibility can instead be a legitimate candidate, but still must pass boundary necessity.

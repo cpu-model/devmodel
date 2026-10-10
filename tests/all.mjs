@@ -17,6 +17,7 @@ run('tests/deployment_validation.mjs');
 run('tests/artifact_validation.mjs');
 run('tests/component_validation.mjs');
 run('tests/substitutability_methodology.mjs');
+run('tests/component_package_realization.mjs');
 run('tests/pdf_review.mjs');
 run('tests/render_presentation.mjs');
 run('tests/native_context_pdf.mjs');

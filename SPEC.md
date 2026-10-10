@@ -26,7 +26,7 @@ The normative responsibilities in `cpu-model/devmodel` are divided as follows:
 2. `AGENTS.md` defines the normative CPU workflow and agent/repository rules.
 3. `CPU/PROCESS/CPU-Artifact-Formats-v2.md` defines the normative artifact formats.
 4. `CPU/PROCESS/CPU-Visual-Language-v2.md` defines the normative visual language.
-5. `CPU/PROCESS/CPU-Component-Discovery.md` defines how Component candidates are derived, reviewed, and condensed into the optional Component architecture artifact.
+5. `CPU/PROCESS/CPU-Component-Discovery.md` defines how Component candidates are derived, reviewed, condensed into the optional Component architecture artifact, and subsequently realized as verifiable Go package boundaries.
 
 The repository does not maintain PDF counterparts. Markdown is the only documentation source.
 
@@ -50,6 +50,7 @@ Generated diagrams are derived artifacts. The four repository-backed files `cont
 - UI describes user capability and intent, not widgets, layout, gestures, responsive rules, or technical components.
 - Deployment describes one concrete normative host/process topology, including explicitly selected implementation and runtime decisions.
 - Components describe cohesive, necessary responsibilities derived from the complete model and normative realization requirements, and the runtime implementation boundaries that realize them. Functional responsibilities cover domain behavior, observation, decision, calculation, presentation, safety, and state. Infrastructure responsibilities cover necessary process composition, technical configuration, persistence, transactions, transport, communication, coordination, and comparable realization mechanisms. Authority is strong evidence but not mandatory for every Component. Components are not automatically files, packages, directories, processes, services, repositories, databases, containers, or deployment units.
+- After an approved Component architecture exists, Component Package Realization derives Go package boundaries from those Components. A Go-based Component normally has exactly one owning Go package and a Go package normally realizes no more than one Component. This is a realization rule, not a second Component definition and not input to semantic Component Discovery.
 - Pulse describes normal functional causality. Component reconciliation establishes or re-establishes valid Component runtime state after startup or invalidation; its mechanical states are not Domain Information.
 - Domain-functional configuration is Domain Information even when Deployment describes its delivery mechanism. Purely technical configuration remains in Deployment.
 - Requirement addresses attach ordered requirement objects with stable, globally unique IDs directly to identified model elements. There is no implicit inheritance.

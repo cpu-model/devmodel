@@ -7,12 +7,12 @@ This repository contains the reusable methodology and tooling for the Context-Pu
 - [`SPEC.md`](SPEC.md) explains the model, source hierarchy, and project adoption rules.
 - [`AGENTS.md`](AGENTS.md) tells Codex and other coding agents how to interpret and change CPU models.
 - [`CPU Artifact Formats v2`](CPU/PROCESS/CPU-Artifact-Formats-v2.md) defines the semantic YAML formats and requirement attachments.
-- [`CPU Component Discovery`](CPU/PROCESS/CPU-Component-Discovery.md) defines how reviewed Component runtime boundaries are derived from cohesive responsibilities in CPU semantics.
+- [`CPU Component Discovery`](CPU/PROCESS/CPU-Component-Discovery.md) defines how reviewed Component runtime boundaries are derived from cohesive responsibilities and subsequently realized as verifiable Go package boundaries.
 - [`CPU Visual Language v2`](CPU/PROCESS/CPU-Visual-Language-v2.md) defines diagram notation, rendering, and interactive requirement review.
 - [`examples/model`](examples/model) is a minimal valid model.
 - [`CPU - lathund för ett nytt projekt`](CPU-nytt-projekt-lathund.md) is a concise Swedish guide from an empty repository to incremental CPU development.
 
-Markdown is the only documentation source. The repository includes a native PDF renderer for model review artifacts and a normative Component Discovery method.
+Markdown is the only documentation source. The repository includes a native PDF renderer for model review artifacts and normative Component Discovery and Component Package Realization methods.
 
 ## Model sources
 
@@ -27,6 +27,8 @@ A concrete system model consists of:
 These five files are the semantic base model. Context, Pulse, and UI are the functional core, Deployment is the complementary implementation artifact, and Requirements contains normative attachments. A reviewed model may additionally contain optional normative `components.yaml`; existing models without it remain valid.
 
 A Component is one model-derived cohesive functional responsibility and the runtime implementation boundary that realizes it. Authority is strong boundary evidence but not mandatory for every Component. Optional reconciliation prerequisites form an acyclic graph used to establish valid Component runtime state during startup, relevant reconfiguration, migration, and recovery.
+
+For an approved Go implementation, Component Package Realization normally maps each Go-based Component to exactly one primary package and each package to at most one Component. The repository records the reviewed mapping and bounded exceptions as realization evidence and enforces them with Go-tool-backed architecture tests; package paths are not duplicated in `components.yaml`.
 
 Pulse optionally declares flat Capabilities for deterministic local causal review and Domain Information for domain-significant participation in Behaviors. `information-in` and `information-out` remain independent of Pulse causality. Requirements are objects containing exactly stable `id` and normative `text`; IDs are globally unique within the concrete model's `requirements.yaml`.
 

@@ -14,7 +14,7 @@ The responsibility may be **functional**—domain behavior, observation, decisio
 
 There is one Component concept, not separate logical and runtime Components. The reviewed responsibility determines the Component; runtime artifacts realize that same Component. A Component does not automatically correspond to a file, package, directory, process, service, repository, database, container, or deployment unit. Deployment continues to describe concrete physical realization.
 
-Component Discovery is model-first. Functional responsibility discovery begins with Context, Pulse, UI, and Requirements. Infrastructure responsibility discovery begins with Deployment and normative realization requirements. Neither begins from files, packages, processes, deployment units, or an existing implementation. Existing implementation is examined through realization reconciliation in section 9 and may expose a necessary responsibility that the approved architecture omitted; it never makes its current structure normative or retroactively determines the initial proposal.
+Component Discovery is model-first. Functional responsibility discovery begins with Context, Pulse, UI, and Requirements. Infrastructure responsibility discovery begins with Deployment and normative realization requirements. Neither begins from files, packages, processes, deployment units, or an existing implementation. Existing implementation is examined through realization reconciliation in section 9 and may expose a necessary responsibility that the approved architecture omitted; it never makes its current structure normative or retroactively determines the initial proposal. For a Go implementation, the subsequent Component Package Realization activity in section 10 derives package boundaries only after the Component architecture is approved; package concerns never alter this discovery sequence.
 
 ## 2. Interpretation principles
 
@@ -205,3 +205,125 @@ Realization reconciliation is **not complete** merely because the normative Comp
 5. State an explicit **PASS** only when coverage is exhaustive, every artifact has one semantically verified owner under the approved normative Component architecture, and no unresolved realization-boundary findings remain. Architecture review alone never closes a finding: any approved architecture change must first be reflected normatively and the affected artifacts must then be verified against it. Otherwise report **FAIL / INCOMPLETE**, identify the blocking findings, and do not declare Component realization or realization reconciliation complete.
 
 The review report is implementation evidence, not a new normative CPU model artifact. If completion status must survive a chat or increment boundary, preserve the evidence and findings in the project repository according to its working instructions. A successful automated coverage check cannot substitute for semantic ownership review.
+
+## 10. Component Package Realization
+
+Component Package Realization is a mandatory post-discovery activity when an approved Component architecture is realized in Go. It begins only after `components.yaml` has been approved and validated. It does not reopen, replace, or adapt Component Discovery to Go, and it never derives Components from packages. `components.yaml` remains the sole normative source of Component identity and responsibility.
+
+The activity refines realization reconciliation for Go. It establishes package boundaries, explicit APIs, and executable dependency rules while preserving exactly one semantic owner for every in-scope source artifact. A Component may additionally own HTML, templates, CSS, JavaScript, YAML, SQL, tests, generated inputs, and equivalent artifacts; those artifacts remain covered by the section 9 ownership gate even when they are embedded in or used by its Go package.
+
+### 10.1 Default package rules
+
+The following defaults apply to all in-scope Go source, including generated Go, internal tests, and external test packages:
+
+1. A Go-based Component is realized by exactly one primary Go package.
+2. A Go package realizes at most one Component.
+3. Package structure follows the approved Component structure. Existing directories, package names, imports, or dependency cycles never justify changing Component identity or boundaries.
+4. A Component's primary package owns its implementation, invariants, Component-facing API, and Component-owned types. Files in `package main` belong to the approved composition Component when one exists; otherwise they must remain a thin assembly entry point whose ownership is resolved under section 9.
+5. Tests belong to the Component contract or authoritative outcome they primarily verify. A Go external test package such as `x_test` remains owned by the same Component as package `x`; it is not a separate Component or an unowned package.
+6. One Component spanning several Go packages, several Components sharing one Go package, or a package with no Component owner is an exception or an unresolved realization defect. It is never silently accepted as ordinary organization.
+
+The default is intentionally about packages, not directories alone: every non-test `.go` file in one directory must declare one package as Go requires, but directory proximity does not prove Component ownership. Generated Go code is assigned through its maintained source or generation responsibility and checked in the effective package inventory; an exclusion requires the same explicit treatment as any other exception.
+
+### 10.2 Inputs and inventory
+
+Start from the approved Components and the exhaustive artifact ownership established by section 9. Record a package-realization table that references Component IDs from `components.yaml`; it must not redeclare Component names, responsibilities, Behaviors, authorities, or dispositions.
+
+Inventory the effective Go build for every supported module, build target, build tag set, operating system, and architecture that the project's Deployment and build instructions require. Use the Go toolchain as the primary source of package truth:
+
+- `go list -json -deps -test` for package identity, files, imports, test variants, generated-file participation, module membership, and dependency edges;
+- `golang.org/x/tools/go/packages` when typed syntax, symbol use, interface satisfaction, or build-configuration-aware analysis is needed;
+- `go vet`, the compiler, and established analyzers such as Staticcheck for the checks they reliably provide.
+
+Do not create a general Go parser, infer dependencies with regular expressions, or treat `go mod graph` as a package dependency graph. If cgo, generated sources, build tags, workspaces, or multiple modules make the inventory configuration-dependent, enumerate and test the supported configurations rather than analyzing an unspecified union.
+
+For every package, inventory:
+
+- its owning Component ID and whether it is that Component's primary package;
+- all production and test import edges to other in-scope packages;
+- cross-Component function and method calls;
+- cross-Component named-type, alias, constant, variable, and interface use;
+- compile-time and runtime interface satisfaction relevant to Component contracts; and
+- shared mutable state, registration, callbacks, and initialization effects that couple Components even when no direct call is visible.
+
+Reflection, dynamic loading, code generation, serialization, SQL, templates, JavaScript, and process or network interaction can create relationships that the Go import graph cannot prove. Record and verify those relationships with appropriate focused tests; never claim that import analysis alone proves their absence.
+
+### 10.3 Derive and implement the target structure
+
+For each Go-based Component, select one primary package whose import path is stable within the repository and whose API expresses that Component's approved responsibility. Then:
+
+1. Assign every in-scope Go package and Go file to exactly one approved Component.
+2. Move or split implementation so the normal one-Component/one-package defaults hold.
+3. Define the allowed directed Component dependency graph from reviewed Component contracts and actual required collaboration. Call direction and import direction are realization decisions; neither creates Pulse causality, Domain Information flow, authority, or reconciliation prerequisites.
+4. Make cross-Component use pass through explicit, minimal APIs. Keep implementation-only identifiers unexported and use Go's `internal` visibility where it materially enforces the intended scope.
+5. Remove package globals or registries that expose mutable state across Component boundaries. Shared state must have one Component authority and be accessed through that owner's API, or be immutable value transfer with explicit semantics.
+6. Re-run the complete artifact ownership review for moved Go and non-Go artifacts and preserve one unambiguous owner for each.
+
+Package names need not equal Component IDs, but the mapping must be explicit and unique in the package-realization report and executable architecture checks. A `cmd` package, adapter package, persistence package, generated package, or test-support package is not exempt merely because its conventional Go role sounds technical.
+
+### 10.4 API and semantic ownership rules
+
+Public API means the identifiers and behavior intentionally available across a Component boundary, whether or not the package can technically be imported by additional callers. Export only the smallest contract required by approved collaboration.
+
+- A domain or technical type belongs to the Component whose responsibility defines its meaning and invariants. Consumers import that owner's type when this preserves the intended dependency, or translate at their own boundary when they require a distinct owned meaning.
+- An interface normally belongs to the consuming Component that requires the capability. The provider implements it without importing the consumer when structural typing permits. A provider-owned interface is justified only when the provider owns the contract semantics rather than merely offering extension convenience.
+- A producer-owned immutable transfer type may cross a boundary when it represents the producer's established result. A consumer-owned command or acceptance input belongs to the consumer when its invariants define valid acceptance.
+- Type aliases, embedding, anonymous structs, generic constraints, callback signatures, and serialization DTOs must not be used to conceal ownership or reverse a required dependency.
+- Common constants, errors, logging helpers, clocks, identifiers, and test fixtures follow semantic or lifecycle ownership. Reuse alone is not a responsibility.
+
+Generic `common`, `shared`, `utils`, `helpers`, `models`, or `types` packages are prohibited when their purpose is to bypass Component ownership or dependency rules. A package with such a name is not automatically invalid, but it must map to exactly one approved Component and satisfy the same cohesive responsibility, necessity, API, and dependency checks as every other package.
+
+### 10.5 Import cycles and dependency inversion
+
+The Go compiler rejects import cycles, but eliminating a cycle must preserve the approved Component architecture. For every actual or prospective cycle, identify the cross-Component contract and type ownership before changing code. Resolve it by one or more of:
+
+- moving a contract or type to the Component that semantically owns it;
+- defining a narrow consumer-owned interface and injecting an implementation;
+- transferring an immutable owner-defined value and translating at the receiving boundary; or
+- separating assembly into the approved composition Component.
+
+Do not break a cycle by creating a generic shared package, duplicating authority, merging approved Components, inventing another Component definition, or moving contracts to a neutral package with no normative owner. If the approved boundaries cannot be realized without violating a model-backed invariant, record a concrete architecture conflict and return it for human review under section 9.
+
+### 10.6 Automatically verifiable architecture rules
+
+Every Go project with approved Components must keep executable architecture checks in its repository. The checks reference Component IDs from `components.yaml` and the reviewed package mapping; they are realization evidence, not another Component model. At minimum they fail when:
+
+1. an in-scope Go package or Go source file has no Component owner or more than one owner;
+2. a Go-based Component has zero or multiple primary packages without an active documented exception;
+3. one package is mapped to multiple Components;
+4. a production or test import crosses a Component boundary on a disallowed edge;
+5. the effective package graph contains an import cycle or cannot be loaded for a supported build configuration;
+6. a prohibited generic ownership-evading package appears;
+7. a declared package mapping names a package absent from the effective Go inventory, or an unexpected package appears; or
+8. an exception's executable constraint, scope, or expiry condition is violated.
+
+Use exact import paths and Go-tool output rather than directory-name heuristics. The checks must cover external test packages and supported build configurations. Typed analysis must additionally enforce any reviewed restrictions on cross-Component symbol use, interface location, forbidden globals, or API allowlists that imports alone cannot express. Ordinary unit and integration tests verify contract behavior; architecture checks verify boundary shape. Both are required where applicable.
+
+### 10.7 Exceptions
+
+An exception is allowed only when the normal rule is impossible or materially harmful under concrete repository and model evidence. Record it in the package-realization report with:
+
+- a stable exception ID;
+- the exact rule waived;
+- affected Component IDs, packages, files, and build configurations;
+- the concrete reason the default cannot be met;
+- confirmation that Component identity, authority, invariants, substitutability constraints, and artifact ownership remain unambiguous;
+- the narrow allowed dependency or package shape;
+- an executable check that prevents the exception from widening; and
+- an owner, review trigger, and removal condition or an explicit reason it is permanent.
+
+Convenience, current layout, migration effort by itself, an import cycle by itself, or broad reuse is not sufficient. Exceptions are reviewed implementation evidence and are not added to `components.yaml`. A changed or broadened exception requires renewed review.
+
+### 10.8 Closure gate
+
+Component Package Realization is **PASS** only when:
+
+- section 9 realization reconciliation is PASS;
+- every Go package and file has exactly one semantically verified Component owner;
+- every Go-based Component has one primary package or a valid, bounded, tested exception;
+- the allowed dependency graph and public APIs preserve approved responsibilities, authorities, contracts, and substitution requirements;
+- all supported build configurations load without package or import-cycle errors;
+- executable architecture checks and ordinary Go tests pass; and
+- every exception is complete, current, and mechanically bounded.
+
+Report **FAIL / INCOMPLETE** for any missing mapping, mixed package, unjustified dependency, unbounded exception, unsupported required build configuration, hidden shared state, or unresolved ownership or contract question. Passing compilation, `go test ./...`, Component YAML validation, or import-cycle absence alone is insufficient.

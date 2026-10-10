@@ -213,6 +213,10 @@ invalidComponent(document => {
 }, /unknown \[implementation\]/);
 
 invalidComponent(document => {
+  document.components.components[0]['go-package'] = 'example.com/system/result';
+}, /unknown \[go-package\]/);
+
+invalidComponent(document => {
   document.components.components[0]['source-files'] = ['internal/result.go'];
 }, /unknown \[source-files\]/);
 
