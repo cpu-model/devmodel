@@ -29,6 +29,7 @@ The normative responsibilities in `cpu-model/devmodel` are divided as follows:
 3. `CPU/PROCESS/CPU-Artifact-Formats-v2.md` defines the normative artifact formats.
 4. `CPU/PROCESS/CPU-Visual-Language-v2.md` defines the normative visual language.
 5. `CPU/PROCESS/CPU-Component-Discovery.md` defines how Component candidates are derived, reviewed, condensed into the optional Component architecture artifact, and subsequently realized as verifiable Go package boundaries.
+6. `CPU/PROCESS/CPU-History-Migration.md` defines the mandatory applicability gate and the migration, reconciliation, and acceptance rules for affected durable domain history.
 
 The repository does not maintain PDF counterparts. Markdown is the only documentation source.
 
@@ -59,6 +60,8 @@ Generated diagrams are derived artifacts. The four repository-backed files `cont
 - Requirement addresses attach ordered requirement objects with stable, globally unique IDs directly to identified model elements. There is no implicit inheritance.
 - IDs are stable machine-readable identity. Names are display text and may change independently.
 - Unknown fields and unresolved references are errors. Tools must not silently repair or reinterpret invalid models.
+
+History Migration is a methodology procedure, not a new model artifact or Component kind. When an increment affects durable domain history, follow `CPU/PROCESS/CPU-History-Migration.md` and preserve domain information authority independently of technical persistence.
 
 ## Project adoption
 
