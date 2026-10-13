@@ -44,6 +44,10 @@ Repository/Git responsibility depends on the acting environment:
 
 The default branch is the normal development line. Branches, pull requests, merges, and repository housekeeping are not part of the normal CPU workflow unless explicitly requested.
 
+## History Migration prerequisite
+
+Before an increment changes durable domain history representation, meaning, authority, or recoverability, apply the applicability gate in `CPU/PROCESS/CPU-History-Migration.md`. When affected history exists, complete the migration contract, execution safeguards, semantic verification, and cutover review before accepting migrated history as authoritative. Use existing Component reconciliation; do not assign domain authority to persistence merely because it executes a migration.
+
 ## Self-instructing implementation work
 
 CPU repositories carry the general working method so that task prompts can normally describe the desired outcome rather than repeat CPU procedure.
