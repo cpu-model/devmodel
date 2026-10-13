@@ -6,6 +6,7 @@ import {loadUiModel} from './native/ui_model.mjs';
 import {loadDeploymentModel} from './native/deployment_model.mjs';
 import {loadRequirements} from './native/requirements_model.mjs';
 import {loadComponentsModel} from './native/components_model.mjs';
+import {loadPresentationModel} from './native/presentation_model.mjs';
 
 function sourceOption(argv) {
   const index = argv.indexOf('--source');
@@ -18,7 +19,8 @@ try {
   const source = sourceOption(process.argv.slice(2));
   loadContextModel(source);
   const pulse = loadPulseModel(source);
-  loadUiModel(source);
+  const ui = loadUiModel(source);
+  const presentation = loadPresentationModel(source, ui.ui);
   loadDeploymentModel(source);
   const requirements = loadRequirements(source);
   const allowed = ['context.', 'pulse.', 'ui.', 'deployment.'];
@@ -29,7 +31,8 @@ try {
   const componentMessage = components
     ? `, and ${components.components.length} Component${components.components.length === 1 ? '' : 's'}`
     : '';
-  console.log(`Validated Context, Pulse, UI, Deployment, and ${Object.keys(requirements).length} requirement targets${componentMessage}.`);
+  const presentationMessage = presentation ? ', and Presentation' : '';
+  console.log(`Validated Context, Pulse, UI, Deployment, and ${Object.keys(requirements).length} requirement targets${componentMessage}${presentationMessage}.`);
 } catch (error) {
   console.error(error.message);
   process.exit(1);

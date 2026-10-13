@@ -23,7 +23,7 @@ ln -s ../devmodel devmodel
 
 `cpu-model/devmodel` klonas bredvid arbetsprojektet och används direkt i aktuell version. Projektet ska inte innehålla en installerad eller pinnad kopia av metodiken. Den lokala symboliska länken `devmodel -> ../devmodel` ger Codex och andra lokala agenter en stabil sökväg till `./devmodel/AGENTS.md`. Lägg `/devmodel` i projektets `.gitignore`; länken är lokal workspace-konfiguration och ska inte committas.
 
-Projektets `CPU/` innehåller endast `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml` och `requirements.yaml`. Root `AGENTS.md` innehåller endast bootstrap till aktuell devmodel och eventuella projektspecifika instruktioner.
+Projektets `CPU/` innehåller den femfiliga basmodellen: `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml` och `requirements.yaml`. Vid behov kan den även innehålla de frivilliga normativa komplementen `components.yaml` och `presentation.yaml`. Root `AGENTS.md` innehåller endast bootstrap till aktuell devmodel och eventuella projektspecifika instruktioner.
 
 Aktuell metodik är CPU v2. Pulse kan använda platta Capabilities och Domain Information; requirements skrivs som objekt med exakt `id` och `text`, och requirement-ID:n är globellt unika i `requirements.yaml`. Äldre strängposter eller v1-fältsyntax är inte giltiga.
 

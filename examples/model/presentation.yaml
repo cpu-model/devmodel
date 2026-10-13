@@ -1,0 +1,38 @@
+presentation:
+  timezone:
+    source: site
+  shared-layouts:
+    - id: application-workspace
+      views:
+        - main
+        - details
+      regions:
+        - ref: header
+          direction: horizontal
+          continuity: true
+        - ref: workspace
+          direction: vertical
+          wrap: true
+  subviews:
+    - ref: shared-status
+      layout:
+        direction: horizontal
+        wrap: true
+      representations:
+        - ref: current-status.state
+          as: status-indicators
+          emphasis: primary
+        - ref: current-status.observed-at
+          as: labeled-values
+  views:
+    - ref: main
+      representations:
+        - ref: summary-status.state
+          as: status-indicators
+          emphasis: primary
+        - ref: detailed-status
+          as: labeled-values
+    - ref: details
+      representations:
+        - ref: details
+          as: table

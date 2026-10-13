@@ -7,7 +7,7 @@
 
 ## 1. Purpose
 
-Visual Language v2 defines the notation used to render Context, Pulse, UI, and the complementary Deployment artifact.
+Visual Language v2 defines the notation used to render Context, Pulse, UI, and the complementary Deployment artifact. Optional application Presentation rules are validated normative input but do not add a review diagram or alter the v2 PDF notation in Presentation v1.
 
 The semantic artifacts are authoritative. The visual language defines notation. The renderer computes artifact-specific layout and draws vector primitives directly into PDF pages.
 
@@ -210,9 +210,9 @@ The renderer prioritizes: clear causal reading; deterministic internal Behavior 
 
 ### 5.1 Purpose
 
-UI describes user-visible system capability in terms of Views, Information, Actions, and meaningful Navigation between Views.
+UI describes user-visible system capability in terms of Views, Information, Actions, meaningful Navigation between Views, and optional functional Composition.
 
-UI does not describe layout details, responsive design, colors, typography, widgets, form controls, gestures, scrolling, animation, technical components, or API calls.
+UI does not describe application layout details, responsive design, colors, typography, widgets, form controls, gestures, scrolling, animation, technical components, or API calls. Composition records functional grouping, occurrences, and order rather than visual geometry.
 
 A useful granularity test is: if two UI elements can be redesigned independently without changing the system's user function, they are probably presentation and should not be separate View elements.
 
@@ -272,6 +272,10 @@ View-local Navigation remains available for user-significant paths that are not 
 - View and SubView containers, Information and Action symbols, inclusion references, and Navigation are native PDF vector constructions.
 - The two-column layout and declared item ordering are computed deterministically.
 
+### 5.8 Composition and optional Presentation
+
+The UI PDF continues to render the declared Actions, Information, includes, and Navigation using the established v2 notation. Information fields, collection cardinality, Composition groups and occurrences, and optional `presentation.yaml` constrain application realization but receive no new PDF notation in Presentation v1. The existing deterministic UI renderer may therefore ignore these additions after strict validation; it must not reinterpret them or treat generated two-column PDF geometry as application Presentation.
+
 ## 6. Deployment
 
 ### 6.1 Purpose
@@ -311,6 +315,7 @@ system/
   ui.yaml
   deployment.yaml
   requirements.yaml
+  presentation.yaml  # optional
 ```
 
 Generated review artifacts:
@@ -320,6 +325,7 @@ context.yaml + requirements.yaml -> context.pdf
 pulse.yaml + requirements.yaml -> pulse.pdf
 ui.yaml + requirements.yaml -> ui.pdf
 deployment.yaml + requirements.yaml -> deployment.pdf
+presentation.yaml -> validation only; no fifth PDF
 ```
 
 Artifact-specific vocabulary is intentionally asymmetric and should remain understandable to a human reader.
@@ -330,7 +336,7 @@ Machine-readable IDs are simple and stable within their natural artifact scope. 
 
 `name` is display text and may change while `id` remains stable. Pulse additionally has a short display identity such as `01`; that display identity is not semantic identity.
 
-General cross-artifact references are not normative in v2. Semantic duplication between artifacts is acceptable rather than prematurely introducing cross-artifact reference machinery. Requirement addresses are the defined limited exception.
+General cross-artifact references are not normative in v2. Semantic duplication between artifacts is acceptable rather than prematurely introducing cross-artifact reference machinery. Presentation references into the validated UI model and requirement target addresses are the defined limited exceptions.
 
 ## 9. Renderer acceptance classes
 
@@ -364,7 +370,7 @@ The artifact-specific native PDF renderer is the normative renderer.
 The renderer implementation:
 
 - pins the PDF library version;
-- validates all five base-model sources and optional `components.yaml` before drawing;
+- validates all five base-model sources and optional `components.yaml` and `presentation.yaml` before drawing;
 - computes layout deterministically from semantic YAML;
 - derives semantic-symbol and annotation placement from the same computed geometry used for drawing;
 - avoids manual per-diagram pixel fixes;

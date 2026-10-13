@@ -24,7 +24,9 @@ A concrete system model consists of:
 - `deployment.yaml`
 - `requirements.yaml`
 
-These five files are the semantic base model. Context, Pulse, and UI are the functional core, Deployment is the complementary implementation artifact, and Requirements contains normative attachments. A reviewed model may additionally contain optional normative `components.yaml`; existing models without it remain valid.
+These five files are the semantic base model. Context, Pulse, and UI are the functional core, Deployment is the complementary implementation artifact, and Requirements contains normative attachments. A reviewed model may additionally contain optional normative `components.yaml` and `presentation.yaml`; existing models without either remain valid.
+
+UI may define functional Composition groups, occurrences, and order, plus named Information fields and collection cardinality. Optional Presentation references that validated UI structure to constrain relative layout, representation, time-zone notation, and visual continuity without introducing functional content, pixel geometry, CSS, or another reusable component concept.
 
 A Component is one model-derived cohesive functional responsibility and the runtime implementation boundary that realizes it. Authority is strong boundary evidence but not mandatory for every Component. Optional reconciliation prerequisites form an acyclic graph used to establish valid Component runtime state during startup, relevant reconfiguration, migration, and recovery.
 
@@ -61,7 +63,7 @@ cd my-project
 ln -s ../devmodel devmodel
 ```
 
-The project keeps its concrete five-file semantic base model and optional reviewed `components.yaml` under `CPU/`. It does not copy or pin the methodology. Its root `AGENTS.md` can bootstrap local agents with `./devmodel/AGENTS.md`. Add `/devmodel` to the project's `.gitignore` so the workspace link is not committed.
+The project keeps its concrete five-file semantic base model and optional reviewed `components.yaml` and `presentation.yaml` under `CPU/`. It does not copy or pin the methodology. Its root `AGENTS.md` can bootstrap local agents with `./devmodel/AGENTS.md`. Add `/devmodel` to the project's `.gitignore` so the workspace link is not committed.
 
 ## Validate a model
 
@@ -69,7 +71,7 @@ The project keeps its concrete five-file semantic base model and optional review
 npm run validate -- --source /path/to/model
 ```
 
-When a reviewed `components.yaml` is present, validation also checks exhaustive Behavior assignment, exhaustive Domain Information authority/disposition, requirement evidence, reconciliation DAG integrity, structural grounding, and structural grounding. Semantic base-model changes require an explicit impact review of the approved Component architecture; no digest field is stored.
+When a reviewed `components.yaml` is present, validation also checks exhaustive Behavior assignment, exhaustive Domain Information authority/disposition, requirement evidence, reconciliation DAG integrity, and structural grounding. When `presentation.yaml` is present, validation resolves all Presentation references against UI and checks the closed Presentation vocabulary, scope, continuity, ordering, conflicts, and time-zone policy. Semantic base-model changes require an explicit impact review of the approved Component architecture; no digest field is stored.
 
 Validation is strict: duplicate YAML keys, unknown fields, invalid identities, unresolved references, invalid requirement targets, malformed requirement objects, and requirement-ID collisions are rejected.
 
@@ -81,7 +83,7 @@ npm run render -- \
   --out /path/to/model
 ```
 
-The renderer strictly validates all five base-model YAML sources and optional `components.yaml`, computes artifact-specific layout, and writes only `context.pdf`, `pulse.pdf`, `ui.pdf`, and `deployment.pdf`. `pulse.pdf` is one system diagram without Capabilities or an overview plus one detail page per Capability. The diagrams are native PDF vector graphics. Every rendered occurrence with attached requirements carries a blue speech-bubble Text annotation containing the exact complete ordered requirement text.
+The renderer strictly validates all five base-model YAML sources and optional `components.yaml` and `presentation.yaml`, computes artifact-specific layout, and writes only `context.pdf`, `pulse.pdf`, `ui.pdf`, and `deployment.pdf`. Presentation v1 adds no renderer or fifth PDF. `pulse.pdf` is one system diagram without Capabilities or an overview plus one detail page per Capability. The diagrams are native PDF vector graphics. Every rendered occurrence with attached requirements carries a blue speech-bubble Text annotation containing the exact complete ordered requirement text.
 
 ## Repository checks
 

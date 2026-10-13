@@ -13,6 +13,16 @@ ui:
       information:
         - id: current-status
           name: Current status
+          fields:
+            - id: state
+              name: State
+            - id: observed-at
+              name: Observed at
+      composition:
+        - id: status
+          content:
+            - current-status
+            - refresh-status
   views:
     - id: main
       name: Main
@@ -25,6 +35,23 @@ ui:
       information:
         - id: current-status
           name: Current status
+          fields:
+            - id: state
+              name: State
+            - id: observed-at
+              name: Observed at
+      composition:
+        - id: header
+          content:
+            - navigation
+        - id: workspace
+          content:
+            - shared-status
+            - id: summary-status
+              ref: current-status
+            - id: detailed-status
+              ref: current-status
+            - submit-input
     - id: details
       name: Details
       includes:
@@ -32,3 +59,11 @@ ui:
       information:
         - id: details
           name: Details
+          multiple: true
+      composition:
+        - id: header
+          content:
+            - navigation
+        - id: workspace
+          content:
+            - details

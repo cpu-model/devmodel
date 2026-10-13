@@ -6,9 +6,9 @@
 
 ## 1. Purpose
 
-Artifact Formats v2 defines the semantic source formats for Context, Pulse, UI, complementary Deployment, and their attached requirements. The YAML artifacts are authoritative. Rendering is derived from them using Visual Language v2.
+Artifact Formats v2 defines the semantic source formats for Context, Pulse, UI, complementary Deployment, their attached requirements, and the optional complementary Component and Presentation artifacts. The YAML artifacts are authoritative. Rendering is derived from the five-file base model using Visual Language v2.
 
-The formats are intentionally small and artifact-specific. v2 does not introduce a generic metamodel, global registry, UUID scheme, presentation fields, or general cross-artifact relation mechanism. Requirement target addresses are the explicit, limited exception described in section 10.
+The formats are intentionally small and artifact-specific. v2 does not introduce a generic metamodel, global registry, UUID scheme, or general cross-artifact relation mechanism. Presentation references into UI and requirement target addresses are the explicit, limited exceptions defined by this document.
 
 ## 2. Common rules
 
@@ -16,7 +16,7 @@ The formats are intentionally small and artifact-specific. v2 does not introduce
 - Duplicate mapping keys are invalid and must be detected before a parser overwrites them.
 - IDs are machine-readable, stable within their natural artifact scope, and unique where the artifact requires identity.
 - Names are human-readable display text and may change without changing identity.
-- Presentation and renderer concerns do not belong in semantic YAML.
+- Renderer geometry does not belong in semantic YAML. UI Composition records functional grouping, occurrences, and order; optional Presentation records only its defined relative visual rules.
 - Generated PDF diagrams and any optional preview files are derived artifacts and are not semantic sources.
 - References must resolve within the artifact, except for the defined requirement target addresses.
 - A configuration value with domain-functional meaning whose change can alter functional decisions, results, or domain behavior is modeled as Domain Information. Deployment may additionally describe its delivery mechanism. Purely technical configuration remains solely in Deployment.
@@ -298,9 +298,9 @@ pulses:
 
 ## 5. UI format
 
-UI describes user-visible Views, reusable SubViews, their Information and Actions, and meaningful Navigation to Views.
+UI describes user-visible Views, reusable SubViews, their Information and Actions, meaningful Navigation to Views, and optional functional Composition.
 
-A SubView is a reusable user-visible surface fragment that can be included by multiple Views. In v2, a SubView contains Navigation only. This supports shared navigation without duplicating the same destinations in every View.
+A SubView is a reusable user-visible surface fragment that can be included by multiple Views. It may contain Actions, Information, Navigation, and Composition, but it does not include another SubView. This supports shared user-visible capability without recursive reuse or duplication across Views.
 
 ```yaml
 ui:
@@ -337,13 +337,13 @@ ui:
 
 ### 5.1 Views
 
-Each View contains `id` and `name`. `includes`, `actions`, `information`, and View-local `navigation` are optional when the View has none of that kind.
+Each View contains `id` and `name`. `includes`, `actions`, `information`, View-local `navigation`, and `composition` are optional when the View has none of that kind.
 
 `includes` is an ordered list of SubView IDs. Inclusion means that the SubView's user-visible capability is present in the containing View. It does not copy or redefine the SubView.
 
 ### 5.2 SubViews
 
-Each SubView contains `id` and `name`, with optional `actions`, `information`, and `navigation`. SubView IDs are unique and distinct from View IDs.
+Each SubView contains `id` and `name`, with optional `actions`, `information`, `navigation`, and `composition`. SubView IDs are unique and distinct from View IDs.
 
 A SubView is defined once and may be included by any number of Views. Actions and Information in a SubView have the same semantics as Actions and Information in a View. A SubView does not include another SubView in v2.
 
@@ -353,7 +353,17 @@ Each Action contains `id` and `name`. The name is a verb phrase expressing user 
 
 ### 5.4 Information
 
-Each Information item contains `id` and `name`. The name is a noun or noun phrase representing a user-relevant concept independent of presentation.
+Each Information item contains `id` and `name`. The name is a noun or noun phrase representing a user-relevant concept independent of presentation. It may additionally contain ordered named `fields`, each with stable `id` and `name`, and `multiple: true` when the Information is a collection. Fields are presentation-addressable parts of the same Information; they are not a domain schema, data type, persistence model, algorithm, or Pulse Domain Information definition.
+
+### 5.4A Composition
+
+`composition` is an optional ordered list on a View or SubView. It records functional grouping, content occurrence, and total content order. Every group contains a locally unique stable `id` and a non-empty ordered `content` list.
+
+A View Composition references that View's Actions, Information, and directly included SubViews. A SubView Composition references that SubView's Actions and Information. A string entry is the referenced content ID. Every available Action and included SubView occurs exactly once; every Information occurs at least once. Composition does not copy names or redefine content.
+
+Information may occur more than once. Every repeated occurrence uses the mapping form `{id: <occurrence-id>, ref: <information-id>}` and every occurrence ID is unique within the owning View or SubView. The mapping form is forbidden for Actions and included SubViews. Occurrence IDs are Presentation reference targets only; they do not create new Information or a reusable component concept. Reuse between Views remains the responsibility of SubViews.
+
+When Composition is absent, the existing declared Action, Information, include, and Navigation semantics are unchanged. When present, it is exhaustive so that no competing implicit order remains.
 
 ### 5.5 Navigation
 
@@ -376,12 +386,15 @@ Navigation describes user-significant navigation capability, not a menu, tab, bu
 - SubView IDs are unique and do not collide with View IDs.
 - Action IDs are unique within their containing View or SubView.
 - Information IDs are unique within their containing View or SubView.
+- Action and Information IDs do not collide within one View or SubView. When Composition exists, its Actions, Information, and included SubViews also have mutually distinct content IDs, so every scoped content reference remains unambiguous.
 - Every `includes` reference resolves to a declared SubView and is unique within its View.
 - Every `navigation.to` reference in a View or SubView resolves to a declared View.
 - View-local Navigation must not navigate to the containing View.
 - SubView Navigation may reference any declared View, including a View that includes that SubView.
 - Navigation entries contain only `to`.
-- SubViews contain only `id`, `name`, `actions`, `information`, and `navigation`.
+- SubViews contain only `id`, `name`, `actions`, `information`, `navigation`, and `composition`.
+- Composition group and occurrence IDs are locally unique, all references resolve in the owning scope, repeated Information uses explicit occurrence IDs, and Composition covers all available content.
+- Information field IDs are unique within their Information and `multiple`, when present, is boolean.
 - Declared ordering of includes, Actions, Information, and Navigation is semantically preserved for deterministic rendering.
 
 ### 5.7 UI field reference
@@ -403,6 +416,7 @@ View mapping:
 | `actions` | list of Action mappings | no | empty list | User intentions in declared order. |
 | `information` | list of Information mappings | no | empty list | User-relevant concepts in declared order. |
 | `navigation` | list of Navigation mappings | no | empty list | Meaningful View-local paths. |
+| `composition` | list of Composition group mappings | no | absent | Exhaustive functional grouping, occurrences, and order. |
 
 SubView mapping:
 
@@ -413,8 +427,13 @@ SubView mapping:
 | `actions` | list of Action mappings | no | empty list | Reusable user intentions in declared order. |
 | `information` | list of Information mappings | no | empty list | Reusable user-relevant concepts in declared order. |
 | `navigation` | list of Navigation mappings | no | empty list | Shared destinations exposed wherever the SubView is included. |
+| `composition` | list of Composition group mappings | no | absent | Exhaustive functional grouping, occurrences, and order. |
 
-Action and Information mappings contain exactly `id` and `name`.
+Action mappings contain exactly `id` and `name`.
+
+Information mappings contain `id` and `name`, with optional `fields` and `multiple`. `fields` is an ordered list of mappings containing exactly `id` and `name`; field IDs are unique within the Information. `multiple` is boolean and defaults to `false` when absent.
+
+Composition group mappings contain exactly `id` and `content`. `content` is a non-empty ordered list of content-ID strings or Information occurrence mappings containing exactly `id` and `ref`.
 
 Navigation mapping contains exactly `to`, a View ID.
 
@@ -439,6 +458,144 @@ subviews:
     navigation:
       - to: planning
 ```
+
+## 5A. Optional Presentation format
+
+`presentation.yaml` is an optional complementary normative artifact. Its absence leaves the five-file semantic base model complete and places no additional visual constraint on implementations. Its presence makes every declared rule normative; there is no separate preference tier.
+
+UI owns functional content, Composition grouping, occurrences, and order. Presentation owns only relative visual structure, representations, time-zone notation, and visual continuity. Presentation cannot declare Information, Actions, SubViews, content lists, or another content order. Unspecified Presentation detail remains free for implementation.
+
+```yaml
+presentation:
+  timezone:
+    source: site
+  shared-layouts:
+    - id: charging-workspace
+      views: [planning, charging]
+      regions:
+        - ref: header
+          direction: vertical
+          continuity: true
+        - ref: workspace
+          direction: vertical
+  subviews:
+    - ref: charging-status
+      layout:
+        direction: horizontal
+        wrap: true
+      representations:
+        - ref: vehicle-soc
+          as: radial-progress
+          emphasis: primary
+        - ref: charging-target
+          as: labeled-values
+  views:
+    - ref: planning
+      representations:
+        - ref: charging-options
+          as: line-chart
+        - ref: select-charging
+          as: chart-selection
+          on: charging-options
+```
+
+### 5A.1 Time-zone policy
+
+`timezone` is required when `presentation.yaml` exists and contains `source`:
+
+- `site` uses the deployment/site time zone supplied by the implementation context;
+- `client` uses the current user's client time zone;
+- `explicit` requires `zone`, a valid IANA time-zone name such as `Europe/Stockholm`.
+
+`zone` is forbidden for `site` and `client`. All date-related Presentation notation uses the selected policy. A compact value such as `09:00+` means 09:00 on the following local calendar day in that selected time zone; `+` does not mean a duration or UTC offset. This notation rule adds no system-specific scheduling behavior.
+
+### 5A.2 Shared layouts and regions
+
+A Shared Layout contains exactly `id`, `views`, and `regions`. `id` is unique. `views` contains at least two unique View references. Every referenced View has Composition. `regions` is a non-empty list containing exactly the full Composition-group sequence of every referenced View; Presentation therefore cannot introduce competing order.
+
+Each region contains `ref`, `direction`, and optional `wrap` and `continuity`. `ref` resolves to the same Composition-group ID in every listed View. `direction` is `horizontal` or `vertical`. `wrap` and `continuity` are booleans and default to `false` when absent.
+
+`continuity: true` requires a non-empty, identical ordered sequence of included SubView references in that group in every listed View. It preserves a shared visible structure without copying the SubView or claiming that unrelated View-local Information and Actions are identical. Visual continuity does not require DOM persistence, retained runtime instances, or pixel-identical placement between Views. The same View/group pair cannot receive multiple Shared Layout definitions.
+
+### 5A.3 View and SubView Presentation
+
+`subviews` and `views` are optional lists. An entry's `ref` resolves to one UI SubView or View respectively and may occur only once. A SubView entry may contain `layout` and `representations`; a View entry may contain `representations`. `layout` contains required `direction` and optional boolean `wrap` using the vocabulary above. Layout never changes UI Composition order.
+
+A representation contains required `ref` and `as`, with optional `emphasis` and `on`. `ref` resolves in the referenced View or SubView only. If Composition exists, it resolves a Composition occurrence ID; otherwise it resolves a direct Information or Action ID. `<information-or-occurrence-id>.<field-id>` addresses a declared Information field. A SubView's content is presented through its SubView definition, not by reaching through an including View. The representations list is a set of target rules in YAML declaration order for stable review; its order does not reorder UI content.
+
+Initial Information representations are:
+
+- `radial-progress`;
+- `labeled-values`;
+- `status-indicators`;
+- `line-chart`;
+- `bar-chart`;
+- `table`.
+
+The initial Action representation is `chart-selection`. It requires `on`, which resolves to an Information representation declared in the same entry. `on` is forbidden for other representations. Relative `emphasis` is `primary`, `secondary`, or `subdued`.
+
+The same target cannot have two representations in one scope. Representing a whole Information and one of its fields in the same scope is conflicting and invalid; distinct fields may have distinct representations. Presentation representation names are normative semantic constraints on visual expression, not HTML elements, framework widgets, CSS classes, or implementation components.
+
+### 5A.4 Strict validation and exclusions
+
+Validation rejects unknown fields, duplicate YAML keys, duplicate definitions or IDs, unresolved or wrong-scope View/SubView/content/field/group references, invalid occurrences, incompatible continuous regions, competing group order, conflicting representations, invalid `on`, invalid enums, and invalid time-zone policies. All references resolve against the already validated UI model.
+
+Presentation v1 contains no pixel geometry, absolute coordinates, CSS box model, mandatory palette, typography, animation, responsive breakpoint model, implementation framework, or new requirement-target grammar. It does not create a reusable component concept or a Presentation PDF. Existing UI rendering remains valid and is not required to render these application-presentation rules.
+
+### 5A.5 Presentation field reference
+
+The document contains exactly `presentation`. Its mapping contains:
+
+| Field | Type | Required | Default/constraint |
+| --- | --- | --- | --- |
+| `timezone` | Time-zone mapping | yes | No default. |
+| `shared-layouts` | list of Shared Layout mappings | no | Empty list. |
+| `subviews` | list of SubView Presentation mappings | no | Empty list. |
+| `views` | list of View Presentation mappings | no | Empty list. |
+
+Time-zone mapping:
+
+| Field | Type | Required | Default/constraint |
+| --- | --- | --- | --- |
+| `source` | string enum | yes | `site`, `client`, or `explicit`. |
+| `zone` | non-empty IANA time-zone string | conditional | Required only for `explicit`; otherwise forbidden. |
+
+Shared Layout mapping:
+
+| Field | Type | Required | Default/constraint |
+| --- | --- | --- | --- |
+| `id` | non-empty ID | yes | Unique among Shared Layouts; no period. |
+| `views` | list of View IDs | yes | At least two unique existing Views. |
+| `regions` | list of Region mappings | yes | Non-empty and exactly follows each View's Composition-group sequence. |
+
+Region mapping:
+
+| Field | Type | Required | Default/constraint |
+| --- | --- | --- | --- |
+| `ref` | Composition-group ID | yes | Exists in every Shared Layout View. |
+| `direction` | string enum | yes | `horizontal` or `vertical`. |
+| `wrap` | boolean | no | `false`. |
+| `continuity` | boolean | no | `false`; `true` requires compatible common SubView structure and order. |
+
+SubView Presentation mapping contains `ref`, optional `layout`, and optional `representations`. View Presentation mapping contains `ref` and optional `representations`. `ref` is a unique existing SubView or View reference in its respective list.
+
+Layout mapping:
+
+| Field | Type | Required | Default/constraint |
+| --- | --- | --- | --- |
+| `direction` | string enum | yes | `horizontal` or `vertical`. |
+| `wrap` | boolean | no | `false`. |
+
+Representation mapping:
+
+| Field | Type | Required | Default/constraint |
+| --- | --- | --- | --- |
+| `ref` | scoped content, occurrence, or field reference | yes | Resolves within the owning View or SubView. |
+| `as` | representation enum | yes | One representation allowed for the resolved target kind. |
+| `emphasis` | string enum | no | `primary`, `secondary`, or `subdued`; otherwise unspecified. |
+| `on` | Information-representation reference | conditional | Required for `chart-selection`; forbidden otherwise. |
+
+No other fields are allowed at any Presentation level.
 
 ## 6. Deployment format
 
@@ -827,11 +984,13 @@ system/
   deployment.yaml
   requirements.yaml
   components.yaml  # optional
+  presentation.yaml  # optional
 
 context.yaml + requirements.yaml -> context.pdf
 pulse.yaml + requirements.yaml -> pulse.pdf
 ui.yaml + requirements.yaml -> ui.pdf
 deployment.yaml + requirements.yaml -> deployment.pdf
+presentation.yaml -> validated normative application-presentation constraints; no additional PDF
 ```
 
 The YAML files are the semantic sources. The four PDF diagrams are generated directly as native vector PDF. Rendering follows Visual Language v2 and must not add, remove, or reinterpret semantics.
