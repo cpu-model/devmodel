@@ -8,6 +8,16 @@ History Migration preserves the required meaning, integrity, and traceability of
 
 This procedure does not add a CPU artifact, Domain Information type, Component kind, or runtime state. The five-file semantic base model and optional Component architecture remain authoritative. A migration must not silently redefine domain meaning to fit existing stored data.
 
+## 1a. Replacement-system storage compatibility gate
+
+When a new implementation will replace an existing deployed system, assess compatibility with the existing durable data **before** selecting or accepting a new storage representation. Greenfield functional architecture does not imply greenfield persistence. This assessment is mandatory even when the new implementation was developed independently of the old implementation.
+
+Inventory the existing storage schema, version, historical semantics, required current state, and upgrade/rollback constraints as compatibility inputs. Compare them with the new implementation's information contracts and Component authority boundaries. Prefer preserving the established durable representation where that satisfies the normative functional model; changing it requires an explicit, evidenced reason, not merely implementation convenience or architectural independence.
+
+Decide and record whether each existing information set can be read and written compatibly, needs additive schema evolution, requires a validated transformation, or cannot be supported without a domain decision. Treat the source database as immutable during assessment and test changes on a copy. Verify old data can be interpreted correctly, not just that its tables can be opened. Never preserve an obsolete functional interpretation merely to retain a physical schema.
+
+If compatibility is feasible, use it as the default replacement strategy, subject to functional correctness and reconciliation. If it is not feasible, follow the full History Migration contract and acceptance procedure below. A replacement project must not declare its persistence design complete while required legacy-data compatibility remains unassessed or unresolved.
+
 ## 2. Applicability gate
 
 Before an increment changes durable data representation, functional interpretation, authority, or the ability to reconstruct required historical outcomes, determine whether existing durable domain history is affected. If it is, History Migration review is mandatory. Pure code changes that preserve representation, interpretation, authority, and access to required history do not trigger this process.
