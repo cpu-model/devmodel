@@ -24,6 +24,12 @@ Before replacement persistence design is approved, record the source schema/vers
 
 This early gate is distinct from the later migration execution and cutover acceptance gate. A preliminary compatibility assessment does not establish that actual historical data can already be migrated or safely used in production.
 
+## 1b. Durable storage fitness review
+
+For every system with durable information, including new systems, review storage fitness before approving persistence realization. Distinguish bounded operational state, growing history and rebuildable data. Document expected observation rates, retention, growth, read and write amplification, recovery cost, record identity, uniqueness, ordering, provenance, transaction safety, schema evolution and backup. Specify whether guarantees are enforced in storage or application code and how they are tested. Full-snapshot rewrites of growing history require explicit evidence that cost and integrity remain acceptable. No database technology is prescribed.
+
+Missing growth assumptions, unverified integrity constraints or unjustified full-history rewrites block persistence realization. Store review evidence in the project repository without adding normative YAML.
+
 ## 2. Applicability gate
 
 Before an increment changes durable data representation, functional interpretation, authority, or the ability to reconstruct required historical outcomes, determine whether existing durable domain history is affected. If it is, History Migration review is mandatory. Pure code changes that preserve representation, interpretation, authority, and access to required history do not trigger this process.
