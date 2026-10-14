@@ -8,6 +8,8 @@ For a replacement system, establish the existing durable information contract be
 
 Component Realization cannot be marked PASS while the compatibility applicability decision or required existing-data assessment remains unresolved. Record the evidence in the project repository; no additional normative YAML artifact is required.
 
+Persistence realization also requires a completed durable-storage fitness review for new and replacement systems, as defined in `CPU-History-Migration.md`.
+
 ## 1. Purpose and status
 
 CPU's concrete semantic base model remains `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml`. `components.yaml` is an optional complementary normative Component architecture artifact derived from that complete base model without changing it.
