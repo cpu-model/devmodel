@@ -18,6 +18,12 @@ Decide and record whether each existing information set can be read and written 
 
 If compatibility is feasible, use it as the default replacement strategy, subject to functional correctness and reconciliation. If it is not feasible, follow the full History Migration contract and acceptance procedure below. A replacement project must not declare its persistence design complete while required legacy-data compatibility remains unassessed or unresolved.
 
+### Design-time evidence and acceptance
+
+Before replacement persistence design is approved, record the source schema/version, historical and current-state inventory, functional information owners, compatibility or transformation decision for each information set, preservation invariants, transaction constraints, unresolved exceptions, and verification and rollback plan. Where existing durable data is absent, document verified non-applicability. Missing required evidence blocks persistence realization, even when ordinary implementation tests pass.
+
+This early gate is distinct from the later migration execution and cutover acceptance gate. A preliminary compatibility assessment does not establish that actual historical data can already be migrated or safely used in production.
+
 ## 2. Applicability gate
 
 Before an increment changes durable data representation, functional interpretation, authority, or the ability to reconstruct required historical outcomes, determine whether existing durable domain history is affected. If it is, History Migration review is mandatory. Pure code changes that preserve representation, interpretation, authority, and access to required history do not trigger this process.
