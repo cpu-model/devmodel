@@ -28,7 +28,10 @@ This early gate is distinct from the later migration execution and cutover accep
 
 For every system with durable information, including new systems, review storage fitness before approving persistence realization. Distinguish bounded operational state, growing history and rebuildable data. Document expected observation rates, retention, growth, read and write amplification, recovery cost, record identity, uniqueness, ordering, provenance, transaction safety, schema evolution and backup. Specify whether guarantees are enforced in storage or application code and how they are tested. Full-snapshot rewrites of growing history require explicit evidence that cost and integrity remain acceptable. No database technology is prescribed.
 
-Missing growth assumptions, unverified integrity constraints or unjustified full-history rewrites block persistence realization. Store review evidence in the project repository without adding normative YAML.
+Missing growth assumptions, unverified integrity constraints or unjustified full-history rewrites block persistence realization.
+
+For growing durable histories, normal operational updates and individual observations must not depend on reading or rewriting unrelated accumulated history. Verify incremental record writes, bounded historical queries, record identity, and atomic cross-Component commits before accepting persistence realization. Functional test success alone does not establish storage fitness. A stricter project-specific persistence constraint remains binding.
+ Store review evidence in the project repository without adding normative YAML.
 
 ## 2. Applicability gate
 
