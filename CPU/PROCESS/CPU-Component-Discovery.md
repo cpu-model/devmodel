@@ -2,6 +2,12 @@
 
 Status: Normative methodology.
 
+### Replacement storage compatibility prerequisite
+
+For a replacement system, establish the existing durable information contract before implementing the persistence Component. Follow `CPU-History-Migration.md`, map stored information to the approved functional Component authorities, and keep technical persistence ownership separate. A new snapshot or schema is not justified solely by greenfield independence.
+
+Component Realization cannot be marked PASS while the compatibility applicability decision or required existing-data assessment remains unresolved. Record the evidence in the project repository; no additional normative YAML artifact is required.
+
 ## 1. Purpose and status
 
 CPU's concrete semantic base model remains `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml`. `components.yaml` is an optional complementary normative Component architecture artifact derived from that complete base model without changing it.
