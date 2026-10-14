@@ -4,7 +4,7 @@ Resolve the methodology root as the directory containing this file. Read its `SP
 
 ## Replacement persistence gate
 
-Before implementing persistence in a replacement system, follow the storage compatibility gate in `CPU/PROCESS/CPU-History-Migration.md`. Record the existing durable schema, information ownership, compatibility decisions and open issues in the project repository. Independent greenfield implementation does not waive this requirement. Do not approve persistence realization while compatibility remains unassessed.
+Before implementing persistence in a replacement system, follow the storage compatibility gate in `CPU/PROCESS/CPU-History-Migration.md`. Record the existing durable schema, information ownership, compatibility decisions and open issues in the project repository. Independent greenfield implementation does not waive this requirement. Do not approve persistence realization while compatibility remains unassessed. For every system with durable data, including new systems, complete the durable storage fitness review in the same methodology before accepting persistence realization.
 
 ## Substitutability prerequisite
 
