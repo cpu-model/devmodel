@@ -8,6 +8,14 @@ History Migration preserves the required meaning, integrity, and traceability of
 
 This procedure does not add a CPU artifact, Domain Information type, Component kind, or runtime state. The five-file semantic base model and optional Component architecture remain authoritative. A migration must not silently redefine domain meaning to fit existing stored data.
 
+## Normative timestamp storage representation
+
+All **new CPU-system implementations** shall persist timestamps as integer Unix epoch seconds (seconds elapsed since 1970-01-01T00:00:00Z, UTC). This applies to operational records, historical facts, event times, receipt times, audit timestamps, migration metadata, and timestamp columns inside persisted payloads. A human-readable date, localized time string, floating-point epoch, or epoch milliseconds/microseconds/nanoseconds is not the canonical durable timestamp representation. Calendar-only domain values (for example a local electricity-price day) are not timestamps and require separately specified semantics.
+
+Preserve distinct domain instants separately (for example source time versus receipt time); conversion must not collapse their identities. Define and test the precision-loss policy where a source has subsecond precision, including boundary behavior. UTC epoch seconds are a storage representation, not a replacement for explicit timezone rules when interpreting local calendar days or deadlines.
+
+For replacement systems, **retain original legacy data unchanged** as migration evidence even if its timestamps use text or another representation. New active storage and all newly written timestamp values must use integer epoch seconds. Read-only compatibility adapters may parse old timestamp representations only when their source encoding and timezone semantics are proven; otherwise classify the mapping as unresolved. Do not silently rewrite legacy records or assume lexicographic timestamp ordering is chronological. Require copy-based migration tests, exact instant preservation at supported precision, bounded historical queries, restart and rollback verification. Persisted schema and payload checks must prevent introducing nonconforming timestamp fields.
+
 ## 1a. Replacement-system storage compatibility gate
 
 When a new implementation will replace an existing deployed system, assess compatibility with the existing durable data **before** selecting or accepting a new storage representation. Greenfield functional architecture does not imply greenfield persistence. This assessment is mandatory even when the new implementation was developed independently of the old implementation.
