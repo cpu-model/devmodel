@@ -16,6 +16,36 @@ Preserve distinct domain instants separately (for example source time versus rec
 
 For replacement systems, **retain original legacy data unchanged** as migration evidence even if its timestamps use text or another representation. New active storage and all newly written timestamp values must use integer epoch seconds. Read-only compatibility adapters may parse old timestamp representations only when their source encoding and timezone semantics are proven; otherwise classify the mapping as unresolved. Do not silently rewrite legacy records or assume lexicographic timestamp ordering is chronological. Require copy-based migration tests, exact instant preservation at supported precision, bounded historical queries, restart and rollback verification. Persisted schema and payload checks must prevent introducing nonconforming timestamp fields.
 
+## Normative timestamp representation across runtime boundaries
+
+All **new CPU-system implementations** shall also represent transient timestamp
+values as integer Unix epoch seconds in UTC. This covers in-memory domain
+facts, Component interfaces, pulses, events, commands, queues, caches, internal
+API payloads, and intermediate calculations when a value denotes an instant.
+The same canonical representation applies whether or not the value is persisted.
+Fractional Unix epochs, epoch milliseconds, formatted timestamp strings and
+language-native date/time objects are not canonical timestamp values at these
+boundaries.
+
+Adapters may convert at external protocol, operating-system clock, database
+compatibility, and human-presentation boundaries, but must normalize immediately
+on entry and convert only at the boundary on exit. A local calendar date, wall
+clock time, duration, time zone identifier, or interval length is not itself a
+timestamp; its semantics and conversion to an instant must be specified
+separately. Any subsecond source instant requires an explicit deterministic
+precision-loss and interval-boundary policy. Do not silently mix precisions
+or treat a timezone offset as an epoch unit.
+
+These rules are **implementation representation constraints**, not a reason to
+encode technical timestamp types in Context, Pulse or UI. The semantic model
+must still normatively specify each historically significant instant's meaning,
+origin, temporal relationship, identity, completeness and retention requirements.
+Executable tests demonstrate compliance but cannot be the sole source of these
+contracts. Before accepting an implementation, review whether reconstructing
+historical facts and lifecycle outcomes from the model plus approved contracts
+would require undocumented implementation or test knowledge; unresolved gaps
+block acceptance.
+
 ## 1a. Replacement-system storage compatibility gate
 
 When a new implementation will replace an existing deployed system, assess compatibility with the existing durable data **before** selecting or accepting a new storage representation. Greenfield functional architecture does not imply greenfield persistence. This assessment is mandatory even when the new implementation was developed independently of the old implementation.
