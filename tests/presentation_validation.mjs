@@ -13,6 +13,9 @@ function directory(ui, presentation = undefined) {
   fs.writeFileSync(path.join(result, 'ui.yaml'), stringify({ui}));
   fs.writeFileSync(path.join(result, 'requirements.yaml'), 'requirements: {}\n');
   if (presentation) fs.writeFileSync(path.join(result, 'presentation.yaml'), stringify({presentation}));
+  fs.mkdirSync(path.join(result, 'assets'));
+  fs.writeFileSync(path.join(result, 'assets', 'visual.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>\n');
+  fs.writeFileSync(path.join(result, 'outside.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>\n');
   return result;
 }
 
@@ -66,6 +69,16 @@ const ui = {
 
 const presentation = {
   timezone: {source: 'site'},
+  resources: [
+    {id: 'workspace-image', path: 'assets/visual.svg'},
+    {id: 'application-icon', path: 'assets/visual.svg'},
+  ],
+  'resource-uses': [
+    {resource: 'workspace-image', role: 'decorative', view: 'planning'},
+    {resource: 'workspace-image', role: 'identity', subview: 'charging-status'},
+    {resource: 'workspace-image', role: 'information-representation', view: 'planning', ref: 'charging-options.cost'},
+    {resource: 'application-icon', role: 'installation'},
+  ],
   'shared-layouts': [{
     id: 'charging-workspace', views: ['planning', 'charging'],
     regions: [
@@ -94,6 +107,7 @@ assert.equal(validate(legacyUi).presentation, null);
 
 // Valid Composition, fields, Presentation and continuous Shared Layout.
 assert.equal(validate(ui, presentation).presentation.timezone.source, 'site');
+assert.equal(validate(ui, presentation).presentation.resources[0].id, 'workspace-image');
 
 // Repeated Information requires and accepts explicit stable occurrence IDs.
 const repeated = clone(ui);
@@ -108,6 +122,7 @@ repeatedPresentation.views[0].representations = [
   {ref: 'savings-chart', as: 'table'},
   {ref: 'select-charging', as: 'chart-selection', on: 'cost-chart.cost'},
 ];
+repeatedPresentation['resource-uses'][2].ref = 'cost-chart.cost';
 validate(repeated, repeatedPresentation);
 
 // Explicit time-zone policy accepts a real IANA zone.
@@ -137,11 +152,33 @@ for (const [mutate, expected] of [
   [p => { p.timezone = {source: 'browser'}; }, /Invalid Presentation timezone source/],
   [p => { p.timezone = {source: 'explicit', zone: 'Not\/A-Zone'}; }, /Invalid explicit Presentation timezone/],
   [p => { p.timezone = {source: 'client', zone: 'UTC'}; }, /zone is allowed only/],
+  [p => { p.resources.push({...p.resources[0]}); }, /Duplicate Presentation resource ID/],
+  [p => { p['resource-uses'] = p['resource-uses'].filter(use => use.resource !== 'application-icon'); }, /Unused Presentation resource declaration/],
+  [p => { p['resource-uses'].push({...p['resource-uses'][0]}); }, /Duplicate Presentation resource use/],
+  [p => { p.resources[0].path = 'assets/missing.svg'; }, /resource file does not exist/],
+  [p => { p.resources[0].path = '../outside.svg'; }, /path must be relative under assets/],
+  [p => { p['resource-uses'][0].resource = 'missing'; }, /Unknown Presentation resource reference/],
+  [p => { p['resource-uses'][0].view = 'missing'; }, /Unknown Presentation View resource-use reference/],
+  [p => { p['resource-uses'][2].ref = 'select-charging'; }, /ref must resolve to Information/],
+  [p => { p['resource-uses'][3].view = 'planning'; }, /installation resource use must not reference UI/],
+  [p => { p.resources[0].text = 'New functional content'; }, /unknown \[text\]/],
   [p => { p.views[0].unexpected = true; }, /unknown \[unexpected\]/],
 ]) {
   const candidate = clone(presentation);
   mutate(candidate);
   invalid(ui, candidate, expected);
+}
+
+const escapingSymlink = directory(ui, presentation);
+try {
+  fs.symlinkSync(path.join(escapingSymlink, 'outside.svg'), path.join(escapingSymlink, 'assets', 'escape.svg'));
+  const candidate = clone(presentation);
+  candidate.resources[0].path = 'assets/escape.svg';
+  fs.writeFileSync(path.join(escapingSymlink, 'presentation.yaml'), stringify({presentation: candidate}));
+  const model = loadUiModel(escapingSymlink);
+  assert.throws(() => loadPresentationModel(escapingSymlink, model.ui), /path leaves assets/);
+} finally {
+  fs.rmSync(escapingSymlink, {recursive: true, force: true});
 }
 
 const invalidOccurrence = clone(ui);

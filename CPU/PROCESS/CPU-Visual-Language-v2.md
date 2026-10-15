@@ -7,7 +7,7 @@
 
 ## 1. Purpose
 
-Visual Language v2 defines the notation used to render Context, Pulse, UI, and the complementary Deployment artifact. Optional application Presentation rules are validated normative input but do not add a review diagram or alter the v2 PDF notation in Presentation v1.
+Visual Language v2 defines the notation used to render Context, Pulse, UI, and the complementary Deployment artifact. Optional application Presentation rules, including declared visual resource use, are validated normative input but do not add a review diagram or alter the v2 PDF notation in Presentation v1.
 
 The semantic artifacts are authoritative. The visual language defines notation. The renderer computes artifact-specific layout and draws vector primitives directly into PDF pages.
 
@@ -274,7 +274,7 @@ View-local Navigation remains available for user-significant paths that are not 
 
 ### 5.8 Composition and optional Presentation
 
-The UI PDF continues to render the declared Actions, Information, includes, and Navigation using the established v2 notation. Information fields, collection cardinality, Composition groups and occurrences, and optional `presentation.yaml` constrain application realization but receive no new PDF notation in Presentation v1. The existing deterministic UI renderer may therefore ignore these additions after strict validation; it must not reinterpret them or treat generated two-column PDF geometry as application Presentation.
+The UI PDF continues to render the declared Actions, Information, includes, and Navigation using the established v2 notation. Information fields, collection cardinality, Composition groups and occurrences, and optional `presentation.yaml` constrain application realization but receive no new PDF notation in Presentation v1. This includes visual resource declarations and uses: the UI PDF does not embed, approximate, or derive semantics from those files. The existing deterministic UI renderer may therefore ignore these additions after strict validation; it must not reinterpret them or treat generated two-column PDF geometry as application Presentation.
 
 ## 6. Deployment
 

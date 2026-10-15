@@ -78,7 +78,7 @@ Therefore a normal task prompt does not need to restate synchronization, source 
 ## Modeling discipline
 
 - Preserve the boundaries between Context, Pulse, and UI.
-- Preserve the boundary between UI and Presentation: UI owns functional content, grouping, occurrences, and order; Presentation owns only explicitly declared relative visual structure, representations, time-zone notation, and visual continuity. Never introduce functional content in `presentation.yaml`.
+- Preserve the boundary between UI and Presentation: UI owns functional content, grouping, occurrences, and order; Presentation owns only explicitly declared relative visual structure, representations, time-zone notation, visual continuity, and visual-resource use. Never introduce functional content in `presentation.yaml`.
 - Do not infer Pulse flows from data use.
 - Do not encode visual layout, controls, gestures, styling, or implementation architecture in `ui.yaml`; UI Composition is limited to functional grouping, occurrences, and order.
 - Model Context flow names as domain information, not protocol operations.

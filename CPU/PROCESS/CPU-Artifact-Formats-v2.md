@@ -463,12 +463,21 @@ subviews:
 
 `presentation.yaml` is an optional complementary normative artifact. Its absence leaves the five-file semantic base model complete and places no additional visual constraint on implementations. Its presence makes every declared rule normative; there is no separate preference tier.
 
-UI owns functional content, Composition grouping, occurrences, and order. Presentation owns only relative visual structure, representations, time-zone notation, and visual continuity. Presentation cannot declare Information, Actions, SubViews, content lists, or another content order. Unspecified Presentation detail remains free for implementation.
+UI owns functional content, Composition grouping, occurrences, and order. Presentation owns only relative visual structure, representations, time-zone notation, visual continuity, and declared visual-resource use. Presentation cannot declare Information, Actions, SubViews, content lists, or another content order. A visual resource never creates functional content. Unspecified Presentation detail remains free for implementation.
 
 ```yaml
 presentation:
   timezone:
     source: site
+  resources:
+    - id: application-identity
+      path: assets/application-identity.svg
+  resource-uses:
+    - resource: application-identity
+      role: identity
+      view: planning
+    - resource: application-identity
+      role: installation
   shared-layouts:
     - id: charging-workspace
       views: [planning, charging]
@@ -536,19 +545,36 @@ The initial Action representation is `chart-selection`. It requires `on`, which 
 
 The same target cannot have two representations in one scope. Representing a whole Information and one of its fields in the same scope is conflicting and invalid; distinct fields may have distinct representations. Presentation representation names are normative semantic constraints on visual expression, not HTML elements, framework widgets, CSS classes, or implementation components.
 
-### 5A.4 Strict validation and exclusions
+### 5A.4 Visual resources
 
-Validation rejects unknown fields, duplicate YAML keys, duplicate definitions or IDs, unresolved or wrong-scope View/SubView/content/field/group references, invalid occurrences, incompatible continuous regions, competing group order, conflicting representations, invalid `on`, invalid enums, and invalid time-zone policies. All references resolve against the already validated UI model.
+`resources` optionally declares normative visual files. Each resource contains exactly a stable `id` and a `path`. The path is a normalized relative path beginning with `assets/`, resolved from the concrete model's `CPU/` directory. It must identify an existing regular file whose resolved location remains inside `CPU/assets/`, including after symbolic-link resolution. Absolute paths, backslashes, empty path segments, `.` or `..` segments, missing files, directories, and paths escaping `assets/` are invalid. The file format and rendering technology are not prescribed by Presentation v1.
+
+`resource-uses` optionally declares how a resource is used. Every declared resource has at least one use. Duplicate identical uses are invalid. Each use references one declared resource and has exactly one semantic role:
+
+- `decorative` adds visual atmosphere without representing Information or creating content;
+- `identity` supplies visual identity without creating content;
+- `information-representation` graphically represents existing UI Information and requires `ref` plus exactly one owning `view` or `subview`;
+- `installation` supplies a resource used to install or identify the deployed application outside a View and therefore forbids `view`, `subview`, and `ref`.
+
+Every non-installation use references exactly one existing View or SubView. For `information-representation`, `ref` resolves with the same scoped rules as an Information representation: it may name existing Information, an Information occurrence, or an Information field. It must not resolve to an Action. `decorative` and `identity` are scoped to the referenced View or SubView and forbid `ref`; they do not become content occurrences and have no ordering semantics.
+
+A resource declaration contains no name, label, caption, alternative text, action, destination, or arbitrary metadata. Such fields would introduce or obscure functional or technical semantics and are rejected. User-visible functional wording and accessibility requirements remain in UI or Requirements as applicable. Installation mechanics remain in Deployment or its attached Requirements; `installation` says only which visual resource has that use. Resource declarations and uses do not define Components, packages, widgets, HTML elements, CSS, pixel geometry, cropping, breakpoints, or responsive behavior.
+
+### 5A.5 Strict validation and exclusions
+
+Validation rejects unknown fields, duplicate YAML keys, duplicate definitions or IDs, unresolved or wrong-scope View/SubView/content/field/group/resource references, invalid resource paths or files, invalid resource-role shapes, invalid occurrences, incompatible continuous regions, competing group order, conflicting representations, invalid `on`, invalid enums, and invalid time-zone policies. All UI references resolve against the already validated UI model.
 
 Presentation v1 contains no pixel geometry, absolute coordinates, CSS box model, mandatory palette, typography, animation, responsive breakpoint model, implementation framework, or new requirement-target grammar. It does not create a reusable component concept or a Presentation PDF. Existing UI rendering remains valid and is not required to render these application-presentation rules.
 
-### 5A.5 Presentation field reference
+### 5A.6 Presentation field reference
 
 The document contains exactly `presentation`. Its mapping contains:
 
 | Field | Type | Required | Default/constraint |
 | --- | --- | --- | --- |
 | `timezone` | Time-zone mapping | yes | No default. |
+| `resources` | list of Resource mappings | no | Empty list. |
+| `resource-uses` | list of Resource Use mappings | no | Empty list. |
 | `shared-layouts` | list of Shared Layout mappings | no | Empty list. |
 | `subviews` | list of SubView Presentation mappings | no | Empty list. |
 | `views` | list of View Presentation mappings | no | Empty list. |
@@ -594,6 +620,23 @@ Representation mapping:
 | `as` | representation enum | yes | One representation allowed for the resolved target kind. |
 | `emphasis` | string enum | no | `primary`, `secondary`, or `subdued`; otherwise unspecified. |
 | `on` | Information-representation reference | conditional | Required for `chart-selection`; forbidden otherwise. |
+
+Resource mapping:
+
+| Field | Type | Required | Default/constraint |
+| --- | --- | --- | --- |
+| `id` | non-empty ID | yes | Unique among resources; no period. |
+| `path` | relative path string | yes | Begins with `assets/`, resolves to an existing regular file inside `CPU/assets/`. |
+
+Resource Use mapping:
+
+| Field | Type | Required | Default/constraint |
+| --- | --- | --- | --- |
+| `resource` | Resource ID | yes | Resolves to one declared resource. |
+| `role` | string enum | yes | `decorative`, `identity`, `information-representation`, or `installation`. |
+| `view` | View ID | conditional | Exactly one of `view` and `subview` for non-installation roles; forbidden for `installation`. |
+| `subview` | SubView ID | conditional | Exactly one of `view` and `subview` for non-installation roles; forbidden for `installation`. |
+| `ref` | scoped Information, occurrence, or field reference | conditional | Required for `information-representation`; forbidden for every other role. |
 
 No other fields are allowed at any Presentation level.
 
@@ -978,6 +1021,7 @@ The following are intentionally not part of Artifact Formats v2:
 
 ```text
 system/
+  assets/  # optional files declared by presentation.yaml
   context.yaml
   pulse.yaml
   ui.yaml
@@ -990,7 +1034,7 @@ context.yaml + requirements.yaml -> context.pdf
 pulse.yaml + requirements.yaml -> pulse.pdf
 ui.yaml + requirements.yaml -> ui.pdf
 deployment.yaml + requirements.yaml -> deployment.pdf
-presentation.yaml -> validated normative application-presentation constraints; no additional PDF
+presentation.yaml + declared assets -> validated normative application-presentation constraints; no additional PDF
 ```
 
 The YAML files are the semantic sources. The four PDF diagrams are generated directly as native vector PDF. Rendering follows Visual Language v2 and must not add, remove, or reinterpret semantics.

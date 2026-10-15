@@ -1,6 +1,15 @@
 presentation:
   timezone:
     source: site
+  resources:
+    - id: application-identity
+      path: assets/application-identity.svg
+  resource-uses:
+    - resource: application-identity
+      role: identity
+      view: main
+    - resource: application-identity
+      role: installation
   shared-layouts:
     - id: application-workspace
       views:

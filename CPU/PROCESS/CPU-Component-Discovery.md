@@ -14,7 +14,7 @@ Persistence realization also requires a completed durable-storage fitness review
 
 CPU's concrete semantic base model remains `context.yaml`, `pulse.yaml`, `ui.yaml`, `deployment.yaml`, and `requirements.yaml`. `components.yaml` is an optional complementary normative Component architecture artifact derived from that complete base model without changing it.
 
-Optional `presentation.yaml` is a separate complementary artifact. It references UI and constrains relative visual realization, but it neither defines Components nor changes Component identity, responsibility, Behavior assignment, Domain Information disposition, or reconciliation. Realization reconciliation must nevertheless preserve its explicit rules in Presentation-owned source artifacts when it is present.
+Optional `presentation.yaml` is a separate complementary artifact. It references UI and constrains relative visual realization and declared visual-resource use, but it neither defines Components nor changes Component identity, responsibility, Behavior assignment, Domain Information disposition, or reconciliation. Realization reconciliation must nevertheless preserve its explicit rules in Presentation-owned source artifacts when it is present.
 
 If `components.yaml` is absent, CPU makes no normative Component-boundary claim. If present, its Component boundaries, Behavior assignments, Domain Information authority or disposition assignments, and reconciliation prerequisites are normative. Changing them requires an explicit model change and human review. A change to any semantic base-model file requires an impact review of the approved Component architecture; update `components.yaml` only if its responsibilities, assignments, dispositions, or reconciliation prerequisites are affected.
 

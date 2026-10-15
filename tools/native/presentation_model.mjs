@@ -9,6 +9,7 @@ const informationRepresentations = new Set([
   'radial-progress', 'labeled-values', 'status-indicators', 'line-chart', 'bar-chart', 'table',
 ]);
 const actionRepresentations = new Set(['chart-selection']);
+const resourceRoles = new Set(['decorative', 'identity', 'information-representation', 'installation']);
 
 function mapping(value, label) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${label} must be a mapping`);
@@ -221,16 +222,86 @@ function validateTimezone(value) {
   } else if ('zone' in value) throw new Error(`presentation.timezone.zone is allowed only when source is explicit`);
 }
 
+function validateResources(resources, sourceDirectory) {
+  const ids = new Set();
+  const assetsDirectory = path.resolve(sourceDirectory, 'assets');
+  let realAssetsDirectory = null;
+  if (fs.existsSync(assetsDirectory)) realAssetsDirectory = fs.realpathSync(assetsDirectory);
+  for (const [index, resource] of optionalList(resources, 'presentation.resources').entries()) {
+    const label = `presentation.resources[${index}]`;
+    exactFields(resource, ['id', 'path'], ['id', 'path'], label);
+    id(resource.id, `${label}.id`);
+    if (ids.has(resource.id)) throw new Error(`Duplicate Presentation resource ID: ${resource.id}`);
+    ids.add(resource.id);
+    nonEmpty(resource.path, `${label}.path`);
+    if (path.isAbsolute(resource.path) || resource.path.includes('\\')) {
+      throw new Error(`Presentation resource path must be relative under assets/: ${resource.path}`);
+    }
+    const segments = resource.path.split('/');
+    if (segments[0] !== 'assets' || segments.length < 2 || segments.some(segment => !segment || segment === '.' || segment === '..')) {
+      throw new Error(`Presentation resource path must be relative under assets/: ${resource.path}`);
+    }
+    const resolved = path.resolve(sourceDirectory, ...segments);
+    if (!fs.existsSync(resolved) || !fs.statSync(resolved).isFile()) {
+      throw new Error(`Presentation resource file does not exist: ${resource.path}`);
+    }
+    const realResolved = fs.realpathSync(resolved);
+    if (!realAssetsDirectory || (realResolved !== realAssetsDirectory && !realResolved.startsWith(`${realAssetsDirectory}${path.sep}`))) {
+      throw new Error(`Presentation resource path leaves assets/: ${resource.path}`);
+    }
+  }
+  return ids;
+}
+
+function validateResourceUses(uses, resourceIds, views, subviews) {
+  const usedResources = new Set();
+  const seenUses = new Set();
+  for (const [index, use] of optionalList(uses, 'presentation.resource-uses').entries()) {
+    const label = `presentation.resource-uses[${index}]`;
+    exactFields(use, ['resource', 'role', 'view', 'subview', 'ref'], ['resource', 'role'], label);
+    id(use.resource, `${label}.resource`);
+    if (!resourceIds.has(use.resource)) throw new Error(`Unknown Presentation resource reference: ${use.resource}`);
+    usedResources.add(use.resource);
+    if (!resourceRoles.has(use.role)) throw new Error(`Invalid Presentation resource role: ${use.role}`);
+    const hasView = 'view' in use;
+    const hasSubview = 'subview' in use;
+    if (use.role === 'installation') {
+      if (hasView || hasSubview || 'ref' in use) throw new Error(`${label}: installation resource use must not reference UI`);
+    } else {
+      if (hasView === hasSubview) throw new Error(`${label}: resource use must reference exactly one View or SubView`);
+      const ownerId = hasView ? use.view : use.subview;
+      id(ownerId, `${label}.${hasView ? 'view' : 'subview'}`);
+      const owner = (hasView ? views : subviews).get(ownerId);
+      if (!owner) throw new Error(`Unknown Presentation ${hasView ? 'View' : 'SubView'} resource-use reference: ${ownerId}`);
+      if (use.role === 'information-representation') {
+        if (!('ref' in use)) throw new Error(`${label}: information-representation requires ref`);
+        const target = resolveRepresentationRef(use.ref, ownerScope(owner), `${label}.ref`);
+        if (target.kind !== 'information') throw new Error(`${label}: information-representation ref must resolve to Information`);
+      } else if ('ref' in use) {
+        throw new Error(`${label}: ref is allowed only for information-representation`);
+      }
+    }
+    const useKey = [use.resource, use.role, use.view || '', use.subview || '', use.ref || ''].join('\0');
+    if (seenUses.has(useKey)) throw new Error(`Duplicate Presentation resource use: ${use.resource}`);
+    seenUses.add(useKey);
+  }
+  for (const resourceId of resourceIds) {
+    if (!usedResources.has(resourceId)) throw new Error(`Unused Presentation resource declaration: ${resourceId}`);
+  }
+}
+
 export function loadPresentationModel(sourceDirectory, ui) {
   const filename = path.join(sourceDirectory, 'presentation.yaml');
   if (!fs.existsSync(filename)) return null;
   const source = parseYaml(filename);
   exactFields(source, ['presentation'], ['presentation'], 'presentation.yaml');
   const presentation = mapping(source.presentation, 'presentation');
-  exactFields(presentation, ['timezone', 'shared-layouts', 'subviews', 'views'], ['timezone'], 'presentation');
+  exactFields(presentation, ['timezone', 'resources', 'resource-uses', 'shared-layouts', 'subviews', 'views'], ['timezone'], 'presentation');
   validateTimezone(presentation.timezone);
   const views = new Map(ui.views.map(view => [view.id, view]));
   const subviews = new Map(ui.subviews.map(subview => [subview.id, subview]));
+  const resourceIds = validateResources(presentation.resources, sourceDirectory);
+  validateResourceUses(presentation['resource-uses'], resourceIds, views, subviews);
   validatePresentationOwners(presentation.subviews, subviews, 'subview');
   validatePresentationOwners(presentation.views, views, 'view');
   validateSharedLayouts(presentation['shared-layouts'], views, new Set(subviews.keys()));
