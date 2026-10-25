@@ -541,7 +541,7 @@ Initial Information representations are:
 - `bar-chart`;
 - `table`.
 
-The initial Action representation is `chart-selection`. It requires `on`, which resolves to an Information representation declared in the same entry. `on` is forbidden for other representations. Relative `emphasis` is `primary`, `secondary`, or `subdued`.
+The initial Action representation is `chart-selection`. It requires `on`, which resolves to an Information representation declared in the same entry. `on` is forbidden for other representations. Relative `emphasis` is `primary`, `secondary`, or `subdued`. `emphasis` specifies relative visual prominence within the current UI scope: `primary` is realized as a principal visual anchor, `secondary` as subordinate but clearly distinguishable emphasis, and `subdued` as intentionally de-emphasized presentation. The relative emphasis must be assessable in the rendered implementation. It does not prescribe exact sizes, colors, typefaces, positions, or component types.
 
 The same target cannot have two representations in one scope. Representing a whole Information and one of its fields in the same scope is conflicting and invalid; distinct fields may have distinct representations. Presentation representation names are normative semantic constraints on visual expression, not HTML elements, framework widgets, CSS classes, or implementation components.
 
