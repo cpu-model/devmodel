@@ -54,6 +54,19 @@ Before an increment changes durable domain history representation, meaning, auth
 
 ## Self-instructing implementation work
 
+### Normative Instruction Authority Gate
+
+Before changing implementation, classify every instruction by authority:
+
+- **Normative model authority:** Product behavior and presentation come only from the complete current CPU model: the five-file semantic base model and any present `components.yaml` and `presentation.yaml`.
+- **Task scope or verification:** An implementation task may narrow scope, name model requirement IDs, limit changed source paths, and prescribe verification work. Those instructions do not add to, reinterpret, strengthen, or weaken the model.
+- **Technical implementation choice:** The implementer may make technical choices only within freedom left by the model. Such choices remain implementation decisions and must not be reported as newly normative product behavior or presentation.
+- **Candidate product decision:** A new or changed product decision must first pass through a separate model increment and review. It is not authorized by an implementation task, a correct requirement-ID citation, a bug label, a review comment, historical code, a prior chat, or a screenshot.
+
+If any implementation instruction appears to require product behavior or presentation that cannot be derived from the current model, stop before implementation. Report the candidate decision and its missing or conflicting model authority. Do not implement the unmodeled part, even when the same task also cites valid requirements or contains otherwise executable work.
+
+Every implementation task must be supplied as the standalone machine-checkable contract defined by `CPU/PROCESS/CPU-Implementation-Task-Contract.md` and validated before implementation. This is the only permitted implementation-task instruction envelope. Complementary prose, chat messages, review comments, and attachments may provide diagnostic context but cannot add or modify scope, verification, technical direction, behavior, presentation, or acceptance. If they appear to do so, stop before implementation and request a corrected contract or a model increment. The contract is deliberately incapable of carrying requirement prose or design directions. A valid contract proves only its structure, current-model resolution, and declared execution boundary; it never proves semantic conformance of the requested or completed implementation.
+
 CPU repositories carry the general working method so that task prompts can normally describe the desired outcome rather than repeat CPU procedure.
 
 When asked to implement the current CPU model, or to make the project buildable or runnable according to the model:

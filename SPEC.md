@@ -30,6 +30,7 @@ The normative responsibilities in `cpu-model/devmodel` are divided as follows:
 4. `CPU/PROCESS/CPU-Visual-Language-v2.md` defines the normative visual language.
 5. `CPU/PROCESS/CPU-Component-Discovery.md` defines how Component candidates are derived, reviewed, condensed into the optional Component architecture artifact, and subsequently realized as verifiable Go package boundaries.
 6. `CPU/PROCESS/CPU-History-Migration.md` defines the mandatory applicability gate and the migration, reconciliation, and acceptance rules for affected durable domain history.
+7. `CPU/PROCESS/CPU-Implementation-Task-Contract.md` defines the Normative Instruction Authority Gate and the mandatory machine-checkable implementation-task contract.
 
 The repository does not maintain PDF counterparts. Markdown is the only documentation source.
 
