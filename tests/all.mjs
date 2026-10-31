@@ -14,6 +14,7 @@ function run(script, args = []) {
 run('tests/validate_naming.mjs');
 run('tools/validate_native_model.mjs', ['--source', path.join(root, 'examples', 'model')]);
 run('tests/deployment_validation.mjs');
+run('tests/deployment_layout.mjs');
 run('tests/artifact_validation.mjs');
 run('tests/presentation_validation.mjs');
 run('tests/component_validation.mjs');

@@ -9,23 +9,36 @@ function portDetail(port) {
 }
 
 export function layoutDeployment(deployment) {
-  const hostHeight = 430;
+  const programHeight = 304;
+  const programRowGap = 24;
+  const hostHeaderHeight = 54;
+  const hostBottomPadding = 72;
   const hostGap = 88;
   const routeMargin = 220;
-  const pageHeight = Math.max(595, 92 + deployment.hosts.length * hostHeight + (deployment.hosts.length - 1) * hostGap);
+  const hostHeights = deployment.hosts.map(host => {
+    const programCount = deployment.programs.filter(program => program.host === host.id).length;
+    const rows = Math.max(1, Math.ceil(programCount / 2));
+    return hostHeaderHeight + rows * programHeight + (rows - 1) * programRowGap + hostBottomPadding;
+  });
+  const pageHeight = Math.max(595, 92 + hostHeights.reduce((sum, height) => sum + height, 0) + (deployment.hosts.length - 1) * hostGap);
   const endpoint = new Map();
+  let nextHostTop = pageHeight - 72;
   const hosts = deployment.hosts.map((host, hostIndex) => {
+    const hostHeight = hostHeights[hostIndex];
     const box = {
       x: PAGE.margin + routeMargin,
-      y: pageHeight - 72 - (hostIndex + 1) * hostHeight - hostIndex * hostGap,
+      y: nextHostTop - hostHeight,
       width: PAGE.width - PAGE.margin * 2 - routeMargin * 2,
       height: hostHeight,
     };
+    nextHostTop = box.y - hostGap;
     const hostPrograms = deployment.programs.filter(program => program.host === host.id);
     const programWidth = hostPrograms.length === 1 ? box.width - 48 : (box.width - 72) / 2;
     const programs = hostPrograms.map((program, index) => {
+      const row = Math.floor(index / 2);
       const x = hostPrograms.length === 1 ? box.x + 24 : box.x + 24 + (index % 2) * (programWidth + 24);
-      const programBox = {...program, x, y: box.y + 72, width: programWidth, height: box.height - 126};
+      const y = box.y + box.height - hostHeaderHeight - (row + 1) * programHeight - row * programRowGap;
+      const programBox = {...program, x, y, width: programWidth, height: programHeight};
       const programPorts = (program.ports || []).map((port, portIndex) => ({
         ...port, detail: portDetail(port), x: x + 18, y: programBox.y + 18 + portIndex * 52,
         width: programWidth - 36, height: 42,
